@@ -1,0 +1,182 @@
+[
+  {
+    "Country": "United States",
+    "CountryCode": "US",
+    "State": "Illinois",
+    "StateCode": "IL",
+    "City": "Chicago",
+    "Airport": "O'Hare International Airport",
+    "Code": "ORD"
+  },
+  {
+    "Country": "Poland",
+    "CountryCode": "PL",
+    "State": "Lesser Poland",
+    "StateCode": "MA",
+    "City": "Kraków",
+    "Airport": "John Paul II International Airport Kraków-Balice",
+    "Code": "KRK"
+  },
+  {
+    "Country": "United States",
+    "CountryCode": "US",
+    "State": "Georgia",
+    "StateCode": "GA",
+    "City": "Atlanta",
+    "Airport": "Hartsfield-Jackson Atlanta International Airport",
+    "Code": "ATL"
+  },
+  {
+    "Country": "United Kingdom",
+    "CountryCode": "GB",
+    "State": "England",
+    "StateCode": "ENG",
+    "City": "London",
+    "Airport": "Heathrow Airport",
+    "Code": "LHR"
+  },
+  {
+    "Country": "Japan",
+    "CountryCode": "JP",
+    "State": "Chiba",
+    "StateCode": "12",
+    "City": "Tokyo",
+    "Airport": "Narita International Airport",
+    "Code": "NRT"
+  },
+  {
+    "Country": "France",
+    "CountryCode": "FR",
+    "State": "Île-de-France",
+    "StateCode": "IDF",
+    "City": "Paris",
+    "Airport": "Charles de Gaulle Airport",
+    "Code": "CDG"
+  },
+  {
+    "Country": "United Arab Emirates",
+    "CountryCode": "AE",
+    "State": "Dubai",
+    "StateCode": "DU",
+    "City": "Dubai",
+    "Airport": "Dubai International Airport",
+    "Code": "DXB"
+  },
+  {
+    "Country": "Germany",
+    "CountryCode": "DE",
+    "State": "Hesse",
+    "StateCode": "HE",
+    "City": "Frankfurt",
+    "Airport": "Frankfurt Airport",
+    "Code": "FRA"
+  },
+  {
+    "Country": "Canada",
+    "CountryCode": "CA",
+    "State": "Ontario",
+    "StateCode": "ON",
+    "City": "Toronto",
+    "Airport": "Toronto Pearson International Airport",
+    "Code": "YYZ"
+  },
+  {
+    "Country": "Australia",
+    "CountryCode": "AU",
+    "State": "New South Wales",
+    "StateCode": "NSW",
+    "City": "Sydney",
+    "Airport": "Sydney Kingsford Smith Airport",
+    "Code": "SYD"
+  },
+  {
+    "Country": "Netherlands",
+    "CountryCode": "NL",
+    "State": "North Holland",
+    "StateCode": "NH",
+    "City": "Amsterdam",
+    "Airport": "Amsterdam Airport Schiphol",
+    "Code": "AMS"
+  },
+  {
+    "Country": "Singapore",
+    "CountryCode": "SG",
+    "State": "Singapore",
+    "StateCode": "SG",
+    "City": "Singapore",
+    "Airport": "Changi Airport",
+    "Code": "SIN"
+  },
+  {
+    "Country": "South Korea",
+    "CountryCode": "KR",
+    "State": "Incheon",
+    "StateCode": "28",
+    "City": "Seoul",
+    "Airport": "Incheon International Airport",
+    "Code": "ICN"
+  },
+  {
+    "Country": "Spain",
+    "CountryCode": "ES",
+    "State": "Madrid",
+    "StateCode": "MD",
+    "City": "Madrid",
+    "Airport": "Adolfo Suárez Madrid-Barajas Airport",
+    "Code": "MAD"
+  },
+  {
+    "Country": "United States",
+    "CountryCode": "US",
+    "State": "California",
+    "StateCode": "CA",
+    "City": "Los Angeles",
+    "Airport": "Los Angeles International Airport",
+    "Code": "LAX"
+  },
+  {
+    "Country": "Turkey",
+    "CountryCode": "TR",
+    "State": "Istanbul",
+    "StateCode": "34",
+    "City": "Istanbul",
+    "Airport": "Istanbul Airport",
+    "Code": "IST"
+  },
+  {
+    "Country": "Brazil",
+    "CountryCode": "BR",
+    "State": "São Paulo",
+    "StateCode": "SP",
+    "City": "São Paulo",
+    "Airport": "Guarulhos International Airport",
+    "Code": "GRU"
+  },
+  {
+    "Country": "India",
+    "CountryCode": "IN",
+    "State": "Delhi",
+    "StateCode": "DL",
+    "City": "New Delhi",
+    "Airport": "Indira Gandhi International Airport",
+    "Code": "DEL"
+  },
+  {
+    "Country": "Thailand",
+    "CountryCode": "TH",
+    "State": "Samut Prakan",
+    "StateCode": "11",
+    "City": "Bangkok",
+    "Airport": "Suvarnabhumi Airport",
+    "Code": "BKK"
+  },
+  {
+    "Country": "Italy",
+    "CountryCode": "IT",
+    "State": "Lazio",
+    "StateCode": "62",
+    "City": "Rome",
+    "Airport": "Leonardo da Vinci-Fiumicino Airport",
+    "Code": "FCO"
+  }
+]

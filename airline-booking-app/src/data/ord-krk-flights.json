@@ -1,0 +1,284 @@
+[
+  {
+    "flightNumber" : "POL01",
+    "isNonStop": true,
+    "totalDurationMinutes": 500,
+    "basePriceUsd": 450.00,
+    "departureAirport" : {
+      "airportId" : 1,
+      "airportName" : "Chicago O'Hare International Airport",
+      "airportCode" : "ORD" 
+    },
+    "arrivalAirport" : {
+      "airportId" : 2,
+      "airportName" : "John Paul II Kraków Balice International Airport",
+      "airportCode" : "KRK"
+    },
+    "layovers": [],
+    "segments": [
+      {
+        "segmentIndex": 1,
+        "flightNumber": "POL01",
+        "aircraftType": "Boeing 787-9 Dreamliner",
+        "departureAirportCode": "ORD",
+        "arrivalAirportCode": "KRK",
+        "departureDateTimeUtc": "12/02/2026 17:10:00",
+        "arrivalDateTimeUtc": "12/03/2026 01:30:00",
+        "availableCabins": ["Economy", "Premium Economy", "Business Class", "First Class"]
+      }
+    ],
+    "brandedFares" : [
+      {
+        "classId" : 1,
+        "className" : "Economy",
+        "fares" : [
+          {
+            "fareId" : 1,
+            "fareName" : "Eco-Light",
+            "farePriceUsd": 450.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Economy" },
+            "perks" : [
+              "Cabin Location: Standard Economy Cabin (middle/rear rows)",
+              "Seat Assignment: Automatically assigned at check-in",
+              "Baggage & Perks: 1 Personal item only. Non-refundable"
+            ]
+          },
+          {
+            "fareId" : 2,
+            "fareName" : "Eco-Standard",
+            "farePriceUsd": 530.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Economy" },
+            "perks" : [
+              "Cabin Location: Standard Economy Cabin",
+              "Seat Assignment: Free selection of any standard window or aisle seat",
+              "Baggage & Perks: 1 Carry-on bag included. Changes allowed for a fee"
+            ]
+          },
+          {
+            "fareId" : 3,
+            "fareName" : "Eco-Plus",
+            "farePriceUsd": 640.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Economy" },
+            "perks" : [
+              "Cabin Location: Economy Extra-Legroom Rows (front rows or exit rows)",
+              "Seat Assignment: Free choice of dedicated extra-legroom seats (+3 to 5 inches of pitch)",
+              "Baggage & Perks: 1 Carry-on + 1 Checked bag included. Priority boarding (Zone 3)"
+            ]
+          }
+        ]
+      },
+      {
+        "classId" : 2,
+        "className" : "Premium Economy",
+        "fares" : [
+          {
+            "fareId" : 4,
+            "fareName" : "Premium-Value",
+            "farePriceUsd": 1150.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Premium Economy" },
+            "perks" : [
+              "Cabin Location: Premium Economy Cabin (wider 2-3-2 seating layout)",
+              "Seat Assignment: Standard seat selection within the Premium cabin.",
+              "Baggage & Perks: 1 Carry-on + 1 Checked bag. Premium meal service"
+            ]
+          },
+          {
+            "fareId" : 5,
+            "fareName" : "Premium-Flex",
+            "farePriceUsd": 1380.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Premium Economy" },
+            "perks" : [
+              "Cabin Location: Premium Economy Cabin",
+              "Seat Assignment: Free choice of bulkhead or front-row seats within Premium cabin",
+              "Baggage & Perks: 1 Carry-on + 2 Checked bags. Priority airport security & boarding (Zone 2). Fully refundable"
+            ]
+          }
+        ]
+      },
+      {
+        "classId" : 3,
+        "className" : "Business Class",
+        "fares" : [
+          {
+            "fareId" : 6,
+            "fareName" : "Biz-Smart",
+            "farePriceUsd": 2800.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Business Class" },
+            "perks" : [
+              "Cabin Location: Main Business Class Cabin (lie-flat suites)",
+              "Seat Assignment: Standard aisle-access suite selection",
+              "Baggage & Perks: 2 Checked bags. Onboard lounge access. (Lounge entry at airport requires a fee)"
+            ]
+          },
+          {
+            "fareId" : 7,
+            "fareName" : "Biz-Elite",
+            "farePriceUsd": 3400.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Business Class" },
+            "perks" : [
+              "Cabin Location: Business Class Mini-Cabin (quieter, exclusive forward section)",
+              "Seat Assignment: Premium bulkhead suites or twin-luxury center suites",
+              "Baggage & Perks: 3 Checked bags. Flagship Airport Lounge access. Priority boarding (Zone 1)"
+            ]
+          }
+        ]
+      },
+      {
+        "classId" : 4,
+        "className" : "First Class",
+        "fares" : [
+          {
+            "fareId" : 8,
+            "fareName" : "First-Omni",
+            "farePriceUsd": 6200.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "First Class" },
+            "perks" : [
+              "Cabin Location: Flagship First Class Cabin (Nose of aircraft, fully enclosed private suites)",
+              "Seat Assignment: Complete freedom of any available private suite",
+              "Baggage & Perks: Unlimited baggage. Private terminal access, personal concierge, and premium dining. Fully flexible"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "flightNumber" : "POL03",
+    "isNonStop": false,
+    "totalDurationMinutes": 645, 
+    "basePriceUsd": 380.00,
+    "departureAirport" : {
+      "airportId" : 1,
+      "airportName" : "Chicago O'Hare International Airport",
+      "airportCode" : "ORD" 
+    },
+    "arrivalAirport" : {
+      "airportId" : 2,
+      "airportName" : "John Paul II Kraków Balice International Airport",
+      "airportCode" : "KRK"
+    },
+    "layovers": [
+      {
+        "airportCode": "WAW",
+        "airportName": "Warsaw Chopin Airport",
+        "durationMinutes": 105
+      }
+    ],
+    "segments": [
+      {
+        "segmentIndex": 1,
+        "flightNumber": "POL03",
+        "aircraftType": "Boeing 787-9 Dreamliner",
+        "departureAirportCode": "ORD",
+        "arrivalAirportCode": "WAW",
+        "departureDateTimeUtc": "12/02/2026 17:00:00",
+        "arrivalDateTimeUtc": "12/03/2026 06:00:00",
+        "availableCabins": ["Economy", "Premium Economy", "Business Class", "First Class"]
+      },
+      {
+        "segmentIndex": 2,
+        "flightNumber": "POL122",
+        "aircraftType": "Embraer 195",
+        "departureAirportCode": "WAW",
+        "arrivalAirportCode": "KRK",
+        "departureDateTimeUtc": "12/03/2026 07:45:00",
+        "arrivalDateTimeUtc": "12/03/2026 08:45:00",
+        "availableCabins": ["Economy", "Business Class"]
+      }
+    ],
+    "brandedFares" : [
+      {
+        "classId" : 1,
+        "className" : "Economy",
+        "fares" : [
+          {
+            "fareId" : 9,
+            "fareName" : "Eco-Light",
+            "farePriceUsd": 380.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Economy", "2": "Economy" },
+            "perks" : [
+              "Cabin Location: Standard Economy Cabin on both planes",
+              "Seat Assignment: Automatically assigned at check-in",
+              "Baggage & Perks: 1 Personal item only. Non-refundable"
+            ]
+          },
+          {
+            "fareId" : 10,
+            "fareName" : "Eco-Standard",
+            "farePriceUsd": 460.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Economy", "2": "Economy" },
+            "perks" : [
+              "Cabin Location: Standard Economy Cabin on both planes",
+              "Seat Assignment: Free window/aisle selection",
+              "Baggage & Perks: 1 Carry-on bag included. Changes for a fee"
+            ]
+          }
+        ]
+      },
+      {
+        "classId" : 2,
+        "className" : "Premium Economy",
+        "fares" : [
+          {
+            "fareId" : 11,
+            "fareName" : "Premium-Value",
+            "farePriceUsd": 980.00,
+            "isMixedCabin": true,
+            "segmentCabinOverlays": { "1": "Premium Economy", "2": "Economy" },
+            "perks" : [
+              "Cabin Location: Premium Economy on long-haul leg; Economy on short flight",
+              "Seat Assignment: Standard premium seats assigned on Leg 1",
+              "Baggage & Perks: 1 Carry-on + 1 Checked bag. Premium lounge & check-in perks carry over"
+            ]
+          }
+        ]
+      },
+      {
+        "classId" : 3,
+        "className" : "Business Class",
+        "fares" : [
+          {
+            "fareId" : 12,
+            "fareName" : "Biz-Smart",
+            "farePriceUsd": 2400.00,
+            "isMixedCabin": false,
+            "segmentCabinOverlays": { "1": "Business Class", "2": "Business Class" },
+            "perks" : [
+              "Cabin Location: Lie-flat suites on long-haul leg; Regional Business class on connecting leg",
+              "Seat Assignment: Complete aisle-access suite selection",
+              "Baggage & Perks: 2 Checked bags. Full airport lounge access during layover"
+            ]
+          }
+        ]
+      },
+      {
+        "classId" : 4,
+        "className" : "First Class",
+        "fares" : [
+          {
+            "fareId" : 13,
+            "fareName" : "First-Omni",
+            "farePriceUsd": 5500.00,
+            "isMixedCabin": true,
+            "segmentCabinOverlays": { "1": "First Class", "2": "Business Class" },
+            "perks" : [
+              "Cabin Location: Private Suite on long-haul leg; Downgraded to Business Class on connecting leg",
+              "Seat Assignment: Absolute private choice on Leg 1",
+              "Baggage & Perks: Private airport terminal access in ORD, elite baggage handler routes, 100% fully flexible changes"
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
