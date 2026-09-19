@@ -1,0 +1,28 @@
+.panel {
+  padding: var(--mantine-spacing-md);
+  color: var(--polonia-color-ink);
+  background: var(--polonia-color-surface-raised);
+  border: 1px solid var(--polonia-color-border);
+  border-radius: 8px;
+}
+
+.segments {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+.segment {
+  display: block;
+}
+
+.segmentHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--mantine-spacing-md);
+}
+
+.connection {
+  color: var(--polonia-color-accent);
+}

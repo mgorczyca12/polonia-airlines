@@ -1,0 +1,30 @@
+@use 'sass:map';
+@use 'variables' as *;
+@use 'themes' as theme;
+
+@mixin flex-row($gap: 0, $align: center, $justify: flex-start) {
+  display: flex;
+  align-items: $align;
+  justify-content: $justify;
+  gap: $gap;
+}
+
+@mixin focus-ring {
+  outline: 3px solid $color-focus;
+  outline-offset: 3px;
+}
+
+@mixin generate-themes {
+  :root,
+  [data-mantine-color-scheme='light'] {
+    @each $key, $value in map.get(theme.$themes, light) {
+      --#{$key}: #{$value};
+    }
+  }
+
+  [data-mantine-color-scheme='dark'] {
+    @each $key, $value in map.get(theme.$themes, dark) {
+      --#{$key}: #{$value};
+    }
+  }
+}

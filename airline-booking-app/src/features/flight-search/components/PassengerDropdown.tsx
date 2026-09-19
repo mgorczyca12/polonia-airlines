@@ -1,6 +1,7 @@
-import { Input, InputBase, Text, Group, Stack, Combobox, useCombobox, Button } from '@mantine/core';
+import { Input, InputBase, Text, Box, Combobox, useCombobox, Button } from '@mantine/core';
 import { IconCaretDown, IconCaretUp } from '@tabler/icons-react';
-import { useFormContext } from './form-context';
+import { useFormContext } from '#/features/flight-search/model/form-context';
+import styles from '../styles/PassengerDropdown.module.scss'
 
 const PassengerDropdown = () => {
   const form = useFormContext();
@@ -66,9 +67,9 @@ const PassengerDropdown = () => {
       </Combobox.Target>
       
       <Combobox.Dropdown>
-        <Stack p="xs" gap="sm">
+        <Box className={styles.menu}>
           {passengersList.map((type) => (
-            <Group justify="space-between" key={type}>
+            <Box className={styles.passengerRow} key={type}>
               <Text size="md" tt="capitalize">{type}</Text>
               <Button.Group>
                 <Button variant="default" onClick={() => updateCount(type, -1)}>
@@ -85,9 +86,9 @@ const PassengerDropdown = () => {
                   <IconCaretUp color="var(--mantine-color-teal-text)" />
                 </Button>
               </Button.Group>
-            </Group>
+            </Box>
           ))}
-        </Stack>
+        </Box>
       </Combobox.Dropdown>
     </Combobox>
   );

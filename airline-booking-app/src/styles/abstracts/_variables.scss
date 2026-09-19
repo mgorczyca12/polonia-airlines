@@ -1,0 +1,21 @@
+$font-family-sans: 'Inter', sans-serif;
+
+$color-ink: #2B2D42;
+$color-ink-muted: #5b6578;
+$color-surface: #ffffff;
+$color-surface-subtle: #F4F4F6;
+$color-primary: #DC143C;
+$color-primary-hover: #B01030;
+$color-primary-subtle: #FDE8ED;
+$color-border: #d9dfeb;
+$color-focus: #f59e0b;
+
+$shadow-sm: 0 1px 2px rgb(23 32 51 / 8%);
+$shadow-md: 0 8px 24px rgb(23 32 51 / 12%);
+
+$polonia-palette: (
+  primary: #DC143C,    // Crimson Amaranth (National tail fin & branding)
+  secondary: #2B2D42,  // Charcoal Gray (Typography & premium cabins)
+  base: #F4F4F6,       // Chalk Alabaster (Fuselage body color)
+  accent: #D4AF37      // Orzeł Gold (First-class highlights & trim)   // Crimson Amaranth (National tail fin & branding)
+)

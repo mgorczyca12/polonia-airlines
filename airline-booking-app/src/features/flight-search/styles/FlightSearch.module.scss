@@ -1,0 +1,107 @@
+.panel {
+  width: 100%;
+  max-width: 38.75rem;
+  padding: var(--mantine-spacing-xl);
+  color: var(--polonia-color-ink);
+  background: var(--polonia-color-surface-raised);
+  border: 1px solid var(--polonia-color-border);
+  box-shadow: var(--mantine-shadow-sm);
+}
+
+.panel :global(.mantine-Input-input),
+.panel :global(.mantine-Select-input),
+.panel :global(.mantine-DatePickerInput-input) {
+  background: var(--polonia-color-input);
+  border-color: transparent;
+  color: var(--polonia-color-input-text);
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.panel :global(.mantine-Input-input::placeholder),
+.panel :global(.mantine-Select-input::placeholder),
+.panel :global(.mantine-DatePickerInput-input::placeholder) {
+  color: var(--polonia-color-ink-muted);
+  opacity: 1;
+}
+
+.panel :global(.mantine-Input-section),
+.panel :global(.mantine-Select-section),
+.panel :global(.mantine-DatePickerInput-section) {
+  color: var(--polonia-color-ink-muted);
+}
+
+.panel :global(.mantine-Input-input:focus),
+.panel :global(.mantine-Select-input:focus),
+.panel :global(.mantine-DatePickerInput-input:focus) {
+  border-color: var(--polonia-color-primary);
+}
+
+.tripToggle {
+  background: var(--polonia-color-surface);
+  border-radius: 0.5rem;
+  padding: 0.25rem;
+}
+
+.tripToggle :global(.mantine-SegmentedControl-indicator) {
+  background: var(--polonia-color-secondary);
+}
+
+.tripToggle :global(.mantine-SegmentedControl-label[data-active]) {
+  color: var(--polonia-color-surface-raised);
+}
+
+.tripToggle :global(.mantine-SegmentedControl-label) {
+  color: var(--polonia-color-input-text);
+}
+
+.searchButton {
+  color: var(--polonia-color-action-text);
+  background: var(--polonia-color-secondary);
+  border: 1px solid color-mix(in srgb, var(--polonia-color-surface-raised) 16%, transparent);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.searchButton:hover {
+  background: var(--polonia-color-primary);
+}
+
+.searchButton:active {
+  transform: scale(0.98);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-md);
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+
+.dateFields {
+  display: grid;
+  grid-column: 2;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--mantine-spacing-md);
+}
+
+.oneWayDateFields > :global(*) {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
+@media (max-width: 36rem) {
+  .fields,
+  .dateFields {
+    grid-template-columns: 1fr;
+  }
+
+  .dateFields {
+    grid-column: auto;
+  }
+}

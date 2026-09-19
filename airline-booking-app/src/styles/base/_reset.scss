@@ -1,0 +1,29 @@
+@use '../abstracts/variables' as *;
+
+html {
+  background: var(--mantine-color-body, $color-surface-subtle);
+}
+
+body {
+  min-width: 20rem;
+  margin: 0;
+  color: var(--mantine-color-text, $color-ink);
+  background: var(--mantine-color-body, $color-surface-subtle);
+  font-family: $font-family-sans;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+::selection {
+  color: var(--text-color, $color-ink);
+  background: color-mix(in srgb, var(--primary-color, $color-primary) 18%, transparent);
+}
+
+:focus-visible {
+  outline: 3px solid $color-focus;
+  outline-offset: 3px;
+}

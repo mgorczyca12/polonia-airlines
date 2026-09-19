@@ -1,17 +1,27 @@
-import { createFileRoute } from '@tanstack/react-router';
-import { FlightSearch } from '../components/FlightSearch'
-import { FlightListing } from '#/components/FlightListing';
-import { Space } from '@mantine/core';
+import { createFileRoute } from '@tanstack/react-router'
+import { HomePage } from '#/pages/HomePage'
 
-const App = () => {
-
-  return (
-    <>
-      <FlightSearch />
-      <Space h="md"/>
-      <FlightListing />
-    </>
-  );
+interface HomeSearch {
+  from?: string
+  to?: string
+  departure?: string
+  return?: string
+  tripType?: 'roundTrip' | 'oneWay'
 }
 
-export const Route = createFileRoute('/')({ component: App })
+function IndexRoute() {
+  const search = Route.useSearch()
+
+  return <HomePage from={search.from} to={search.to} />
+}
+
+export const Route = createFileRoute('/')({
+  validateSearch: (search: Record<string, unknown>): HomeSearch => ({
+    from: typeof search.from === 'string' ? search.from : undefined,
+    to: typeof search.to === 'string' ? search.to : undefined,
+    departure: typeof search.departure === 'string' ? search.departure : undefined,
+    return: typeof search.return === 'string' ? search.return : undefined,
+    tripType: search.tripType === 'oneWay' ? 'oneWay' : 'roundTrip',
+  }),
+  component: IndexRoute,
+})
