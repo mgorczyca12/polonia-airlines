@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { FlightListingPage } from '#/pages/FlightListingPage'
+import { Box, Container, Text, Title } from '@mantine/core'
+import { FlightResults } from '#/features/flight-results/components/FlightResults'
 
 interface FlightListSearch {
   from?: string
@@ -12,7 +13,15 @@ interface FlightListSearch {
 function FlightListingRoute() {
   const { from, to } = Route.useSearch()
 
-  return <FlightListingPage from={from} to={to} />
+  return (
+    <Container>
+      <Box>
+        <Text c="dimmed" size="sm">Available flights</Text>
+        <Title order={2} size="h3">Search results</Title>
+      </Box>
+      <FlightResults from={from} to={to} />
+    </Container>
+  )
 }
 
 export const Route = createFileRoute('/flightlist')({
