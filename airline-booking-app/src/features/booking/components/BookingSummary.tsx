@@ -1,7 +1,6 @@
 import { Box, Card, List, Text } from '@mantine/core'
 import type { Flight } from '#/features/flight-results'
 import type { BrandedFare } from '#/features/flight-results/model/flight.types'
-import styles from '../styles/BookingSummary.module.scss'
 
 interface BookingSummaryProps {
   flight: Flight
@@ -11,8 +10,8 @@ interface BookingSummaryProps {
 export function BookingSummary({ flight, fare }: BookingSummaryProps) {
   return (
     <Card withBorder p="lg">
-      <Box className={styles.summary}>
-        <Box className={styles.route}>
+      <Box>
+        <Box>
           <Text fw={700}>{flight.departureAirport.airportCode} → {flight.arrivalAirport.airportCode}</Text>
           <Text c="dimmed">{flight.flightNumber}</Text>
         </Box>

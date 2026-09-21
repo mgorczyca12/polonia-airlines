@@ -18,14 +18,14 @@ export function CabinSelector({ cabins, selectedCabinId, onSelect }: CabinSelect
         return (
           <UnstyledButton key={cabin.classId} onClick={() => onSelect(cabin.classId)}>
             <Card
+              className={`${styles.card} ${isSelected ? styles.selected : ''}`}
               withBorder
               p="sm"
-              className={`${styles.card} ${isSelected ? styles.selected : ''}`}
             >
-              <Text className={`${styles.name} ${isSelected ? styles.selectedText : ''}`} size="xs" c={isSelected ? undefined : 'dimmed'} fw={500}>
+              <Text className={styles.name} size="xs" c={isSelected ? undefined : 'dimmed'} fw={500}>
                 {cabin.className}
               </Text>
-              <Text className={`${styles.price} ${isSelected ? styles.selectedPrice : styles.defaultPrice}`} size="md" fw={700}>
+              <Text className={`${styles.price} ${isSelected ? styles.selectedPrice : ''}`} size="md" fw={700}>
                 ${lowestPrice.toLocaleString()}
               </Text>
             </Card>

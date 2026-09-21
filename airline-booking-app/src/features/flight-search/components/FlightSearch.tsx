@@ -31,7 +31,7 @@ export const FlightSearch = () => {
 
   const handleSubmit = (values: FlightSearchFormValues) => {
     void navigate({
-      to: '/',
+      to: '/flightlist',
       search: {
         from: values.departureAirportCode ?? undefined,
         to: values.arrivalAirportCode ?? undefined,

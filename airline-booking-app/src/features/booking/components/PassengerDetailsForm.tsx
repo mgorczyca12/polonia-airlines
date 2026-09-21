@@ -2,7 +2,6 @@ import { Box, Button, Card, Text, TextInput } from '@mantine/core'
 import { useForm } from '@mantine/form'
 import { useState } from 'react'
 import type { PassengerDetails } from '../model/booking.types'
-import styles from '../styles/PassengerDetailsForm.module.scss'
 
 export function PassengerDetailsForm() {
   const [confirmed, setConfirmed] = useState(false)
@@ -27,12 +26,12 @@ export function PassengerDetailsForm() {
   return (
     <Card withBorder p="lg">
       <form onSubmit={form.onSubmit(handleSubmit)}>
-        <Box className={styles.form}>
-          <Box className={styles.heading}>
+        <Box>
+          <Box>
             <Text fw={600}>Passenger details</Text>
             <Text size="sm" c="dimmed">Enter the primary passenger's contact information.</Text>
           </Box>
-          <Box className={styles.nameFields}>
+          <Box>
             <TextInput label="First name" required {...form.getInputProps('firstName')} />
             <TextInput label="Last name" required {...form.getInputProps('lastName')} />
           </Box>

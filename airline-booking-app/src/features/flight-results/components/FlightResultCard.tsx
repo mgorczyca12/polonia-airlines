@@ -3,11 +3,11 @@ import { useDisclosure } from '@mantine/hooks'
 import { useNavigate } from '@tanstack/react-router'
 import { useState } from 'react'
 import type { Flight } from '../model/flight.types'
+import styles from '../styles/FlightResultCard.module.scss'
 import { CabinSelector } from './CabinSelector'
 import { FareOptions } from './FareOptions'
 import { FlightDetails } from './FlightDetails'
 import { FlightTimeline } from './FlightTimeline'
-import styles from '../styles/FlightResultCard.module.scss'
 
 interface FlightResultCardProps {
   flight: Flight
@@ -26,7 +26,7 @@ export function FlightResultCard({ flight }: FlightResultCardProps) {
   }
 
   return (
-    <Card className={styles.card} withBorder p="xl">
+    <Card className={`${styles.card} polonia-card`} withBorder p="xl">
       <Box className={styles.content}>
         <Box className={styles.header}>
           <FlightTimeline
@@ -52,7 +52,7 @@ export function FlightResultCard({ flight }: FlightResultCardProps) {
                 onSelect={setSelectedFareId}
               />
               <Button
-                className={styles.continueButton}
+                className={`${styles.continueButton} polonia-button-primary`}
                 disabled={selectedFareId === null}
                 onClick={() => {
                   if (selectedFareId !== null) {

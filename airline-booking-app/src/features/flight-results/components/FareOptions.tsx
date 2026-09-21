@@ -21,16 +21,16 @@ export function FareOptions({ cabin, selectedFareId, onSelect }: FareOptionsProp
               <Card className={`${styles.card} ${isSelected ? styles.selected : ''}`} withBorder>
                 <Box className={styles.fareContent}>
                   <div>
-                    <Text className={isSelected ? styles.selectedText : styles.defaultText} fw={700} size="md">
+                    <Text className={isSelected ? styles.selectedText : ''} fw={700} size="md">
                       {fare.fareName}
                     </Text>
                     {fare.perks.slice(0, 2).map((perk) => (
-                      <Text className={isSelected ? styles.perkSelected : ''} key={perk} size="xs" c={isSelected ? undefined : 'dimmed'} mt={8}>
+                      <Text key={perk} size="xs" c={isSelected ? undefined : 'dimmed'} mt={8}>
                         • {perk}
                       </Text>
                     ))}
                   </div>
-                  <Text className={isSelected ? styles.selectedText : styles.defaultText} fw={700} size="lg" ta="right">
+                  <Text fw={700} size="lg" ta="right">
                     ${fare.farePriceUsd.toLocaleString()}
                   </Text>
                 </Box>

@@ -1,13 +1,13 @@
 .menu {
   display: flex;
   flex-direction: column;
-  gap: var(--mantine-spacing-sm);
-  padding: var(--mantine-spacing-xs);
+  gap: var(--spacing-sm);
+  padding: var(--spacing-xs);
 }
 
 .passengerRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--mantine-spacing-sm);
+  gap: var(--spacing-sm);
 }

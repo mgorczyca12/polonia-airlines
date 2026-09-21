@@ -13,7 +13,7 @@ export function FlightDetails({ flight, opened }: FlightDetailsProps) {
       <Box className={styles.panel}>
         <Box className={styles.segments}>
           {flight.segments.map((segment, index) => (
-            <Box className={styles.segment} key={`${flight.flightNumber}-${segment.segmentIndex}`}>
+            <Box key={`${flight.flightNumber}-${segment.segmentIndex}`}>
               <Box className={styles.segmentHeader}>
                 <Text size="sm" fw={600}>
                   {segment.departureAirportCode} → {segment.arrivalAirportCode}

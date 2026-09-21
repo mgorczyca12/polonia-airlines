@@ -1,2 +1,92 @@
-@use 'base/reset';
-@use 'theme/mantine-bridge';
+@use 'abstracts/variables' as *;
+@use 'abstracts/mixins' as *;
+
+:root {
+  /* Light Theme */
+  --color-bg: #{$air-white};
+  --color-surface: #{$air-white};
+  
+  --color-text: #{$cabin-black};
+  --color-ink: #{$slate-ink};
+
+  --color-primary: color-mix(in srgb, #{$polonia-red}, white 10%);
+  --color-secondary: #{$polonia-gold};
+
+  --color-muted: #{$steel-gray};
+
+  /* Mantine spacing scale */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+
+  /* Mantine font sizes */
+  --font-xs: 0.75rem;
+  --font-sm: 0.875rem;
+  --font-md: 1rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.25rem;
+
+  /* Mantine radii */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 0.75rem;
+}
+
+/* Dark theme (Mantine-driven) */
+@include polonia-dark-theme {
+  --color-bg: #{$night-charcoal};
+  --color-surface: #{$cabin-graphite};
+
+  --color-text: #{$polar-white};
+  --color-ink: #{$mist-gray};
+
+  --color-primary: #{$polonia-red};
+  --color-secondary: #{$polonia-gold};
+
+  --color-muted: #{$runway-gray};
+}
+
+html {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+body {
+  background-color: var(--color-bg);
+}
+
+.polonia-card {
+  color: var(--color-text);
+  border: 1px solid var(--color-muted);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.polonia-button-primary {
+  background-color: var(--color-primary);
+  color: var(--color-text);
+  border: 1px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.polonia-button-primary:hover {
+  background-color: var(--color-secondary);
+}
+
+.polonia-box-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.polonia-box-group {
+  display: flex;
+  flex-direction: row;
+  gap: var(--spacing-md);
+}

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as BookingRouteImport } from './routes/booking'
+import { Route as FlightlistRouteImport } from './routes/flightlist'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -28,35 +29,44 @@ const BookingRoute = BookingRouteImport.update({
   path: '/booking',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FlightlistRoute = FlightlistRouteImport.update({
+  id: '/flightlist',
+  path: '/flightlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/booking': typeof BookingRoute
+  '/flightlist': typeof FlightlistRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/booking': typeof BookingRoute
+  '/flightlist': typeof FlightlistRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/booking': typeof BookingRoute
+  '/flightlist': typeof FlightlistRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/booking'
+  fullPaths: '/' | '/about' | '/booking' | '/flightlist'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/booking'
-  id: '__root__' | '/' | '/about' | '/booking'
+  to: '/' | '/about' | '/booking' | '/flightlist'
+  id: '__root__' | '/' | '/about' | '/booking' | '/flightlist'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AboutRoute: typeof AboutRoute
   BookingRoute: typeof BookingRoute
+  FlightlistRoute: typeof FlightlistRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -82,6 +92,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BookingRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/flightlist': {
+      id: '/flightlist'
+      path: '/flightlist'
+      fullPath: '/flightlist'
+      preLoaderRoute: typeof FlightlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -89,6 +106,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AboutRoute: AboutRoute,
   BookingRoute: BookingRoute,
+  FlightlistRoute: FlightlistRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
