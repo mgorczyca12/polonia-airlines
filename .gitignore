@@ -1,0 +1,20 @@
+# Generated .NET build output
+bin/
+obj/
+
+# JavaScript and frontend build output
+node_modules/
+dist/
+dist-ssr/
+.nitro/
+.tanstack/
+.wrangler/
+.output/
+.vinxi/
+
+# Local configuration and development artifacts
+.DS_Store
+*.local
+.env
+__unconfig*
+todos.json
