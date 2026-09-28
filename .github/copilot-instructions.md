@@ -13,6 +13,13 @@
   - Queries stay in query services/read models and should not be mixed into command handlers
 - Keep controllers thin. They should delegate to application service via mediator and avoid business logic
 
+## Domain Encapsulation
+- Protect aggregate invariants at aggregate boundaries. Meaningful state changes should be performed through domain methods rather than public setters.
+- Use private setters for entity state that must be controlled, while allowing simple descriptive/configuration data to remain straightforward for EF Core persistence.
+- Aggregate roots own and mutate child collections. Expose collections as read-only when practical, and initialize EF Core navigation collections.
+- Do not force every property change through a method. Add domain methods where a change has business meaning, validates a transition, or raises a domain event.
+- Keep identity/equality separate from event capture. Entities may use different identifier types, and only aggregate roots need domain-event support.
+
 ## Service Project Structure
 Organize each service using the following structure:
 
