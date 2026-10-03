@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/backend/">
+    <Project Path="backend/booking-service/booking-service.csproj" />
+    <Project Path="backend/flight-service/flight-service.csproj" />
+    <Project Path="backend/seating-service/seating-service.csproj" />
+    <Project Path="backend/shared/shared.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="backend/tests/integration/booking-service.integration.test/booking-service.integration.test.csproj" />
+    <Project Path="backend/tests/integration/flight-service.integration.test/flight-service.integration.test.csproj" />
+    <Project Path="backend/tests/integration/seating-service.integration.test/seating-service.integration.test.csproj" />
+    <Project Path="backend/tests/unit/booking-service.unit.test/booking-service.unit.test.csproj" />
+    <Project Path="backend/tests/unit/flight-service.unit.test/flight-service.unit.test.csproj" />
+    <Project Path="backend/tests/unit/seating-service.unit.test/seating-service.unit.test.csproj" />
+  </Folder>
+</Solution>
