@@ -1,4 +1,5 @@
 allowBuilds:
   '@parcel/watcher': false
   esbuild: true
+  lightningcss: true
   unrs-resolver: false

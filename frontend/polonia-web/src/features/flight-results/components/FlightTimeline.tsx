@@ -1,5 +1,4 @@
 import { Box, Text, UnstyledButton } from '@mantine/core'
-import type { CSSProperties } from 'react'
 import type { Flight } from '../model/flight.types'
 import styles from '../styles/FlightTimeline.module.scss'
 
@@ -23,9 +22,13 @@ function formatFlightTime(dateTime: string): string {
   return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`
 }
 
-export function FlightTimeline({ flight, detailsOpened, onToggleDetails }: FlightTimelineProps) {
-  const firstSegment = flight.segments[0]
-  const lastSegment = flight.segments[flight.segments.length - 1]
+export function FlightTimeline({
+  flight,
+  detailsOpened,
+  onToggleDetails,
+}: FlightTimelineProps) {
+  const firstSegment = flight.segments.at(0)
+  const lastSegment = flight.segments.at(-1)
 
   if (!firstSegment || !lastSegment) {
     return null
@@ -35,7 +38,8 @@ export function FlightTimeline({ flight, detailsOpened, onToggleDetails }: Fligh
     <Box className={styles.timeline}>
       <Box className={styles.route}>
         <Text className={styles.endpoint} fw={700} size="lg">
-          {formatFlightTime(firstSegment.departureDateTimeUtc)} {flight.departureAirport.airportCode}
+          {formatFlightTime(firstSegment.departureDateTimeUtc)}{' '}
+          {flight.departureAirport.airportCode}
         </Text>
         <Box className={styles.track}>
           <Box className={styles.line} />
@@ -43,23 +47,34 @@ export function FlightTimeline({ flight, detailsOpened, onToggleDetails }: Fligh
             <Box
               key={`${flight.flightNumber}-layover-${index}`}
               className={styles.stopMarker}
-              style={{ '--stop-position': `${((index + 1) / (flight.layovers.length + 1)) * 100}%` } as CSSProperties}
+              style={{
+                '--stop-position': `${((index + 1) / (flight.layovers.length + 1)) * 100}%`,
+              }}
             />
           ))}
         </Box>
         <Text className={styles.endpoint} fw={700} size="lg">
-          {formatFlightTime(lastSegment.arrivalDateTimeUtc)} {flight.arrivalAirport.airportCode}
+          {formatFlightTime(lastSegment.arrivalDateTimeUtc)}{' '}
+          {flight.arrivalAirport.airportCode}
         </Text>
       </Box>
       <Box className={styles.metadata}>
         <Text size="xs" c="dimmed">
-          Duration: {Math.floor(flight.totalDurationMinutes / 60)}h {flight.totalDurationMinutes % 60}m
+          Duration: {Math.floor(flight.totalDurationMinutes / 60)}h{' '}
+          {flight.totalDurationMinutes % 60}m
         </Text>
-        <Text size="xs" c="dimmed">•</Text>
+        <Text size="xs" c="dimmed">
+          •
+        </Text>
         <Text className={styles.stopText} size="xs" fw={600}>
-          {flight.isNonStop ? 'Nonstop' : `${flight.layovers.length} stop${flight.layovers.length === 1 ? '' : 's'}`}
+          {flight.isNonStop
+            ? 'Nonstop'
+            : `${flight.layovers.length} stop${flight.layovers.length === 1 ? '' : 's'}`}
         </Text>
-        <UnstyledButton className={styles.detailsButton} onClick={onToggleDetails}>
+        <UnstyledButton
+          className={styles.detailsButton}
+          onClick={onToggleDetails}
+        >
           <Text className={styles.detailsText} size="xs" fw={500}>
             {detailsOpened ? 'Hide flight details' : 'View flight details'}
           </Text>

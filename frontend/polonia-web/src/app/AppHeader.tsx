@@ -14,8 +14,16 @@ export function AppHeader() {
         <Text fw={700}>Polonia Airlines</Text>
       </Box>
       <Box className={styles.navigation}>
-        <Link className={styles.link} to="/">Search flights</Link>
-        <Link className={styles.link} to="/booking">Booking</Link>
+        <Link className={styles.link} to="/">
+          Search flights
+        </Link>
+        <Link
+          className={styles.link}
+          to="/booking"
+          search={{ flight: undefined, fare: undefined }}
+        >
+          Booking
+        </Link>
         <ActionIcon
           className={styles.themeToggle}
           variant="subtle"
