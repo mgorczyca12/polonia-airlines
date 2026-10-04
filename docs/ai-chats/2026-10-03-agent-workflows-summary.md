@@ -10,7 +10,7 @@ Date: 2026-10-03
 - Use the existing GitHub Copilot subscription where possible, with a fine-grained PAT stored as `COPILOT_GITHUB_TOKEN`. The GitHub CLI was signed out after local setup.
 - Allow Dependabot patch and minor updates to auto-merge only after required checks pass. Major updates and Actions updates remain manual. Dependabot handles rebasing its own branches; automatic rebasing of other PR branches is deferred.
 
-## Workflows Added Locally
+## Workflows Added
 
 - `ci.yml`: backend and frontend build/test jobs for PRs and pushes to `main`.
 - `.github/dependabot.yml`: weekly NuGet, pnpm/npm and GitHub Actions updates, grouped minor/patch changes, seven-day cooldown.
@@ -22,11 +22,22 @@ Date: 2026-10-03
 - `polonia-airlines.slnx`: includes the backend services, shared library and test projects.
 - `pnpm-workspace.yaml`: unresolved build-script permissions were replaced with explicit settings so frozen installs work.
 
-The `gh-aw` Markdown workflow sources and generated `.lock.yml` files are both required. The AI workflows are staged, so proposed comments, pushes, labels and PRs are previews rather than live changes.
+The `gh-aw` Markdown workflow sources and generated `.lock.yml` files are both required. The AI workflows are staged, so proposed comments, pushes, labels and PRs are previews rather than live changes. These repository files are committed on `main`.
 
 ## GitHub Setup Deferred
 
-Nothing was committed or pushed, and no repository settings were changed. Before enabling automation, configure the Copilot PAT secret and required labels, require CI checks on `main`, then opt in to Dependabot auto-merge. Removing `staged: true` is required before agent outputs become live. An additional CI-trigger token may be needed for agent-created branches to start CI.
+GitHub Actions is currently disabled, and the Dependabot configuration is commented out. No GitHub-side settings were configured. Before enabling automation, configure the Copilot PAT secret and required labels, require CI checks on `main`, then opt in to Dependabot auto-merge. Removing `staged: true` is required before agent outputs become live. An additional CI-trigger token may be needed for agent-created branches to start CI.
+
+## Future Work: Red Diagnostic Environment
+
+Explore an on-demand, access-restricted "Red" environment alongside the conceptual Blue/Green production slots. Its purpose would be production-like debugging and testing, not serving customer traffic. Defer implementation until there is a working MVP and a live system to replicate.
+
+Design constraints to retain for that future investigation:
+
+- Restore coordinated, production-derived snapshots or isolated clones for the stores in scope (relational, document, and object storage); decide point-in-time consistency and retention requirements.
+- Complete data masking before developers or agents can access the environment. Do not connect Red to live production stores, even for fallback reads.
+- Isolate writes and external side effects such as messaging, payments, and email. Use restricted developer access, verbose diagnostics, and automatic teardown/TTL.
+- Treat Red as an ephemeral diagnostic environment, not a replacement for a tested backup and disaster-recovery plan. Snapshot cadence, provider-specific restore mechanisms, and costs remain undecided.
 
 ## Known Caveats
 
