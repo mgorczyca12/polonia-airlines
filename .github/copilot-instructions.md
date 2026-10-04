@@ -71,3 +71,9 @@ Organize each service using the following structure:
 - OpenTelemetry for distributed tracing and observability
 - Middleware for handling cross-cutting concerns such as logging, authentication, and error handling, and other global application concerns
 - Mediator (DispatchR) pipelines for handling input validation, transaction management, and other request-level concerns
+
+## Session Summaries
+- At the end of each substantive repository session, create or update a concise summary in `docs/ai-chats/` before the final response. Skip trivial questions or sessions with no project decisions or work, and follow any explicit request not to create a summary.
+- Name new files `YYYY-MM-DD-<topic>.md` using the current date and a short kebab-case topic. If continuing a session that already has a summary, update that same file instead of creating another.
+- Record the goal, decisions, files changed, checks and their actual results, and deferred work. Distinguish completed work from proposed or unverified work. Do not include secrets or reproduce the conversation transcript.
+- Use the `session-summary` skill when available. Mention the summary file in the final response.
