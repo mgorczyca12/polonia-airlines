@@ -1,0 +1,42 @@
+{
+  "profiles": {
+    "fast": {
+      "engine": "copilot",
+      "model": "gpt-6-luna?effort=low"
+    },
+    "small": {
+      "engine": "copilot",
+      "model": "gpt-6-luna"
+    },
+    "medium-sol": {
+      "engine": "copilot",
+      "model": "gpt-6.1-sol"
+    },
+    "medium-sonnet": {
+      "engine": "copilot",
+      "model": "claude-sonnet-5.5"
+    },
+    "large": {
+      "engine": "copilot",
+      "model": "claude-opus-5.5"
+    },
+    "long-task": {
+      "engine": "copilot",
+      "model": "gpt-6-astra"
+    }
+  },
+  "workflows": {
+    "dependency-fix-tier1": "fast",
+    "dependency-fix-tier2": "long-task",
+    "docs-updater": "small",
+    "pr-review": "medium-sonnet",
+    "test-writer": "medium-sol"
+  },
+  "subAgents": {
+    "integration-tests": {
+      "file": ".github/agents/integration-tests.agent.md",
+      "parentWorkflow": "test-writer",
+      "profile": "large"
+    }
+  }
+}
