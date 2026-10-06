@@ -9,6 +9,9 @@ permissions:
 engine:
   id: copilot
   model: gpt-6.1-sol
+sandbox:
+  agent:
+    version: v0.28.37
 timeout-minutes: 40
 concurrency:
   job-discriminator: ${{ github.run_id }}

@@ -19,6 +19,9 @@ permissions:
 engine:
   id: copilot
   model: gpt-6-astra
+sandbox:
+  agent:
+    version: v0.28.37
 timeout-minutes: 45
 concurrency:
   job-discriminator: ${{ github.run_id }}

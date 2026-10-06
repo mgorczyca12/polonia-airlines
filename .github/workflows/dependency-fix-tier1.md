@@ -12,6 +12,9 @@ permissions:
 engine:
   id: copilot
   model: gpt-6-luna?effort=low
+sandbox:
+  agent:
+    version: v0.28.37
 timeout-minutes: 30
 max-turns: 40
 max-ai-credits: 100

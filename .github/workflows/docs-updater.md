@@ -1,18 +1,24 @@
 ---
 name: Docs and diagrams updater
-description: Keeps docs and Mermaid diagrams in sync after a PR merges (preview-only, draft PR for human review).
+description: Keeps docs and Mermaid diagrams in sync after a non-Dependabot PR merges (preview-only, draft PR for human review).
 on:
   pull_request_target:
     types: [closed]
     branches: [main]
   workflow_dispatch:
-if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+if: >-
+  github.event_name == 'workflow_dispatch' ||
+  (github.event.pull_request.merged == true &&
+   github.event.pull_request.user.login != 'dependabot[bot]')
 permissions:
   contents: read
   pull-requests: read
 engine:
   id: copilot
   model: gpt-6-luna
+sandbox:
+  agent:
+    version: v0.28.37
 timeout-minutes: 20
 max-turns: 30
 max-ai-credits: 100

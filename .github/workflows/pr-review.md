@@ -14,6 +14,9 @@ engine:
   id: copilot
   # Medium Sonnet keeps review independent from this repo's Luna, Sol, Astra, and Opus author profiles.
   model: claude-sonnet-5.5
+sandbox:
+  agent:
+    version: v0.28.37
 timeout-minutes: 15
 max-turns: 40
 max-ai-credits: 150
