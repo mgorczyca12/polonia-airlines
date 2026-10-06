@@ -1,38 +1,38 @@
 # The 7-day cooldown limits supply-chain risk from auto-merging freshly published releases.
-# version: 2
-# updates:
-#   - package-ecosystem: nuget
-#     directory: /
-#     schedule:
-#       interval: weekly
-#       day: monday
-#     cooldown:
-#       default-days: 7
-#     groups:
-#       nuget-minor-patch:
-#         patterns: ["*"]
-#         update-types: [minor, patch]
+version: 2
+updates:
+  - package-ecosystem: nuget
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      nuget-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
 
-#   - package-ecosystem: npm
-#     directory: /frontend/polonia-web
-#     schedule:
-#       interval: weekly
-#       day: monday
-#     cooldown:
-#       default-days: 7
-#     groups:
-#       npm-minor-patch:
-#         patterns: ["*"]
-#         update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /frontend/polonia-web
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      npm-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
 
-#   - package-ecosystem: github-actions
-#     directory: /
-#     schedule:
-#       interval: weekly
-#       day: monday
-#     cooldown:
-#       default-days: 7
-#     groups:
-#       actions-minor-patch:
-#         patterns: ["*"]
-#         update-types: [minor, patch]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      actions-minor-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]

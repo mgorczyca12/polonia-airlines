@@ -2,7 +2,7 @@
 name: Docs and diagrams updater
 description: Keeps docs and Mermaid diagrams in sync after a PR merges (preview-only, draft PR for human review).
 on:
-  pull_request:
+  pull_request_target:
     types: [closed]
     branches: [main]
   workflow_dispatch:
@@ -17,6 +17,9 @@ timeout-minutes: 20
 max-turns: 30
 max-ai-credits: 100
 max-daily-ai-credits: 300
+checkout:
+  repository: ${{ github.repository }}
+  fetch-depth: 0
 tools:
   github:
     toolsets: [pull_requests, repos]
