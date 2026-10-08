@@ -8,6 +8,14 @@ namespace booking_service.Domain.ValueObjects
 
         public string Status { get; }
 
+        public static ReservationStatus From(string status) => status switch
+        {
+            "Created" => Created,
+            "Reserved" => Reserved,
+            "Cancelled" => Cancelled,
+            _ => throw new ArgumentException("Unknown reservation status.", nameof(status))
+        };
+
         private ReservationStatus(string status)
         {
             Status = status;

@@ -5,7 +5,7 @@ namespace booking_service.Domain.Entities
 {
     public class Reservation : AggregateRoot<int>
     {
-        private readonly List<int> flightIds = new();
+        private readonly List<ReservationFlight> flights = new();
         private readonly List<Passenger> passengers = new();
         private readonly List<Payment> payments = new();
 
@@ -14,7 +14,9 @@ namespace booking_service.Domain.Entities
         public int UserId { get; private set; }
         public ReservationStatus Status { get; private set; } = ReservationStatus.Created;
         public Fare Fare { get; private set; } = null!;
-        public IReadOnlyList<int> FlightIds => flightIds.AsReadOnly();
+        public IReadOnlyList<ReservationFlight> Flights => flights.AsReadOnly();
+        public IReadOnlyList<int> FlightIds => flights.OrderBy(flight => flight.SequenceNumber)
+            .Select(flight => flight.FlightId).ToList().AsReadOnly();
         public IReadOnlyCollection<Passenger> Passengers => passengers.AsReadOnly();
         public IReadOnlyCollection<Payment> Payments => payments.AsReadOnly();
 
@@ -39,10 +41,11 @@ namespace booking_service.Domain.Entities
             {
                 Code = code.Trim(),
                 UserId = userId,
-                Fare = fare,
                 ReservationDate = reservationDate
             };
-            reservation.flightIds.AddRange(itinerary);
+            reservation.Fare = Fare.CreateForReservation(reservation, fare);
+            for (var index = 0; index < itinerary.Count; index++)
+                reservation.flights.Add(ReservationFlight.Create(reservation, itinerary[index], index + 1));
             return reservation;
         }
 
@@ -51,7 +54,7 @@ namespace booking_service.Domain.Entities
             EnsureCreated();
             if (dateOfBirth > DateOnly.FromDateTime(ReservationDate.UtcDateTime))
                 throw new ArgumentException("Date of birth cannot be after the reservation date.", nameof(dateOfBirth));
-            var passenger = Passenger.Create(firstName, lastName, dateOfBirth);
+            var passenger = Passenger.Create(this, firstName, lastName, dateOfBirth);
             passengers.Add(passenger);
             return passenger;
         }
@@ -84,7 +87,7 @@ namespace booking_service.Domain.Entities
         {
             if (Status == ReservationStatus.Cancelled)
                 throw new InvalidOperationException("Cannot record a payment against a cancelled reservation.");
-            var payment = Payment.Create(reference, amount, currency, recordedAt);
+            var payment = Payment.Create(this, reference, amount, currency, recordedAt);
             if (payment.Currency != Fare.Currency)
                 throw new InvalidOperationException("Payment currency must match the fare currency.");
             if (payments.Any(existing => existing.Reference == payment.Reference))

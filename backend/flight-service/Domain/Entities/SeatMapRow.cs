@@ -5,12 +5,13 @@ namespace flight_service.Domain.Entities;
 
 public class SeatMapRow : Entity<int>
 {
+    private readonly List<SeatMapPosition> seatMapPositions = new();
     public int AircraftConfigurationId { get; private set; }
     public AircraftConfiguration AircraftConfiguration { get; private set; } = null!;
     public int CabinId { get; private set; }
     public SeatMapCabin Cabin { get; private set; } = null!;
     public SeatMapRowType Type { get; private set; } = null!;
-    public ICollection<SeatMapPosition> SeatMapPositions { get; private set; } = new List<SeatMapPosition>();
+    public IReadOnlyCollection<SeatMapPosition> SeatMapPositions => seatMapPositions.AsReadOnly();
 
     private SeatMapRow() { }
 
@@ -35,6 +36,9 @@ public class SeatMapRow : Entity<int>
     public void AddPosition(SeatMapPosition position)
     {
         ArgumentNullException.ThrowIfNull(position);
-        SeatMapPositions.Add(position);
+        if (seatMapPositions.Any(existing => ReferenceEquals(existing, position)))
+            throw new InvalidOperationException("Position is already part of this seat map row.");
+        position.AttachTo(this);
+        seatMapPositions.Add(position);
     }
 }

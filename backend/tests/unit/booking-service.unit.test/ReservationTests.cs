@@ -168,4 +168,62 @@ public class ReservationTests
         Assert.Throws<ArgumentNullException>(() => Reservation.Create("Code", 1, [1], null!, BookingDate));
         Assert.Throws<ArgumentException>(() => Reservation.Create("Code", 1, [1], Fare.Create("Fare", 1m, "PLN"), default));
     }
+
+    [Fact]
+    public void ChildrenReferenceTheirParentAndItineraryHasExplicitSequence()
+    {
+        var reservation = Create(3, 1, 2);
+        var passenger = reservation.AddPassenger("Jan", "Kowalski", new DateOnly(1990, 1, 1));
+        var baggage = reservation.AddBaggage(passenger, "Bag", 10m);
+        var payment = reservation.RecordPayment("reference", 50m, "PLN", BookingDate);
+
+        Assert.Same(reservation, passenger.Reservation);
+        Assert.Equal(reservation.Id, passenger.ReservationId);
+        Assert.Same(passenger, baggage.Passenger);
+        Assert.Equal(passenger.Id, baggage.PassengerId);
+        Assert.Same(reservation, payment.Reservation);
+        Assert.Equal(reservation.Id, payment.ReservationId);
+        Assert.Same(reservation, reservation.Fare.Reservation);
+        Assert.Equal(reservation.Id, reservation.Fare.ReservationId);
+        Assert.Equal(new[] { 3, 1, 2 }, reservation.Flights.Select(flight => flight.FlightId));
+        Assert.Equal(new[] { 1, 2, 3 }, reservation.Flights.Select(flight => flight.SequenceNumber));
+        Assert.Equal(new[] { 3, 1, 2 }, reservation.FlightIds);
+        Assert.All(reservation.Flights, flight =>
+        {
+            Assert.Same(reservation, flight.Reservation);
+            Assert.Equal(reservation.Id, flight.ReservationId);
+        });
+        Assert.Throws<NotSupportedException>(() => ((IList<ReservationFlight>)reservation.Flights).Clear());
+    }
+
+    [Fact]
+    public void EachReservationHasItsOwnFareSnapshot()
+    {
+        var quote = Fare.Create("Economy", 100m, "PLN");
+        var first = Reservation.Create("First", 1, [1], quote, BookingDate);
+        var second = Reservation.Create("Second", 1, [2], quote, BookingDate);
+
+        Assert.NotSame(quote, first.Fare);
+        Assert.NotSame(first.Fare, second.Fare);
+        Assert.Same(first, first.Fare.Reservation);
+        Assert.Same(second, second.Fare.Reservation);
+        Assert.Equal(quote.Amount, first.Fare.Amount);
+        Assert.Equal(quote.Code, first.Fare.Code);
+        Assert.Equal(quote.Currency, first.Fare.Currency);
+    }
+
+    [Theory]
+    [InlineData("Created")]
+    [InlineData("Reserved")]
+    [InlineData("Cancelled")]
+    public void KnownStatusesCanBeReconstructed(string status) =>
+        Assert.Equal(status, ReservationStatus.From(status).Status);
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("created")]
+    [InlineData("Unknown")]
+    [InlineData(null)]
+    public void UnknownStatusesFailExplicitly(string? status) =>
+        Assert.Throws<ArgumentException>(() => ReservationStatus.From(status!));
 }

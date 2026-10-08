@@ -4,13 +4,14 @@ using Shared.Domain.Entities;
 
 public class AircraftConfiguration : AggregateRoot<int>
 {
+    private readonly List<SeatMapRow> seatMapRows = new();
     public int AircraftTypeId { get; private set; }
     public AircraftType AircraftType { get; private set; } = null!;
     public string Code { get; private set; } = null!;
     public string Name { get; private set; } = null!;
     public int Version { get; private set; }
     public bool IsActive { get; private set; }
-    public ICollection<SeatMapRow> SeatMapRows { get; private set; } = new List<SeatMapRow>();
+    public IReadOnlyCollection<SeatMapRow> SeatMapRows => seatMapRows.AsReadOnly();
     private AircraftConfiguration() { }
 
     private AircraftConfiguration(AircraftType aircraftType, string code, string name, int version)
@@ -40,6 +41,10 @@ public class AircraftConfiguration : AggregateRoot<int>
     public void AddSeatMapRow(SeatMapRow row)
     {
         ArgumentNullException.ThrowIfNull(row);
-        SeatMapRows.Add(row);
+        if (!ReferenceEquals(row.AircraftConfiguration, this))
+            throw new InvalidOperationException("Seat map row belongs to another aircraft configuration.");
+        if (seatMapRows.Any(existing => ReferenceEquals(existing, row)))
+            throw new InvalidOperationException("Seat map row is already part of this aircraft configuration.");
+        seatMapRows.Add(row);
     }
 }

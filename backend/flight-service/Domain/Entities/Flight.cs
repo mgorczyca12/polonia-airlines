@@ -4,6 +4,7 @@ using Shared.Domain.Entities;
 
 public class Flight : AggregateRoot<int>
 {
+    private readonly List<FlightSegment> flightSegments = new();
     public string FlightNumber { get; private set; } = null!;
     public DateTime DepartureTime { get; private set; }
     public DateTime ArrivalTime { get; private set; }
@@ -14,7 +15,7 @@ public class Flight : AggregateRoot<int>
     public int ArrivalAirportId { get; private set; }
     public Airport ArrivalAirport { get; private set; } = null!;
 
-    public ICollection<FlightSegment> FlightSegments { get; private set; } = new List<FlightSegment>();
+    public IReadOnlyCollection<FlightSegment> FlightSegments => flightSegments.AsReadOnly();
 
     private Flight() { }
 
@@ -44,6 +45,9 @@ public class Flight : AggregateRoot<int>
     public void AddSegment(FlightSegment segment)
     {
         ArgumentNullException.ThrowIfNull(segment);
-        FlightSegments.Add(segment);
+        if (flightSegments.Any(existing => ReferenceEquals(existing, segment)))
+            throw new InvalidOperationException("Segment is already part of this flight.");
+        segment.AttachTo(this);
+        flightSegments.Add(segment);
     }
 }
