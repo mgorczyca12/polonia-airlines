@@ -50,4 +50,7 @@ Previous context: [2026-10-06 summary](./2026-10-06-dependabot-docs-checkout.md)
   flagged trailing whitespace in the user's unrelated SeatInventory edit, left intact.
   Checked editor diagnostics reported no errors. No EF persistence behavior has
   been verified; tests cover domain behavior and object graph relationships only.
-- Changes are local; no commit or push was requested for this work.
+- At the user's subsequent request, committed the domain, tests, documentation,
+  and rollover policy as `eb6c046` and pushed to origin/main. Verified matching
+  local and remote-tracking HEADs; seating-service edits remain unstaged and
+  uncommitted. This delivery note is recorded in a follow-up documentation commit.
