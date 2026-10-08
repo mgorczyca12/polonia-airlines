@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <Using Include="Xunit" />
+    <ProjectReference Include="..\..\..\seating-service\seating-service.csproj" />
   </ItemGroup>
 
 </Project>

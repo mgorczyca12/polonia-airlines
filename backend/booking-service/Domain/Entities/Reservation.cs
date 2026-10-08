@@ -15,14 +15,14 @@ namespace booking_service.Domain.Entities
         public ReservationStatus Status { get; private set; } = ReservationStatus.Created;
         public Fare Fare { get; private set; } = null!;
         public IReadOnlyList<ReservationFlight> Flights => flights.AsReadOnly();
-        public IReadOnlyList<int> FlightIds => flights.OrderBy(flight => flight.SequenceNumber)
+        public IReadOnlyList<string> FlightIds => flights.OrderBy(flight => flight.SequenceNumber)
             .Select(flight => flight.FlightId).ToList().AsReadOnly();
         public IReadOnlyCollection<Passenger> Passengers => passengers.AsReadOnly();
         public IReadOnlyCollection<Payment> Payments => payments.AsReadOnly();
 
         private Reservation() { }
 
-        public static Reservation Create(string code, int userId, IEnumerable<int> flightIds,
+        public static Reservation Create(string code, int userId, IEnumerable<string> flightIds,
             Fare fare, DateTimeOffset reservationDate)
         {
             ArgumentException.ThrowIfNullOrWhiteSpace(code);
@@ -33,9 +33,9 @@ namespace booking_service.Domain.Entities
                 throw new ArgumentException("Reservation date is required.", nameof(reservationDate));
 
             var itinerary = flightIds.ToList();
-            if (itinerary.Count == 0 || itinerary.Any(id => id <= 0) ||
-                itinerary.Distinct().Count() != itinerary.Count)
-                throw new ArgumentException("An itinerary requires distinct positive flight IDs.", nameof(flightIds));
+            if (itinerary.Count == 0 || itinerary.Any(string.IsNullOrWhiteSpace) ||
+                itinerary.Distinct(StringComparer.Ordinal).Count() != itinerary.Count)
+                throw new ArgumentException("An itinerary requires distinct non-blank flight IDs.", nameof(flightIds));
 
             var reservation = new Reservation
             {

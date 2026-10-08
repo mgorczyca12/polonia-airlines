@@ -1,13 +1,15 @@
 # Booking service domain
 
 `Reservation` owns its passengers, their baggage, and recorded payment references.
-It references the booking user and flight-service flights by integer ID, without
-cross-service entity navigation. An ordered itinerary contains one or more distinct
+It references its local booking User by integer ID and flight-service flights by
+opaque string IDs, without cross-service entity navigation. An ordered itinerary contains one or more distinct
 flight IDs; flight availability, connection validity, and inventory allocation
 must be checked by the application layer through service integrations.
 The itinerary is represented by reservation-owned `ReservationFlight` children,
 each with an external `FlightId` and a one-based `SequenceNumber`. `FlightIds` is
 a derived convenience projection sorted by that sequence, not a persisted navigation.
+External flight IDs preserve their canonical contract representation and use
+ordinal, case-sensitive comparison without parsing, trimming, or normalization.
 
 The reservation starts as `Created`. Adding passengers and baggage is allowed only
 in this state. `Reserve()` requires at least one passenger and transitions to

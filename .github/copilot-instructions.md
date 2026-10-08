@@ -20,6 +20,13 @@
 - Do not force every property change through a method. Add domain methods where a change has business meaning, validates a transition, or raises a domain event.
 - Keep identity/equality separate from event capture. Entities may use different identifier types, and only aggregate roots need domain-event support.
 
+## Cross-Service Identifiers
+- Treat IDs owned by another service as opaque strings in domain references and application contracts. Do not assume or parse the owning service's internal ID type.
+- Keep service-owned identities and relationships within the same service in their native types.
+- Application/integration boundaries map contracts to domain references using the owning service's canonical representation.
+- Validate external references as non-null and non-whitespace, but preserve their supplied representation. Do not silently trim, change case, or otherwise normalize them; compare using ordinal, case-sensitive semantics unless the owning contract explicitly specifies otherwise.
+- External references do not introduce cross-service entity navigation or database foreign keys.
+
 ## Service Project Structure
 Organize each service using the following structure:
 

@@ -7,38 +7,48 @@ public class ReservationTests
 {
     private static readonly DateTimeOffset BookingDate = new(2026, 10, 6, 12, 0, 0, TimeSpan.Zero);
 
-    private static Reservation Create(params int[] flightIds) =>
+    private static Reservation Create(params string[] flightIds) =>
         Reservation.Create(" ABC123 ", 1, flightIds, Fare.Create("Economy", 200m, " pln "), BookingDate);
 
+    public static TheoryData<string[]> ValidItineraries => new()
+    {
+        new[] { "1" },
+        new[] { "1", "2", "3" }
+    };
+
+    public static TheoryData<string[]> InvalidItineraries => new()
+    {
+        Array.Empty<string>(),
+        new[] { "" },
+        new[] { " " },
+        new[] { "1", "1" }
+    };
+
     [Theory]
-    [InlineData(new int[] { 1 })]
-    [InlineData(new int[] { 1, 2, 3 })]
-    public void CreatesSingleFlightOrItinerary(int[] flights)
+    [MemberData(nameof(ValidItineraries))]
+    public void CreatesSingleFlightOrItinerary(string[] flights)
     {
         var reservation = Create(flights);
-        flights[0] = 99;
+        flights[0] = "99";
 
         Assert.Equal("ABC123", reservation.Code);
         Assert.Equal(1, reservation.UserId);
         Assert.Equal(BookingDate, reservation.ReservationDate);
         Assert.Equal(ReservationStatus.Created, reservation.Status);
-        Assert.Equal(1, reservation.FlightIds[0]);
+        Assert.Equal("1", reservation.FlightIds[0]);
         Assert.Equal(flights.Length, reservation.FlightIds.Count);
         Assert.Equal("PLN", reservation.Fare.Currency);
     }
 
     [Theory]
-    [InlineData(new int[] { })]
-    [InlineData(new int[] { 0 })]
-    [InlineData(new int[] { -1 })]
-    [InlineData(new int[] { 1, 1 })]
-    public void RejectsInvalidItineraries(int[] flights) =>
+    [MemberData(nameof(InvalidItineraries))]
+    public void RejectsInvalidItineraries(string[] flights) =>
         Assert.Throws<ArgumentException>(() => Create(flights));
 
     [Fact]
     public void AggregateOwnsPassengersAndBaggage()
     {
-        var reservation = Create(1);
+        var reservation = Create("1");
         var passenger = reservation.AddPassenger(" Jan ", " Kowalski ", new DateOnly(1990, 1, 1));
         var baggage = reservation.AddBaggage(passenger, " Checked bag ", 20m);
 
@@ -50,15 +60,15 @@ public class ReservationTests
         Assert.Same(baggage, Assert.Single(passenger.Baggage));
         Assert.Throws<NotSupportedException>(() => ((ICollection<Passenger>)reservation.Passengers).Clear());
         Assert.Throws<NotSupportedException>(() => ((ICollection<Baggage>)passenger.Baggage).Clear());
-        Assert.Throws<NotSupportedException>(() => ((IList<int>)reservation.FlightIds).Add(2));
+        Assert.Throws<NotSupportedException>(() => ((IList<string>)reservation.FlightIds).Add("2"));
     }
 
     [Fact]
     public void RejectsForeignPassengerEvenWithSameTransientId()
     {
-        var reservation = Create(1);
+        var reservation = Create("1");
         reservation.AddPassenger("Jan", "Kowalski", new DateOnly(1990, 1, 1));
-        var foreign = Create(2).AddPassenger("Anna", "Kowalska", new DateOnly(1990, 1, 1));
+        var foreign = Create("2").AddPassenger("Anna", "Kowalska", new DateOnly(1990, 1, 1));
 
         Assert.Throws<InvalidOperationException>(() => reservation.AddBaggage(foreign, "Bag", 10m));
     }
@@ -66,7 +76,7 @@ public class ReservationTests
     [Fact]
     public void ReserveRequiresPassengerAndFreezesBookingDetails()
     {
-        var reservation = Create(1);
+        var reservation = Create("1");
         Assert.Throws<InvalidOperationException>(reservation.Reserve);
         var passenger = reservation.AddPassenger("Jan", "Kowalski", new DateOnly(1990, 1, 1));
         reservation.Reserve();
@@ -82,7 +92,7 @@ public class ReservationTests
     [InlineData(true)]
     public void CancelIsTerminalAndRetainsHistory(bool reserve)
     {
-        var reservation = Create(1);
+        var reservation = Create("1");
         var passenger = reservation.AddPassenger("Jan", "Kowalski", new DateOnly(1990, 1, 1));
         reservation.RecordPayment("payment-1", 50m, "PLN", BookingDate);
         if (reserve)
@@ -101,7 +111,7 @@ public class ReservationTests
     [Fact]
     public void PaymentsSupportPartialAmountsAndRejectDuplicatesMismatchAndOverpayment()
     {
-        var reservation = Create(1);
+        var reservation = Create("1");
         var payment = reservation.RecordPayment(" payment-1 ", 50m, "pln", BookingDate);
         Assert.Equal("payment-1", payment.Reference);
         Assert.Equal("PLN", payment.Currency);
@@ -117,7 +127,7 @@ public class ReservationTests
     [Fact]
     public void RejectsInvalidPassengerBaggageAndPaymentInputsWithoutMutation()
     {
-        var reservation = Create(1);
+        var reservation = Create("1");
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("", "Name", new DateOnly(1990, 1, 1)));
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Name", "Name", default));
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Name", "Name", new DateOnly(2027, 1, 1)));
@@ -163,16 +173,16 @@ public class ReservationTests
     [Fact]
     public void ReservationRequiresIdentityQuoteAndDate()
     {
-        Assert.Throws<ArgumentException>(() => Reservation.Create("", 1, [1], Fare.Create("Fare", 1m, "PLN"), BookingDate));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Reservation.Create("Code", 0, [1], Fare.Create("Fare", 1m, "PLN"), BookingDate));
-        Assert.Throws<ArgumentNullException>(() => Reservation.Create("Code", 1, [1], null!, BookingDate));
-        Assert.Throws<ArgumentException>(() => Reservation.Create("Code", 1, [1], Fare.Create("Fare", 1m, "PLN"), default));
+        Assert.Throws<ArgumentException>(() => Reservation.Create("", 1, ["1"], Fare.Create("Fare", 1m, "PLN"), BookingDate));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Reservation.Create("Code", 0, ["1"], Fare.Create("Fare", 1m, "PLN"), BookingDate));
+        Assert.Throws<ArgumentNullException>(() => Reservation.Create("Code", 1, ["1"], null!, BookingDate));
+        Assert.Throws<ArgumentException>(() => Reservation.Create("Code", 1, ["1"], Fare.Create("Fare", 1m, "PLN"), default));
     }
 
     [Fact]
     public void ChildrenReferenceTheirParentAndItineraryHasExplicitSequence()
     {
-        var reservation = Create(3, 1, 2);
+        var reservation = Create("3", "1", "2");
         var passenger = reservation.AddPassenger("Jan", "Kowalski", new DateOnly(1990, 1, 1));
         var baggage = reservation.AddBaggage(passenger, "Bag", 10m);
         var payment = reservation.RecordPayment("reference", 50m, "PLN", BookingDate);
@@ -185,9 +195,9 @@ public class ReservationTests
         Assert.Equal(reservation.Id, payment.ReservationId);
         Assert.Same(reservation, reservation.Fare.Reservation);
         Assert.Equal(reservation.Id, reservation.Fare.ReservationId);
-        Assert.Equal(new[] { 3, 1, 2 }, reservation.Flights.Select(flight => flight.FlightId));
+        Assert.Equal(new[] { "3", "1", "2" }, reservation.Flights.Select(flight => flight.FlightId));
         Assert.Equal(new[] { 1, 2, 3 }, reservation.Flights.Select(flight => flight.SequenceNumber));
-        Assert.Equal(new[] { 3, 1, 2 }, reservation.FlightIds);
+        Assert.Equal(new[] { "3", "1", "2" }, reservation.FlightIds);
         Assert.All(reservation.Flights, flight =>
         {
             Assert.Same(reservation, flight.Reservation);
@@ -200,8 +210,8 @@ public class ReservationTests
     public void EachReservationHasItsOwnFareSnapshot()
     {
         var quote = Fare.Create("Economy", 100m, "PLN");
-        var first = Reservation.Create("First", 1, [1], quote, BookingDate);
-        var second = Reservation.Create("Second", 1, [2], quote, BookingDate);
+        var first = Reservation.Create("First", 1, ["1"], quote, BookingDate);
+        var second = Reservation.Create("Second", 1, ["2"], quote, BookingDate);
 
         Assert.NotSame(quote, first.Fare);
         Assert.NotSame(first.Fare, second.Fare);
@@ -226,4 +236,15 @@ public class ReservationTests
     [InlineData(null)]
     public void UnknownStatusesFailExplicitly(string? status) =>
         Assert.Throws<ArgumentException>(() => ReservationStatus.From(status!));
+
+    [Fact]
+    public void ExternalFlightIdsAreOpaqueAndComparedOrdinally()
+    {
+        var reservation = Create("Flight-A", "flight-a", "  flight-b  ", "0");
+
+        Assert.Equal(new[] { "Flight-A", "flight-a", "  flight-b  ", "0" }, reservation.FlightIds);
+        Assert.Throws<ArgumentException>(() => Create("Flight-A", "Flight-A"));
+        Assert.Throws<ArgumentNullException>(() => Create(null!));
+        Assert.Throws<ArgumentException>(() => Create(new string[] { null! }));
+    }
 }
