@@ -1,5 +1,15 @@
 # Flight service domain
 
+## Dependency injection
+
+`Application/DependencyInjection.cs` and `Infrastructure/DependencyInjection.cs`
+provide the chainable `WebApplicationBuilder` extensions `AddApplication` and
+`AddInfrastructure`. Both are called from `Program.cs` before the app is built.
+These are preliminary entry points and do not register services yet. Add
+application registrations (such as mediator handlers and validators) to
+`AddApplication`, and persistence, repository, and query-service registrations to
+`AddInfrastructure` when their implementations and configuration are ready.
+
 Flight segments, airport gates, aircraft configuration rows, and row positions
 are exposed through read-only collection wrappers over initialized list backing
 fields. Use `Flight.AddSegment`, `Airport.AddGate`,
