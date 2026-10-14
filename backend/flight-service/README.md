@@ -5,10 +5,54 @@
 `Application/DependencyInjection.cs` and `Infrastructure/DependencyInjection.cs`
 provide the chainable `WebApplicationBuilder` extensions `AddApplication` and
 `AddInfrastructure`. Both are called from `Program.cs` before the app is built.
-These are preliminary entry points and do not register services yet. Add
-application registrations (such as mediator handlers and validators) to
-`AddApplication`, and persistence, repository, and query-service registrations to
-`AddInfrastructure` when their implementations and configuration are ready.
+`AddApplication` registers the search validator; `AddInfrastructure` registers
+the scoped database context and flight query service. `Api/Extensions/DependencyInjection.cs`
+registers controllers, authorization, OpenAPI, and centralized ProblemDetails
+exception handling through `AddApi`.
+
+No production database provider or connection has been selected. The host can
+start, but flight reads require provider configuration; without it they return
+a safe 500 problem response and log the configuration exception. SQLite remains
+test-only. Mediator and repository registrations remain deferred.
+
+## Flight reads and error handling
+
+Existing routes are preserved:
+
+- `GET /api/Flight/flight/{flightId}` accepts a positive integer service-owned ID.
+  Returns a response DTO on success and 404 ProblemDetails with
+  `code: flight_not_found` if absent; invalid IDs return 400.
+- `GET /api/Flight/flights` accepts `DepartureAirport`, `ArrivalAirport`,
+  `DepartureDate`, `Page`, and `PageSize`. Airports are exact uppercase three-letter
+  IATA codes. `DepartureDate` is now a date-only `YYYY-MM-DD` UTC calendar date,
+  rather than the scaffold's DateTime input. Page defaults to 1; page size defaults
+  to 20 and must be between 1 and 100. Invalid inputs return field-specific 400
+  ValidationProblemDetails before querying. Offset overflow is rejected.
+
+Query interfaces return `Result<T>` over immutable application DTOs, never domain
+entities. Controllers return the successful value, not the result wrapper.
+Searches return an array (empty when unmatched) and use departure timestamp then
+flight ID ordering before pagination. UTC filtering includes midnight at the
+start of the requested date and excludes midnight of the following date.
+The minimum/default date and maximum date are rejected to catch omitted dates
+and prevent end-boundary overflow.
+
+Stored timestamps are UTC; DTOs expose explicit zero-offset DateTimeOffset values.
+Frontends and downstream applications handle local-time conversion. EF providers
+that materialize DateTime without a Kind are interpreted as UTC, not server-local
+time. This refactor does not change the domain timestamp types.
+
+Direct queries use explicit FluentValidation at the HTTP boundary, not a DispatchR
+pipeline. Single-flight ID validation uses MVC range/model-binding validation.
+Unexpected exceptions propagate to the global API handler, are logged internally,
+and return safe 500 ProblemDetails with a trace identifier. Request cancellation
+continues through to EF without conversion into a failed result.
+
+SQLite-backed HTTP integration tests cover response shapes, validation, missing
+flights, UTC boundaries, stable pagination, untracked reads, cancellation,
+OpenAPI metadata, and safe logged database failures.
+
+## Domain collections
 
 Flight segments, airport gates, aircraft configuration rows, and row positions
 are exposed through read-only collection wrappers over initialized list backing

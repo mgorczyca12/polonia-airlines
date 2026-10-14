@@ -11,7 +11,19 @@
 - Keep reads and writes separated using CQRS (Command Query Responsibility Segregation)
   - Commands go through mediator handlers
   - Queries stay in query services/read models and should not be mixed into command handlers
-- Keep controllers thin. They should delegate to application service via mediator and avoid business logic
+- Keep controllers thin. Delegate commands via mediator and queries to application query interfaces; avoid business logic.
+
+## Query Results and API Errors
+- Commands use DispatchR handlers and validation pipelines; queries call application query interfaces/read models directly, without introducing mediator handlers solely for validation or error handling.
+- Query interfaces return `FluentResults.Result<T>` over application response DTOs, not domain entities, EF entities, or HTTP types. Application must not depend on Infrastructure.
+- Explicitly validate direct query inputs with FluentValidation at the API boundary before execution; command pipelines do not run for direct queries. Reuse application-level validation when adding non-HTTP callers.
+- Return typed application errors with stable codes for expected outcomes such as a missing flight. Discover not-found during the actual read, not through a separate existence check in an input validator.
+- Controllers translate successful result values to response bodies and expected errors to appropriate HTTP statuses with ProblemDetails/ValidationProblemDetails. Never serialize FluentResults itself or match errors by message text.
+- Empty searches succeed with an empty collection. Invalid input returns 400; missing resources return 404. Unrecognized result failures must surface explicitly, not become successful responses.
+- Let unexpected infrastructure/programming exceptions propagate to centralized API exception handling. Log full exceptions internally; return safe 500 ProblemDetails with a trace identifier, never raw exception messages or stack traces. Do not broadly map programming exceptions to client errors.
+- Pass cancellation tokens through all async boundaries; request cancellation is not an application failure.
+- Store service timestamps in UTC and expose UTC timestamps with explicit offsets. Frontends/downstream applications own local-time conversion. Calendar-date search filters use UTC day boundaries.
+- Validate pagination bounds, avoid offset overflow, and use deterministic ordering before pagination. Airport search inputs use exact uppercase IATA codes, without silent normalization.
 
 ## Domain Encapsulation
 - Protect aggregate invariants at aggregate boundaries. Meaningful state changes should be performed through domain methods rather than public setters.

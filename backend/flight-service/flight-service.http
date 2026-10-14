@@ -1,6 +1,17 @@
 @flight_service_HostAddress = http://localhost:5114
 
-GET {{flight_service_HostAddress}}/weatherforecast/
+### Search flights by UTC date
+GET {{flight_service_HostAddress}}/api/Flight/flights?DepartureAirport=WAW&ArrivalAirport=KRK&DepartureDate=2026-10-13&Page=1&PageSize=20
 Accept: application/json
 
-###
+### Get an existing flight (replace the ID with seeded data)
+GET {{flight_service_HostAddress}}/api/Flight/flight/1
+Accept: application/json
+
+### Missing flight
+GET {{flight_service_HostAddress}}/api/Flight/flight/2147483647
+Accept: application/problem+json
+
+### Invalid search input
+GET {{flight_service_HostAddress}}/api/Flight/flights?DepartureAirport=waw&ArrivalAirport=KRK&DepartureDate=2026-10-13&PageSize=101
+Accept: application/problem+json
