@@ -9,8 +9,8 @@ normal startup. Booking and seating have domain models but no wired business API
 
 ## Documentation
 
-- [System documentation index](docs/README.md)
-- [Architecture and C4 diagrams](docs/architecture.md)
-- [Flight](docs/services/flight-service.md), [booking](docs/services/booking-service.md) and [seating](docs/services/seating-service.md) services
-- [Frontend routes and features](docs/frontend.md)
-- [Development, verification and backend code style](docs/development.md)
+- [System documentation index](docs/architecture/README.md)
+- [Architecture and C4 diagrams](docs/architecture/architecture.md)
+- [Flight](docs/architecture/services/flight-service.md), [booking](docs/architecture/services/booking-service.md) and [seating](docs/architecture/services/seating-service.md) services
+- [Frontend routes and features](docs/architecture/frontend.md)
+- [Development, verification and backend code style](docs/architecture/development.md)

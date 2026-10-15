@@ -4,7 +4,7 @@
 
 ## Platform and routes
 
-[polonia-web](../frontend/polonia-web/) uses React, TypeScript, TanStack Start
+[polonia-web](../../frontend/polonia-web/) uses React, TypeScript, TanStack Start
 and file-based TanStack Router routes, Mantine components/forms, and Vite.
 The root document supplies the application shell, theme initialization and devtools.
 Desktop and native mobile applications are not present.
@@ -18,9 +18,9 @@ Desktop and native mobile applications are not present.
 
 ## Data and behavior
 
-[Airport repository](../frontend/polonia-web/src/entities/airport/airport.repository.ts)
+[Airport repository](../../frontend/polonia-web/src/entities/airport/airport.repository.ts)
 loads bundled airport JSON for select options and code lookup.
-[Flight repository](../frontend/polonia-web/src/features/flight-results/data/flight.repository.ts)
+[Flight repository](../../frontend/polonia-web/src/features/flight-results/data/flight.repository.ts)
 loads bundled sample flight JSON and filters only by departure and arrival airport.
 There is no backend fetch/API client in the current route flow.
 

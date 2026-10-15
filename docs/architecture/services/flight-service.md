@@ -4,7 +4,7 @@
 
 ## Runtime and API
 
-[Program.cs](../../backend/flight-service/Program.cs) chains per-layer
+[Program.cs](../../../backend/flight-service/Program.cs) chains per-layer
 `AddApi`, `AddApplication`, and `AddInfrastructure` registration. It enables
 exception handling, status-code pages, HTTPS redirection, authorization middleware,
 controllers, and development-only OpenAPI at `/openapi/v1.json`.
@@ -17,12 +17,12 @@ No authentication scheme or authorization requirement is configured on these con
 | GET | `/api/Aircraft/aircrafts` | Placeholder: returns empty `200 OK`; does not query aircraft |
 | GET | `/api/Aircraft/aircraft/{aircraftId}` | Placeholder: returns empty `200 OK` |
 
-[AirportController](../../backend/flight-service/Api/Controllers/AirportController.cs)
+[AirportController](../../../backend/flight-service/Api/Controllers/AirportController.cs)
 has no actions, so it exposes no airport query endpoint.
 
 ### Search and response contract
 
-Search uses [SearchFlightsRequest](../../backend/flight-service/Application/Contracts/Requests/SearchFlightsRequest.cs):
+Search uses [SearchFlightsRequest](../../../backend/flight-service/Application/Contracts/Requests/SearchFlightsRequest.cs):
 
 - `DepartureAirport` and `ArrivalAirport`: required exact uppercase three-letter
   IATA codes, without trimming or normalization.
@@ -34,7 +34,7 @@ Search uses [SearchFlightsRequest](../../backend/flight-service/Application/Cont
 Example: `GET /api/Flight/flights?DepartureAirport=WAW&ArrivalAirport=KRK&DepartureDate=2026-10-13&Page=1&PageSize=20`.
 
 The response is a JSON array, not a pagination envelope.
-[FlightResponse](../../backend/flight-service/Application/Contracts/Responses/FlightResponse.cs)
+[FlightResponse](../../../backend/flight-service/Application/Contracts/Responses/FlightResponse.cs)
 contains `id`, `flightNumber`, `departureTime`, `arrivalTime`, `departureAirport`
 and `arrivalAirport`. Time values are projected with explicit UTC offsets.
 The single-flight endpoint returns one DTO of the same shape.
@@ -50,7 +50,7 @@ The single-flight endpoint returns one DTO of the same shape.
 
 ## Query sequence
 
-Queries call [IFlightQueries](../../backend/flight-service/Application/Features/FlightFeatures/Queries/IFlightQueries.cs)
+Queries call [IFlightQueries](../../../backend/flight-service/Application/Features/FlightFeatures/Queries/IFlightQueries.cs)
 directly, not mediator handlers. This sequence assumes a provider is supplied,
 as it is by the integration-test fixture.
 
@@ -84,12 +84,12 @@ The domain includes flights and ordered segments, schedules with operating days,
 airports and gates, aircraft and types, and aircraft configurations with cabin,
 row and position definitions. Aggregate methods control child collection changes.
 
-[FlightQueries](../../backend/flight-service/Infrastructure/Persistence/Queries/FlightQueries.cs)
+[FlightQueries](../../../backend/flight-service/Infrastructure/Persistence/Queries/FlightQueries.cs)
 filters departure times using UTC day boundaries and orders by departure time
 then ID before pagination. EF projections avoid serializing domain entities.
 Single reads discover absence during the read and return `FlightNotFoundError`.
 
-[FlightServiceDbContext](../../backend/flight-service/Infrastructure/Persistence/FlightServiceDbContext.cs)
+[FlightServiceDbContext](../../../backend/flight-service/Infrastructure/Persistence/FlightServiceDbContext.cs)
 loads mappings from its persistence configuration namespace. The normal host
 does not choose a database provider, connection string, migrations, or seed data.
 Consequently its data-backed endpoints need further configuration to work outside

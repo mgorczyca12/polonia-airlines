@@ -4,7 +4,7 @@
 
 ## Implementation status
 
-[Program.cs](../../backend/booking-service/Program.cs) still runs the ASP.NET
+[Program.cs](../../../backend/booking-service/Program.cs) still runs the ASP.NET
 weather scaffold: `GET /weatherforecast` returns five generated forecasts.
 OpenAPI is mapped in development, and HTTPS redirection is enabled.
 The reservation controller source file is empty. There is no booking business
@@ -15,7 +15,7 @@ not connected to the web application's booking confirmation.
 
 ## Reservation aggregate
 
-[Reservation](../../backend/booking-service/Domain/Entities/Reservation.cs) owns
+[Reservation](../../../backend/booking-service/Domain/Entities/Reservation.cs) owns
 ordered itinerary entries, passengers and payments.
 
 - Creation requires a code, positive service-owned user ID, reservation date and

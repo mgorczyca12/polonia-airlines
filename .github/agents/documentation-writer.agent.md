@@ -17,7 +17,7 @@ Look only at what the merged PR (or, for a backfill, the current code) changed i
 
 ## Output
 
-- Inspect the current `docs/` tree before editing. Use `docs/README.md` as the system-documentation index, `docs/architecture.md` for boundaries and layering, `docs/services/<service>.md` for each service, `docs/frontend.md` for routes and features, and `docs/development.md` for setup, checks, and backend style. Keep root `README.md` a short overview with links.
+- Inspect the current `docs/` tree before editing. Keep system documentation under `docs/architecture/`: use `README.md` as its index, `architecture.md` for boundaries and layering, `services/<service>.md` for each service, `frontend.md` for routes and features, and `development.md` for setup, checks, and backend style. Keep root `README.md` a short overview with links to this folder.
 - `docs/ai-chats/` contains dated session records, not authoritative system documentation. Preserve its history; verify claims against code rather than copying historical proposals into system docs.
 - Describe current behavior separately from intended architecture, scaffolding, and missing wiring. Package references and shared helpers do not prove a feature is registered or used at runtime.
 - Include Mermaid `C4Context` and `C4Container` charts in the architecture document. Use C4 component views only where implemented components warrant them. Label test-only persistence explicitly and omit speculative service calls, brokers, gateways, databases, and external providers.

@@ -85,14 +85,14 @@ called directly by the controller. See the [flight sequence](services/flight-ser
 ## Layering and shared building blocks
 
 The intended service organization is `Api`, `Application`, `Domain`, and
-`Infrastructure`, defined in [repository instructions](../.github/copilot-instructions.md).
+`Infrastructure`, defined in [repository instructions](../../.github/copilot-instructions.md).
 These are folders within each service project, not separate assemblies.
 
 - `Api`: HTTP contracts, controllers, validation invocation and error translation.
 - `Application`: use-case contracts, response DTOs, query abstractions and validators.
 - `Domain`: entities, aggregate invariants and value objects.
 - `Infrastructure`: EF mappings, concrete query services and external-system adapters.
-- [Shared](../backend/shared/): reusable entity identities, aggregate domain-event
+- [Shared](../../backend/shared/): reusable entity identities, aggregate domain-event
   collection, DispatchR command and validation/transaction pipelines, and the
   MassTransit-backed integration publisher.
 

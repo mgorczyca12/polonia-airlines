@@ -65,3 +65,11 @@
 - The initial Mermaid parse attempt lacked browser DOM support; rerunning with the existing local jsdom dependency passed. Temporary parser packages were installed outside the repository, with no manifest changes.
 - Diagram visual rendering and deployed runtime behavior are not verified. No application code changed, so builds/tests were not rerun for this documentation task.
 - Prepared a documentation backfill branch for a draft PR; remote CI and human review remain pending.
+
+## Documentation folder adjustment
+
+- User requested that the new system documentation live under `docs/architecture/`.
+- Moved the index, architecture, frontend, development and three service documents into that folder, preserving the `services/` subfolder and leaving `docs/ai-chats/` history in place.
+- Updated root README links, rebased relative source/navigation links, and updated the documentation agent's output layout.
+- Checked relative links in all eight relocated/indexing documents: zero missing targets. `git diff --check` passed. Diagrams were not changed.
+- Previous draft-PR creation was interrupted; no PR creation is confirmed. This relocation remains local and uncommitted.

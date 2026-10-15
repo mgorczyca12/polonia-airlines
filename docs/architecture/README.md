@@ -20,5 +20,5 @@ It describes checked-in implementation, not a deployed production environment.
 - Booking and seating have domain behavior but no wired business HTTP endpoints.
 - No implemented cross-service messaging or request flow currently connects these services.
 
-[AI session records](ai-chats/) preserve decisions and checks from individual work
+[AI session records](../ai-chats/) preserve decisions and checks from individual work
 sessions. They are historical context, not a substitute for the system documents above.

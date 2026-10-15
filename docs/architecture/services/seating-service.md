@@ -4,14 +4,14 @@
 
 ## Implementation status
 
-[Program.cs](../../backend/seating-service/Program.cs) exposes only the generated
+[Program.cs](../../../backend/seating-service/Program.cs) exposes only the generated
 `GET /weatherforecast` scaffold, development OpenAPI and HTTPS redirection.
 There are no seating business endpoints, command/query handlers, database
 registration, consumers or service-to-service calls.
 
 ## Seat inventory and allocations
 
-[SeatInventory](../../backend/seating-service/Domain/Entities/SeatInventory.cs)
+[SeatInventory](../../../backend/seating-service/Domain/Entities/SeatInventory.cs)
 is an aggregate for a flight/cabin pair and owns its `SeatAssignment` collection.
 Flight, cabin, reservation, passenger and seat references are opaque strings;
 nonblank checks preserve their supplied representation.

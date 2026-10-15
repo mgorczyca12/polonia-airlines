@@ -33,7 +33,7 @@ the backend hosts for its sample search and booking-preview flow.
 
 ## Verification
 
-The [CI workflow](../.github/workflows/ci.yml) has `backend` and `frontend` jobs.
+The [CI workflow](../../.github/workflows/ci.yml) has `backend` and `frontend` jobs.
 Backend checks run formatting, Release build and tests:
 
 ```powershell
@@ -60,8 +60,8 @@ frontend behavior has test coverage.
 
 ## Backend readability convention
 
-[backend/.editorconfig](../backend/.editorconfig) applies only to backend C#.
-[Scoped agent instructions](../.github/instructions/backend-style.instructions.md)
+[backend/.editorconfig](../../backend/.editorconfig) applies only to backend C#.
+[Scoped agent instructions](../../.github/instructions/backend-style.instructions.md)
 also cover services, shared code and backend tests.
 
 - Explicit control-flow braces and block-bodied methods/constructors.
@@ -76,14 +76,14 @@ wrapping and logical grouping still require review. Frontend style is unchanged.
 
 ## Documentation ownership
 
-The [documentation agent](../.github/agents/documentation-writer.agent.md)
+The [documentation agent](../../.github/agents/documentation-writer.agent.md)
 maintains this index, architecture, service and frontend references.
-The [docs updater workflow](../.github/workflows/docs-updater.md) runs after
+The [docs updater workflow](../../.github/workflows/docs-updater.md) runs after
 non-Dependabot merges or on manual dispatch. Its safe outputs are currently staged
 (preview mode), so do not assume a scheduled agent will publish changes.
 
 Keep Mermaid charts inline with the relevant document. Distinguish C4 levels,
 test-only storage, local UI flow and intended architecture from deployed behavior.
 Do not add cross-service arrows until the corresponding integration exists.
-Keep dated session summaries under [ai-chats](ai-chats/), separate from authoritative
+Keep dated session summaries under [ai-chats](../ai-chats/), separate from authoritative
 system documentation.
