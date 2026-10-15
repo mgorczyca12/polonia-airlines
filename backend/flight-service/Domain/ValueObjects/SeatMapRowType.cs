@@ -13,7 +13,14 @@ public sealed class SeatMapRowType : IEquatable<SeatMapRowType>
     public static readonly SeatMapRowType Galley = new SeatMapRowType("Galley", 1 << 3);
     public static readonly SeatMapRowType Lavatory = new SeatMapRowType("Lavatory", 1 << 4);
 
-    private static readonly SeatMapRowType[] All = { Seats, ExitRow, Bulkhead, Galley, Lavatory };
+    private static readonly SeatMapRowType[] All =
+    {
+        Seats,
+        ExitRow,
+        Bulkhead,
+        Galley,
+        Lavatory
+    };
 
     public int Value { get; }
 
@@ -25,22 +32,48 @@ public sealed class SeatMapRowType : IEquatable<SeatMapRowType>
 
     public string Name { get; }
 
-    public bool HasFlag(SeatMapRowType flag) => (Value & flag.Value) == flag.Value;
+    public bool HasFlag(SeatMapRowType flag)
+    {
+        return (Value & flag.Value) == flag.Value;
+    }
 
-    public static SeatMapRowType operator |(SeatMapRowType left, SeatMapRowType right) =>
-        new SeatMapRowType(string.Join(", ", CombinedNames(left.Value | right.Value)), left.Value | right.Value);
+    public static SeatMapRowType operator |(SeatMapRowType left, SeatMapRowType right)
+    {
+        var value = left.Value | right.Value;
+        var name = string.Join(", ", CombinedNames(value));
 
-    private static IEnumerable<string> CombinedNames(int value) =>
-        All.Where(t => (value & t.Value) == t.Value).Select(t => t.Name);
+        return new SeatMapRowType(name, value);
+    }
 
-    public static SeatMapRowType FromValue(int value) =>
-        new SeatMapRowType(string.Join(", ", CombinedNames(value)), value);
+    private static IEnumerable<string> CombinedNames(int value)
+    {
+        return All
+            .Where(rowType => (value & rowType.Value) == rowType.Value)
+            .Select(rowType => rowType.Name);
+    }
 
-    public override string ToString() => Name;
+    public static SeatMapRowType FromValue(int value)
+    {
+        return new SeatMapRowType(string.Join(", ", CombinedNames(value)), value);
+    }
 
-    public bool Equals(SeatMapRowType? other) => other is not null && Value == other.Value;
+    public override string ToString()
+    {
+        return Name;
+    }
 
-    public override bool Equals(object? obj) => Equals(obj as SeatMapRowType);
+    public bool Equals(SeatMapRowType? other)
+    {
+        return other is not null && Value == other.Value;
+    }
 
-    public override int GetHashCode() => Value;
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as SeatMapRowType);
+    }
+
+    public override int GetHashCode()
+    {
+        return Value;
+    }
 }

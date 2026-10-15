@@ -5,15 +5,29 @@ namespace flight_service.unit.test;
 
 public class CollectionTests
 {
-    private static Airport Airport() =>
-        flight_service.Domain.Entities.Airport.Create("Airport", "EPWA", "WAW", Address.Create("Warsaw", "Mazovia", "PL"));
+    private static Airport Airport()
+    {
+        return flight_service.Domain.Entities.Airport.Create(
+            "Airport",
+            "EPWA",
+            "WAW",
+            Address.Create("Warsaw", "Mazovia", "PL"));
+    }
 
-    private static Flight Flight() =>
-        flight_service.Domain.Entities.Flight.Create("PA123", new DateTime(2026, 10, 8, 10, 0, 0),
-            new DateTime(2026, 10, 8, 12, 0, 0), Airport(), Airport());
+    private static Flight Flight()
+    {
+        return flight_service.Domain.Entities.Flight.Create(
+            "PA123",
+            new DateTime(2026, 10, 8, 10, 0, 0),
+            new DateTime(2026, 10, 8, 12, 0, 0),
+            Airport(),
+            Airport());
+    }
 
-    private static AircraftConfiguration Configuration() =>
-        AircraftConfiguration.Create(AircraftType.Create("B738", "737", "Boeing"), "STD", "Standard", 1);
+    private static AircraftConfiguration Configuration()
+    {
+        return AircraftConfiguration.Create(AircraftType.Create("B738", "737", "Boeing"), "STD", "Standard", 1);
+    }
 
     [Fact]
     public void SegmentsAreReadOnlyAndConnectedToOneFlight()

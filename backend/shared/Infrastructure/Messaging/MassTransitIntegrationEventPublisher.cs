@@ -7,6 +7,8 @@ public sealed class MassTransitIntegrationEventPublisher(IPublishEndpoint publis
     : IIntegrationEventPublisher
 {
     public Task PublishAsync<TEvent>(TEvent integrationEvent, CancellationToken cancellationToken)
-        where TEvent : class, IIntegrationEvent =>
-        publishEndpoint.Publish(integrationEvent, cancellationToken);
+        where TEvent : class, IIntegrationEvent
+    {
+        return publishEndpoint.Publish(integrationEvent, cancellationToken);
+    }
 }

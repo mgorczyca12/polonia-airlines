@@ -15,13 +15,16 @@ public class PassengerFare : Entity<int>
     public string Currency { get; private set; } = null!;
     public BaggageAllowance BaggageAllowance { get; private set; } = null!;
 
-    private PassengerFare() { }
+    private PassengerFare()
+    {
+    }
 
     internal static PassengerFare Create(Passenger passenger, ReservationFlight flight, FareQuote quote)
     {
         ArgumentNullException.ThrowIfNull(passenger);
         ArgumentNullException.ThrowIfNull(flight);
         ArgumentNullException.ThrowIfNull(quote);
+
         return new PassengerFare
         {
             PassengerId = passenger.Id,

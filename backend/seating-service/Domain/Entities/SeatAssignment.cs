@@ -10,7 +10,9 @@ public class SeatAssignment : Entity<int>
     public string PassengerId { get; private set; } = null!;
     public string? SeatId { get; private set; }
 
-    private SeatAssignment() { }
+    private SeatAssignment()
+    {
+    }
 
     internal static SeatAssignment Create(SeatInventory inventory, string reservationId,
         string passengerId, string? seatId)
@@ -19,7 +21,9 @@ public class SeatAssignment : Entity<int>
         ArgumentException.ThrowIfNullOrWhiteSpace(reservationId);
         ArgumentException.ThrowIfNullOrWhiteSpace(passengerId);
         if (seatId is not null)
+        {
             ArgumentException.ThrowIfNullOrWhiteSpace(seatId);
+        }
 
         return new SeatAssignment
         {
@@ -34,7 +38,10 @@ public class SeatAssignment : Entity<int>
     internal void ChangeSeat(string? seatId)
     {
         if (seatId is not null)
+        {
             ArgumentException.ThrowIfNullOrWhiteSpace(seatId);
+        }
+
         SeatId = seatId;
     }
 }

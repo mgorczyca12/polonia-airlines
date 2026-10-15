@@ -9,7 +9,9 @@ public class AirportGate : Entity<int>
     public int AirportId { get; private set; }
     public Airport Airport { get; private set; } = null!;
 
-    private AirportGate() { }
+    private AirportGate()
+    {
+    }
 
     private AirportGate(Airport airport, string terminal, string gateNumber)
     {

@@ -12,15 +12,25 @@ public class Payment : Entity<int>
     public string Currency { get; private set; } = null!;
     public DateTimeOffset RecordedAt { get; private set; }
 
-    private Payment() { }
+    private Payment()
+    {
+    }
 
-    internal static Payment Create(Reservation reservation, string reference, decimal amount, string currency, DateTimeOffset recordedAt)
+    internal static Payment Create(
+        Reservation reservation,
+        string reference,
+        decimal amount,
+        string currency,
+        DateTimeOffset recordedAt)
     {
         ArgumentNullException.ThrowIfNull(reservation);
         ArgumentException.ThrowIfNullOrWhiteSpace(reference);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(amount);
         if (recordedAt == default)
+        {
             throw new ArgumentException("Payment recording date is required.", nameof(recordedAt));
+        }
+
         return new Payment
         {
             ReservationId = reservation.Id,

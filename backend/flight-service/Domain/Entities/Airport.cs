@@ -12,7 +12,9 @@ public class Airport : AggregateRoot<int>
     public Address Address { get; private set; } = null!;
     public IReadOnlyCollection<AirportGate> Gates => gates.AsReadOnly();
 
-    private Airport() { }
+    private Airport()
+    {
+    }
 
     private Airport(string name, string icaoCode, string iataCode, Address address)
     {
@@ -36,9 +38,15 @@ public class Airport : AggregateRoot<int>
     {
         ArgumentNullException.ThrowIfNull(gate);
         if (!ReferenceEquals(gate.Airport, this))
+        {
             throw new InvalidOperationException("Gate belongs to another airport.");
+        }
+
         if (gates.Any(existing => ReferenceEquals(existing, gate)))
+        {
             throw new InvalidOperationException("Gate is already part of this airport.");
+        }
+
         gates.Add(gate);
     }
 }

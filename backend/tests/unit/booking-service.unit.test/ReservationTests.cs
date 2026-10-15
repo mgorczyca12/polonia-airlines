@@ -11,17 +11,33 @@ public class ReservationTests
     // 1 included piece, 23 kg per piece, up to 2 paid extra pieces at 50 each.
     private static readonly BaggageAllowance Allowance = BaggageAllowance.Create(1, 23m, 2, 50m);
 
-    private static Reservation Create(params string[] flightIds) =>
-        Reservation.Create(" ABC123 ", 1, flightIds, " pln ", BookingDate);
+    private static Reservation Create(params string[] flightIds)
+    {
+        return Reservation.Create(" ABC123 ", 1, flightIds, " pln ", BookingDate);
+    }
 
-    private static FareQuote Quote(string flightId, decimal amount = 200m, string currency = "PLN",
-        string cabin = "Economy", BaggageAllowance? allowance = null) =>
-        FareQuote.Create(flightId, "ECO-BASIC", cabin, amount, currency, allowance ?? Allowance);
+    private static FareQuote Quote(
+        string flightId,
+        decimal amount = 200m,
+        string currency = "PLN",
+        string cabin = "Economy",
+        BaggageAllowance? allowance = null)
+    {
+        return FareQuote.Create(flightId, "ECO-BASIC", cabin, amount, currency, allowance ?? Allowance);
+    }
 
-    private static Passenger AddPassenger(Reservation reservation, string firstName = "Jan", decimal amount = 200m,
-        BaggageAllowance? allowance = null) =>
-        reservation.AddPassenger(firstName, "Kowalski", Adult,
+    private static Passenger AddPassenger(
+        Reservation reservation,
+        string firstName = "Jan",
+        decimal amount = 200m,
+        BaggageAllowance? allowance = null)
+    {
+        return reservation.AddPassenger(
+            firstName,
+            "Kowalski",
+            Adult,
             reservation.FlightIds.Select(id => Quote(id, amount, allowance: allowance)));
+    }
 
     public static TheoryData<string[]> ValidItineraries => new()
     {
@@ -56,8 +72,10 @@ public class ReservationTests
 
     [Theory]
     [MemberData(nameof(InvalidItineraries))]
-    public void RejectsInvalidItineraries(string[] flights) =>
+    public void RejectsInvalidItineraries(string[] flights)
+    {
         Assert.Throws<ArgumentException>(() => Create(flights));
+    }
 
     [Fact]
     public void AggregateOwnsPassengersFaresAndBaggage()
@@ -118,8 +136,10 @@ public class ReservationTests
         Assert.Throws<ArgumentNullException>(() => reservation.AddPassenger("Jan", "Kowalski", Adult, [null!]));
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Jan", "Kowalski", Adult, []));
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Jan", "Kowalski", Adult, [Quote("1")]));
-        Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Jan", "Kowalski", Adult, [Quote("1"), Quote("1")]));
-        Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Jan", "Kowalski", Adult, [Quote("1"), Quote("3")]));
+        Assert.Throws<ArgumentException>(() =>
+            reservation.AddPassenger("Jan", "Kowalski", Adult, [Quote("1"), Quote("1")]));
+        Assert.Throws<ArgumentException>(() =>
+            reservation.AddPassenger("Jan", "Kowalski", Adult, [Quote("1"), Quote("3")]));
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Jan", "Kowalski", Adult,
             [Quote("1"), Quote("2", currency: "EUR")]));
         Assert.Empty(reservation.Passengers);
@@ -217,7 +237,10 @@ public class ReservationTests
         var passenger = AddPassenger(reservation);
         reservation.RecordPayment("payment-1", 50m, "PLN", BookingDate);
         if (reserve)
+        {
             reservation.Reserve();
+        }
+
         reservation.Cancel();
 
         Assert.Equal(ReservationStatus.Cancelled, reservation.Status);
@@ -240,7 +263,8 @@ public class ReservationTests
         Assert.Equal(BookingDate, payment.RecordedAt);
         Assert.Throws<InvalidOperationException>(() => reservation.RecordPayment("payment-1", 50m, "PLN", BookingDate));
         Assert.Throws<InvalidOperationException>(() => reservation.RecordPayment("payment-2", 50m, "EUR", BookingDate));
-        Assert.Throws<InvalidOperationException>(() => reservation.RecordPayment("payment-2", 151m, "PLN", BookingDate));
+        Assert.Throws<InvalidOperationException>(() =>
+            reservation.RecordPayment("payment-2", 151m, "PLN", BookingDate));
         reservation.RecordPayment("payment-2", 150m, "PLN", BookingDate);
         Assert.Equal(200m, reservation.Payments.Sum(item => item.Amount));
         Assert.Throws<NotSupportedException>(() => ((ICollection<Payment>)reservation.Payments).Clear());
@@ -255,7 +279,8 @@ public class ReservationTests
         reservation.AddBaggage(passenger, "1", "Extra", 10m);
 
         Assert.Equal(250m, reservation.TotalAmount);
-        Assert.Throws<InvalidOperationException>(() => reservation.RecordPayment("payment-1", 251m, "PLN", BookingDate));
+        Assert.Throws<InvalidOperationException>(() =>
+            reservation.RecordPayment("payment-1", 251m, "PLN", BookingDate));
         reservation.RecordPayment("payment-2", 250m, "PLN", BookingDate);
     }
 
@@ -265,13 +290,15 @@ public class ReservationTests
         var reservation = Create("1");
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("", "Name", Adult, [Quote("1")]));
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Name", "Name", default, [Quote("1")]));
-        Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Name", "Name", new DateOnly(2027, 1, 1), [Quote("1")]));
+        Assert.Throws<ArgumentException>(() =>
+            reservation.AddPassenger("Name", "Name", new DateOnly(2027, 1, 1), [Quote("1")]));
         Assert.Empty(reservation.Passengers);
         var passenger = AddPassenger(reservation);
         Assert.Throws<ArgumentOutOfRangeException>(() => reservation.AddBaggage(passenger, "1", "Bag", 0));
         Assert.Throws<ArgumentException>(() => reservation.AddBaggage(passenger, "1", "", 10));
         Assert.Empty(passenger.Baggage);
-        Assert.Throws<ArgumentOutOfRangeException>(() => reservation.RecordPayment("reference", 0m, "PLN", BookingDate));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            reservation.RecordPayment("reference", 0m, "PLN", BookingDate));
         Assert.Throws<ArgumentException>(() => reservation.RecordPayment("reference", 10m, "PLN", default));
         Assert.Empty(reservation.Payments);
     }
@@ -376,16 +403,20 @@ public class ReservationTests
     [InlineData("Created")]
     [InlineData("Reserved")]
     [InlineData("Cancelled")]
-    public void KnownStatusesCanBeReconstructed(string status) =>
+    public void KnownStatusesCanBeReconstructed(string status)
+    {
         Assert.Equal(status, ReservationStatus.From(status).Status);
+    }
 
     [Theory]
     [InlineData("")]
     [InlineData("created")]
     [InlineData("Unknown")]
     [InlineData(null)]
-    public void UnknownStatusesFailExplicitly(string? status) =>
+    public void UnknownStatusesFailExplicitly(string? status)
+    {
         Assert.Throws<ArgumentException>(() => ReservationStatus.From(status!));
+    }
 
     [Fact]
     public void ExternalFlightIdsAreOpaqueAndComparedOrdinally()

@@ -22,13 +22,21 @@ public sealed class Address : IEquatable<Address>
         Country = country;
     }
 
-    public bool Equals(Address? other) =>
-        other is not null &&
-        City == other.City &&
-        State == other.State &&
-        Country == other.Country;
+    public bool Equals(Address? other)
+    {
+        return other is not null &&
+            City == other.City &&
+            State == other.State &&
+            Country == other.Country;
+    }
 
-    public override bool Equals(object? obj) => Equals(obj as Address);
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as Address);
+    }
 
-    public override int GetHashCode() => HashCode.Combine(City, State, Country);
+    public override int GetHashCode()
+    {
+        return HashCode.Combine(City, State, Country);
+    }
 }

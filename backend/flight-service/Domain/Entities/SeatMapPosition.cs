@@ -10,7 +10,9 @@ public class SeatMapPosition : Entity<int>
     public string Column { get; private set; } = null!;
     public int AisleGroup { get; private set; }
     public bool IsSeat { get; private set; }
-    private SeatMapPosition() { }
+    private SeatMapPosition()
+    {
+    }
 
     private SeatMapPosition(string column, int aisleGroup, bool isSeat)
     {
@@ -27,14 +29,23 @@ public class SeatMapPosition : Entity<int>
         return new SeatMapPosition(column, aisleGroup, isSeat);
     }
 
-    public void MarkAsSeat() => IsSeat = true;
+    public void MarkAsSeat()
+    {
+        IsSeat = true;
+    }
 
-    public void MarkAsNonSeat() => IsSeat = false;
+    public void MarkAsNonSeat()
+    {
+        IsSeat = false;
+    }
 
     internal void AttachTo(SeatMapRow row)
     {
         if (SeatMapRow is not null && !ReferenceEquals(SeatMapRow, row))
+        {
             throw new InvalidOperationException("Position already belongs to another seat map row.");
+        }
+
         SeatMapRow = row;
         SeatMapRowId = row.Id;
     }

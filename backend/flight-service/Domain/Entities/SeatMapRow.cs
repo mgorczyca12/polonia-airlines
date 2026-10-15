@@ -13,7 +13,9 @@ public class SeatMapRow : Entity<int>
     public SeatMapRowType Type { get; private set; } = null!;
     public IReadOnlyCollection<SeatMapPosition> SeatMapPositions => seatMapPositions.AsReadOnly();
 
-    private SeatMapRow() { }
+    private SeatMapRow()
+    {
+    }
 
     private SeatMapRow(AircraftConfiguration aircraftConfiguration, SeatMapCabin cabin, SeatMapRowType type)
     {
@@ -24,7 +26,10 @@ public class SeatMapRow : Entity<int>
         Type = type;
     }
 
-    public static SeatMapRow Create(AircraftConfiguration aircraftConfiguration, SeatMapCabin cabin, SeatMapRowType type)
+    public static SeatMapRow Create(
+        AircraftConfiguration aircraftConfiguration,
+        SeatMapCabin cabin,
+        SeatMapRowType type)
     {
         ArgumentNullException.ThrowIfNull(aircraftConfiguration);
         ArgumentNullException.ThrowIfNull(cabin);
@@ -37,7 +42,10 @@ public class SeatMapRow : Entity<int>
     {
         ArgumentNullException.ThrowIfNull(position);
         if (seatMapPositions.Any(existing => ReferenceEquals(existing, position)))
+        {
             throw new InvalidOperationException("Position is already part of this seat map row.");
+        }
+
         position.AttachTo(this);
         seatMapPositions.Add(position);
     }

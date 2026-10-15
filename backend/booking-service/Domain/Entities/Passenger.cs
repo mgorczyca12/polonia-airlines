@@ -17,15 +17,25 @@ public class Passenger : Entity<int>
     public IReadOnlyCollection<Baggage> Baggage => baggage.AsReadOnly();
     public decimal TotalAmount => fares.Sum(fare => fare.Amount) + baggage.Sum(item => item.Charge);
 
-    private Passenger() { }
+    private Passenger()
+    {
+    }
 
-    internal static Passenger Create(Reservation reservation, string firstName, string lastName, DateOnly dateOfBirth)
+    internal static Passenger Create(
+        Reservation reservation,
+        string firstName,
+        string lastName,
+        DateOnly dateOfBirth)
     {
         ArgumentNullException.ThrowIfNull(reservation);
         ArgumentException.ThrowIfNullOrWhiteSpace(firstName);
         ArgumentException.ThrowIfNullOrWhiteSpace(lastName);
+
         if (dateOfBirth == default)
+        {
             throw new ArgumentException("Date of birth is required.", nameof(dateOfBirth));
+        }
+
         return new Passenger
         {
             ReservationId = reservation.Id,
@@ -46,7 +56,8 @@ public class Passenger : Entity<int>
     internal Baggage AddBaggage(string flightId, string name, decimal weightKg)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(flightId);
-        var fare = fares.SingleOrDefault(existing => existing.ReservationFlight.FlightId == flightId)
+        var fare = fares
+            .SingleOrDefault(existing => existing.ReservationFlight.FlightId == flightId)
             ?? throw new InvalidOperationException("Passenger has no fare for this flight.");
         var existingPieces = baggage.Count(item => ReferenceEquals(item.PassengerFare, fare));
         var charge = fare.BaggageAllowance.ChargeForNextPiece(existingPieces, weightKg);

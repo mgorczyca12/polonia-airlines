@@ -11,7 +11,9 @@ public class FlightSegment : Entity<int>
     public Airport DepartureAirport { get; private set; } = null!;
     public int ArrivalAirportId { get; private set; }
     public Airport ArrivalAirport { get; private set; } = null!;
-    private FlightSegment() { }
+    private FlightSegment()
+    {
+    }
 
     private FlightSegment(int sequenceNumber, Airport departureAirport, Airport arrivalAirport)
     {
@@ -34,7 +36,10 @@ public class FlightSegment : Entity<int>
     internal void AttachTo(Flight flight)
     {
         if (Flight is not null && !ReferenceEquals(Flight, flight))
+        {
             throw new InvalidOperationException("Segment already belongs to another flight.");
+        }
+
         Flight = flight;
         FlightId = flight.Id;
     }

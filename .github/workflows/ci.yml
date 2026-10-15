@@ -22,6 +22,10 @@ jobs:
         with:
           dotnet-version: 10.0.x
       - run: dotnet restore polonia-airlines.slnx
+      - name: Check backend whitespace
+        run: dotnet format whitespace polonia-airlines.slnx --no-restore --verify-no-changes
+      - name: Check backend readability rules
+        run: dotnet format style polonia-airlines.slnx --diagnostics IDE0011 IDE0021 IDE0022 --no-restore --verify-no-changes
       - run: dotnet build polonia-airlines.slnx --no-restore -c Release
       - run: dotnet test polonia-airlines.slnx --no-build -c Release
 

@@ -7,9 +7,13 @@ public abstract class AggregateRoot<TId> : Entity<TId>, IHasDomainEvents
 {
     private readonly List<IDomainEvent> domainEvents = new();
 
-    protected AggregateRoot() { }
+    protected AggregateRoot()
+    {
+    }
 
-    protected AggregateRoot(TId id) : base(id) { }
+    protected AggregateRoot(TId id) : base(id)
+    {
+    }
 
     public IReadOnlyCollection<IDomainEvent> DomainEvents => domainEvents.AsReadOnly();
 
@@ -19,5 +23,8 @@ public abstract class AggregateRoot<TId> : Entity<TId>, IHasDomainEvents
         domainEvents.Add(domainEvent);
     }
 
-    public void ClearDomainEvents() => domainEvents.Clear();
+    public void ClearDomainEvents()
+    {
+        domainEvents.Clear();
+    }
 }

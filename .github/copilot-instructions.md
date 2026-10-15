@@ -2,6 +2,10 @@
 
 ## Project Guidlines
 
+## Backend Readability
+- For backend services, shared C# code, and backend tests, follow [the backend style instructions](instructions/backend-style.instructions.md) and [backend/.editorconfig](../backend/.editorconfig).
+- Preserve explicit control-flow braces, block-bodied methods, readable multiline expressions, and logical spacing. Keep simple properties concise. Do not apply this backend-specific convention to frontend code.
+
 ## Architecture Preferences
 - Use DDD (Domain-Driven Design) / Clean Architecture / Hexagonal Architecture principles for structuring the application.
   - 'Api' for the API layer, handling HTTP requests and responses.

@@ -31,12 +31,15 @@ public sealed class AircraftEntityConfiguration : IEntityTypeConfiguration<Aircr
     }
 
     // Domain transitions compare the canonical instances by reference.
-    private static AircraftOperationalState RestoreState(string code) => code switch
+    private static AircraftOperationalState RestoreState(string code)
     {
-        "ACTIVE" => AircraftOperationalState.Active,
-        "INACTIVE" => AircraftOperationalState.Inactive,
-        "MAINTENANCE" => AircraftOperationalState.Maintenance,
-        "DECOMMISSIONED" => AircraftOperationalState.Decommissioned,
-        _ => new AircraftOperationalState(code)
-    };
+        return code switch
+        {
+            "ACTIVE" => AircraftOperationalState.Active,
+            "INACTIVE" => AircraftOperationalState.Inactive,
+            "MAINTENANCE" => AircraftOperationalState.Maintenance,
+            "DECOMMISSIONED" => AircraftOperationalState.Decommissioned,
+            _ => new AircraftOperationalState(code)
+        };
+    }
 }
