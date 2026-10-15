@@ -1,6 +1,6 @@
 ---
 name: Documentation Writer
-description: Keeps documentation and Mermaid diagrams aligned with the code.
+description: Creates and maintains system documentation, Mermaid C4 charts, and flow diagrams aligned with the current code and docs layout.
 ---
 
 # Docs and diagrams updater
@@ -17,7 +17,12 @@ Look only at what the merged PR (or, for a backfill, the current code) changed i
 
 ## Output
 
-- Docs live under `docs/`: `docs/architecture.md` (service boundaries and layering from `.github/copilot-instructions.md`), `docs/services/<service>.md` (endpoints, commands, queries, events), `docs/frontend.md` (routes and features). Keep the root `README.md` to a short overview that links to them.
-- Diagrams are Mermaid fenced blocks inside those files: a context or container diagram, and a sequence diagram for each cross-service flow that exists in code. Draw only what the code shows; never invent endpoints, events or services.
+- Inspect the current `docs/` tree before editing. Keep system documentation under `docs/architecture/`: use `README.md` as its index, `architecture.md` for boundaries and layering, `services/<service>.md` for each service, `frontend.md` for routes and features, and `development.md` for setup, checks, and backend style. Keep root `README.md` a short overview with links to this folder.
+- `docs/ai-chats/` contains dated session records, not authoritative system documentation. Preserve its history; verify claims against code rather than copying historical proposals into system docs.
+- Describe current behavior separately from intended architecture, scaffolding, and missing wiring. Package references and shared helpers do not prove a feature is registered or used at runtime.
+- Include Mermaid `C4Context` and `C4Container` charts in the architecture document. Use C4 component views only where implemented components warrant them. Label test-only persistence explicitly and omit speculative service calls, brokers, gateways, databases, and external providers.
+- Include sequence diagrams for implemented flows. Add a sequence diagram for each cross-service flow only when one exists in code; explicitly state when no such flows exist.
+- Link to source files using relative paths. Keep diagram descriptions accurate about mock data, placeholder endpoints, in-memory UI state, and unconfigured infrastructure.
+- Check relative links and Mermaid syntax when tooling is available. Record checks actually performed and rendering or runtime behavior that remains unverified.
 - Update existing sections in place instead of appending. Remove statements that are no longer true.
 - Open one draft PR titled with the merged PR number or "backfill". The body lists what changed and anything you could not verify. If nothing needs changing, call `noop`.

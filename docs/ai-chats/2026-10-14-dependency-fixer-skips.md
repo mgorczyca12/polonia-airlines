@@ -53,3 +53,23 @@
 - Updated `README.md` to distinguish automated checks from readability decisions that require review.
 - Ran both exact CI formatter commands locally: passed. `git diff --check`: passed. VS Code diagnostics for the workflow and new instructions: no errors.
 - Existing backend edits from the preceding readability pass remain intact. No new runtime code changes, commits, or remote CI runs in this follow-up; CI enforcement becomes active after these changes are pushed.
+
+## Initial system documentation and agent update
+
+- User requested initial current-system documentation, Mermaid diagrams and C4 charts, and confirmed that the documentation agent should also be updated.
+- Started from clean checked-out `main`. Added `docs/README.md`, `docs/architecture.md`, `docs/development.md`, `docs/frontend.md`, and service references for flight, booking and seating. Shortened root `README.md` to an overview and documentation links.
+- Updated the documentation agent to inspect the docs layout, maintain the index, keep historical `docs/ai-chats/` separate, document implementation gaps, and maintain C4 and flow diagrams without speculative integrations.
+- Architecture includes C4 context, container and flight-component views. Flow diagrams cover actual flight queries, local web search/confirmation, and in-process booking/seating behavior. No cross-service flow was invented.
+- Verified key implementation limits: frontend uses JSON; flight startup lacks a database provider; booking/seating expose weather scaffolds only; shared messaging/pipeline helpers are not proof of active integration.
+- Checks: all relative links in the nine new/updated system/agent documents resolve; fences are balanced; all eight Mermaid diagrams parse successfully with Mermaid and a local DOM; agent file diagnostics and `git diff --check` pass.
+- The initial Mermaid parse attempt lacked browser DOM support; rerunning with the existing local jsdom dependency passed. Temporary parser packages were installed outside the repository, with no manifest changes.
+- Diagram visual rendering and deployed runtime behavior are not verified. No application code changed, so builds/tests were not rerun for this documentation task.
+- Prepared a documentation backfill branch for a draft PR; remote CI and human review remain pending.
+
+## Documentation folder adjustment
+
+- User requested that the new system documentation live under `docs/architecture/`.
+- Moved the index, architecture, frontend, development and three service documents into that folder, preserving the `services/` subfolder and leaving `docs/ai-chats/` history in place.
+- Updated root README links, rebased relative source/navigation links, and updated the documentation agent's output layout.
+- Checked relative links in all eight relocated/indexing documents: zero missing targets. `git diff --check` passed. Diagrams were not changed.
+- Previous draft-PR creation was interrupted; no PR creation is confirmed. This relocation remains local and uncommitted.
