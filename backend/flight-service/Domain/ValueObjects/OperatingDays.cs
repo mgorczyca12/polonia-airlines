@@ -34,7 +34,10 @@ public sealed class OperatingDays : IEquatable<OperatingDays>
     public string Name { get; }
     public int Value { get; }
 
-    public bool HasDay(OperatingDays day) => (Value & day.Value) == day.Value;
+    public bool HasDay(OperatingDays day)
+    {
+        return (Value & day.Value) == day.Value;
+    }
 
     public static OperatingDays operator |(OperatingDays left, OperatingDays right)
     {
@@ -47,19 +50,37 @@ public sealed class OperatingDays : IEquatable<OperatingDays>
 
     public static bool operator !=(OperatingDays? left, OperatingDays? right) => !(left == right);
 
-    public static OperatingDays FromValue(int value) =>
-        value == 0
+    public static OperatingDays FromValue(int value)
+    {
+        return value == 0
             ? None
             : new OperatingDays(string.Join(", ", GetNames(value)), value);
+    }
 
-    private static IEnumerable<string> GetNames(int value) =>
-        All.Where(day => (value & day.Value) == day.Value).Select(day => day.Name);
+    private static IEnumerable<string> GetNames(int value)
+    {
+        return All
+            .Where(day => (value & day.Value) == day.Value)
+            .Select(day => day.Name);
+    }
 
-    public bool Equals(OperatingDays? other) => other is not null && Value == other.Value;
+    public bool Equals(OperatingDays? other)
+    {
+        return other is not null && Value == other.Value;
+    }
 
-    public override bool Equals(object? obj) => Equals(obj as OperatingDays);
+    public override bool Equals(object? obj)
+    {
+        return Equals(obj as OperatingDays);
+    }
 
-    public override int GetHashCode() => Value;
+    public override int GetHashCode()
+    {
+        return Value;
+    }
 
-    public override string ToString() => Name;
+    public override string ToString()
+    {
+        return Name;
+    }
 }

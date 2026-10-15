@@ -13,16 +13,24 @@ public sealed record FareQuote
     public string Currency { get; private set; } = null!;
     public BaggageAllowance BaggageAllowance { get; private set; } = null!;
 
-    private FareQuote() { }
+    private FareQuote()
+    {
+    }
 
-    public static FareQuote Create(string flightId, string productCode, string cabinClass, decimal amount,
-        string currency, BaggageAllowance baggageAllowance)
+    public static FareQuote Create(
+        string flightId,
+        string productCode,
+        string cabinClass,
+        decimal amount,
+        string currency,
+        BaggageAllowance baggageAllowance)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(flightId);
         ArgumentException.ThrowIfNullOrWhiteSpace(productCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(cabinClass);
         ArgumentOutOfRangeException.ThrowIfNegative(amount);
         ArgumentNullException.ThrowIfNull(baggageAllowance);
+
         return new FareQuote
         {
             FlightId = flightId,

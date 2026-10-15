@@ -130,8 +130,10 @@ public class FlightQueryApiTests
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
         using (var scope = factory.Services.CreateScope())
+        {
             await scope.ServiceProvider.GetRequiredService<FlightServiceDbContext>()
                 .Database.ExecuteSqlRawAsync("DROP TABLE Flights");
+        }
 
         var response = await client.GetAsync(path);
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
@@ -150,8 +152,10 @@ public class FlightQueryApiTests
         using var client = factory.CreateSeededClient();
         client.DefaultRequestHeaders.Accept.ParseAdd(accept);
         using (var scope = factory.Services.CreateScope())
+        {
             await scope.ServiceProvider.GetRequiredService<FlightServiceDbContext>()
                 .Database.ExecuteSqlRawAsync("DROP TABLE Flights");
+        }
 
         var response = await client.GetAsync(Search);
         var body = await response.Content.ReadAsStringAsync();
@@ -219,8 +223,10 @@ public class FlightQueryApiTests
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var paths = json.RootElement.GetProperty("paths");
-        var singleResponses = paths.GetProperty("/api/Flight/flight/{flightId}")
-            .GetProperty("get").GetProperty("responses");
+        var singleResponses = paths
+            .GetProperty("/api/Flight/flight/{flightId}")
+            .GetProperty("get")
+            .GetProperty("responses");
         Assert.True(singleResponses.TryGetProperty("200", out _));
         Assert.True(singleResponses.TryGetProperty("400", out _));
         Assert.True(singleResponses.TryGetProperty("404", out _));
@@ -230,6 +236,7 @@ public class FlightQueryApiTests
     private sealed class FlightApiFactory : WebApplicationFactory<Program>
     {
         private readonly SqliteConnection connection = new("Data Source=:memory:");
+
         public ExceptionLogProvider Logs { get; } = new();
         public int FirstFlightId { get; private set; }
 
@@ -255,20 +262,24 @@ public class FlightQueryApiTests
             using var scope = Services.CreateScope();
             var context = scope.ServiceProvider.GetRequiredService<FlightServiceDbContext>();
             context.Database.EnsureCreated();
+
             var departure = Airport.Create("Warsaw", "EPWA", "WAW", Address.Create("Warsaw", "Mazovia", "PL"));
             var arrival = Airport.Create("Krakow", "EPKK", "KRK", Address.Create("Krakow", "Malopolska", "PL"));
             var other = Airport.Create("Gdansk", "EPGD", "GDN", Address.Create("Gdansk", "Pomerania", "PL"));
             var day = new DateTime(2026, 10, 13, 0, 0, 0, DateTimeKind.Utc);
             var first = Flight.Create("PA101", day, day.AddHours(1), departure, arrival);
-            context.Flights.AddRange(first,
+            context.Flights.AddRange(
+                first,
                 Flight.Create("PA102", day.AddHours(10), day.AddHours(11), departure, arrival),
                 Flight.Create("PA103", day.AddHours(10), day.AddHours(12), departure, arrival),
                 Flight.Create("PA104", day.AddDays(1).AddTicks(-1), day.AddDays(1).AddHours(1), departure, arrival),
                 Flight.Create("PA105", day.AddDays(1), day.AddDays(1).AddHours(1), departure, arrival),
                 Flight.Create("PA106", day.AddHours(10), day.AddHours(11), departure, other),
                 Flight.Create("PA107", day.AddTicks(-1), day.AddHours(1), departure, arrival));
+
             context.SaveChanges();
             FirstFlightId = first.Id;
+
             return CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
         }
 
@@ -276,27 +287,50 @@ public class FlightQueryApiTests
         {
             base.Dispose(disposing);
             if (disposing)
+            {
                 connection.Dispose();
+            }
         }
     }
 
     private sealed class ExceptionLogProvider : ILoggerProvider
     {
         public ConcurrentQueue<(string Category, LogLevel Level, Exception Exception)> Entries { get; } = new();
-        public ILogger CreateLogger(string categoryName) => new ExceptionLogger(categoryName, Entries);
-        public void Dispose() { }
+
+        public ILogger CreateLogger(string categoryName)
+        {
+            return new ExceptionLogger(categoryName, Entries);
+        }
+
+        public void Dispose()
+        {
+        }
 
         private sealed class ExceptionLogger(
             string categoryName,
             ConcurrentQueue<(string Category, LogLevel Level, Exception Exception)> entries) : ILogger
         {
-            public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
-            public bool IsEnabled(LogLevel logLevel) => true;
-            public void Log<TState>(LogLevel logLevel, EventId eventId, TState state,
-                Exception? exception, Func<TState, Exception?, string> formatter)
+            public IDisposable? BeginScope<TState>(TState state) where TState : notnull
+            {
+                return null;
+            }
+
+            public bool IsEnabled(LogLevel logLevel)
+            {
+                return true;
+            }
+
+            public void Log<TState>(
+                LogLevel logLevel,
+                EventId eventId,
+                TState state,
+                Exception? exception,
+                Func<TState, Exception?, string> formatter)
             {
                 if (exception is not null)
+                {
                     entries.Enqueue((categoryName, logLevel, exception));
+                }
             }
         }
     }

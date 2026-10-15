@@ -19,7 +19,10 @@ public class SearchFlightsRequestValidatorTests
         Assert.True(validator.Validate(ValidRequest).IsValid);
         Assert.Equal(1, ValidRequest.Page);
         Assert.Equal(20, ValidRequest.PageSize);
-        Assert.True(validator.Validate(ValidRequest with { PageSize = 100 }).IsValid);
+        Assert.True(validator.Validate(ValidRequest with
+        {
+            PageSize = 100
+        }).IsValid);
     }
 
     [Theory]
@@ -32,9 +35,15 @@ public class SearchFlightsRequestValidatorTests
     [InlineData("WA1")]
     public void AirportCodesMustBeExactUppercaseIata(string code)
     {
-        Assert.Contains(validator.Validate(ValidRequest with { DepartureAirport = code }).Errors,
+        Assert.Contains(validator.Validate(ValidRequest with
+        {
+            DepartureAirport = code
+        }).Errors,
             error => error.PropertyName == nameof(SearchFlightsRequest.DepartureAirport));
-        Assert.Contains(validator.Validate(ValidRequest with { ArrivalAirport = code }).Errors,
+        Assert.Contains(validator.Validate(ValidRequest with
+        {
+            ArrivalAirport = code
+        }).Errors,
             error => error.PropertyName == nameof(SearchFlightsRequest.ArrivalAirport));
     }
 
@@ -47,19 +56,33 @@ public class SearchFlightsRequestValidatorTests
     [InlineData(int.MaxValue, 100)]
     public void InvalidPaginationIsRejected(int page, int pageSize)
     {
-        Assert.False(validator.Validate(ValidRequest with { Page = page, PageSize = pageSize }).IsValid);
+        Assert.False(validator.Validate(ValidRequest with
+        {
+            Page = page,
+            PageSize = pageSize
+        }).IsValid);
     }
 
     [Fact]
     public void PaginationBoundaryDoesNotOverflow()
     {
-        Assert.True(validator.Validate(ValidRequest with { Page = int.MaxValue, PageSize = 1 }).IsValid);
+        Assert.True(validator.Validate(ValidRequest with
+        {
+            Page = int.MaxValue,
+            PageSize = 1
+        }).IsValid);
     }
 
     [Fact]
     public void MissingDateAndUnrepresentableEndOfDayAreRejected()
     {
-        Assert.False(validator.Validate(ValidRequest with { DepartureDate = default }).IsValid);
-        Assert.False(validator.Validate(ValidRequest with { DepartureDate = DateOnly.MaxValue }).IsValid);
+        Assert.False(validator.Validate(ValidRequest with
+        {
+            DepartureDate = default
+        }).IsValid);
+        Assert.False(validator.Validate(ValidRequest with
+        {
+            DepartureDate = DateOnly.MaxValue
+        }).IsValid);
     }
 }

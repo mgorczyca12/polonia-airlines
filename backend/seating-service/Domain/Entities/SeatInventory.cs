@@ -16,16 +16,27 @@ public class SeatInventory : AggregateRoot<int>
     public int OverbookedSeats => Math.Max(0, ReservedSeats - TotalSeats);
     public IReadOnlyCollection<SeatAssignment> Assignments => assignments.AsReadOnly();
 
-    private SeatInventory() { }
+    private SeatInventory()
+    {
+    }
 
-    public static SeatInventory Create(string flightId, string cabinId, int totalSeats, int overbookingAllowance = 0)
+    public static SeatInventory Create(
+        string flightId,
+        string cabinId,
+        int totalSeats,
+        int overbookingAllowance = 0)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(flightId);
         ArgumentException.ThrowIfNullOrWhiteSpace(cabinId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(totalSeats);
         ArgumentOutOfRangeException.ThrowIfNegative(overbookingAllowance);
+
         if (overbookingAllowance > int.MaxValue - totalSeats)
-            throw new ArgumentOutOfRangeException(nameof(overbookingAllowance), "Booking limit exceeds the supported capacity.");
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(overbookingAllowance),
+                "Booking limit exceeds the supported capacity.");
+        }
 
         return new SeatInventory
         {
@@ -40,10 +51,17 @@ public class SeatInventory : AggregateRoot<int>
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(reservationId);
         ArgumentException.ThrowIfNullOrWhiteSpace(passengerId);
+
         if (assignments.Any(assignment => assignment.PassengerId == passengerId))
+        {
             throw new InvalidOperationException("Passenger already has an allocation in this inventory.");
+        }
+
         if (RemainingBookingCapacity <= 0)
+        {
             throw new InvalidOperationException("The cabin booking limit has been reached.");
+        }
+
         EnsureSeatAvailable(seatId);
 
         var assignment = SeatAssignment.Create(this, reservationId, passengerId, seatId);
@@ -70,7 +88,10 @@ public class SeatInventory : AggregateRoot<int>
     {
         EnsureOwned(assignment);
         if (ReservedSeats <= 0)
+        {
             throw new InvalidOperationException("Confirmed allocation count is inconsistent.");
+        }
+
         assignments.Remove(assignment);
         ReservedSeats--;
     }
@@ -78,19 +99,31 @@ public class SeatInventory : AggregateRoot<int>
     private void EnsureOwned(SeatAssignment assignment)
     {
         ArgumentNullException.ThrowIfNull(assignment);
+
         if (!assignments.Any(existing => ReferenceEquals(existing, assignment)))
+        {
             throw new InvalidOperationException("Allocation does not belong to this inventory.");
+        }
     }
 
     private void EnsureSeatAvailable(string? seatId, SeatAssignment? current = null)
     {
         if (seatId is null)
+        {
             return;
+        }
+
         ArgumentException.ThrowIfNullOrWhiteSpace(seatId);
+
         if (assignments.Any(assignment => !ReferenceEquals(assignment, current) && assignment.SeatId == seatId))
+        {
             throw new InvalidOperationException("Seat is already assigned in this inventory.");
+        }
+
         if ((current is null || current.SeatId is null) &&
             assignments.Count(assignment => assignment.SeatId is not null) >= TotalSeats)
+        {
             throw new InvalidOperationException("All physical seats in this cabin are assigned.");
+        }
     }
 }

@@ -7,7 +7,9 @@ public class SeatMapCabin : Entity<int>
     public string Name { get; private set; } = null!;
     public string IataCode { get; private set; } = null!;
 
-    private SeatMapCabin() { }
+    private SeatMapCabin()
+    {
+    }
 
     private SeatMapCabin(string name, string iataCode)
     {

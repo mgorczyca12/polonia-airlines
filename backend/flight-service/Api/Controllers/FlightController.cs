@@ -24,15 +24,19 @@ public class FlightController(
         var validation = await searchValidator.ValidateAsync(request, cancellationToken);
         if (!validation.IsValid)
         {
-            var errors = validation.Errors.GroupBy(error => error.PropertyName)
-                .ToDictionary(group => group.Key,
+            var errors = validation.Errors
+                .GroupBy(error => error.PropertyName)
+                .ToDictionary(
+                    group => group.Key,
                     group => group.Select(error => error.ErrorMessage).ToArray());
             return ValidationProblem(new ValidationProblemDetails(errors));
         }
 
         var result = await flightQueries.GetFlights(request, cancellationToken);
         if (result.IsFailed)
+        {
             throw new InvalidOperationException("The flight search returned an unrecognized failure.");
+        }
 
         return Ok(result.Value);
     }
@@ -48,9 +52,12 @@ public class FlightController(
     {
         var result = await flightQueries.GetFlight(flightId, cancellationToken);
         if (result.IsSuccess)
+        {
             return Ok(result.Value);
+        }
 
         if (result.Errors.Count == 1 && result.Errors[0] is FlightNotFoundError error)
+        {
             return Problem(
                 statusCode: StatusCodes.Status404NotFound,
                 title: "Flight not found",
@@ -59,6 +66,7 @@ public class FlightController(
                 {
                     ["code"] = FlightNotFoundError.Code
                 });
+        }
 
         throw new InvalidOperationException("The flight query returned an unrecognized failure.");
     }

@@ -19,7 +19,9 @@ public static class SharedApplicationServiceCollectionExtensions
         {
             options.Assemblies.Add(typeof(SharedApplicationServiceCollectionExtensions).Assembly);
             if (applicationAssembly != typeof(SharedApplicationServiceCollectionExtensions).Assembly)
+            {
                 options.Assemblies.Add(applicationAssembly);
+            }
 
             options.RegisterPipelines = true;
             options.RegisterNotifications = true;

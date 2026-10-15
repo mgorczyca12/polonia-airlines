@@ -9,7 +9,9 @@ public class ReservationFlight : Entity<int>
     public string FlightId { get; private set; } = null!;
     public int SequenceNumber { get; private set; }
 
-    private ReservationFlight() { }
+    private ReservationFlight()
+    {
+    }
 
     internal static ReservationFlight Create(Reservation reservation, string flightId, int sequenceNumber)
     {

@@ -12,9 +12,15 @@ namespace booking_service.Domain.Entities
         public decimal WeightKg { get; private set; }
         public decimal Charge { get; private set; }
 
-        private Baggage() { }
+        private Baggage()
+        {
+        }
 
-        internal static Baggage Create(Passenger passenger, PassengerFare fare, string name, decimal weightKg,
+        internal static Baggage Create(
+            Passenger passenger,
+            PassengerFare fare,
+            string name,
+            decimal weightKg,
             decimal charge)
         {
             ArgumentNullException.ThrowIfNull(passenger);
@@ -22,6 +28,7 @@ namespace booking_service.Domain.Entities
             ArgumentException.ThrowIfNullOrWhiteSpace(name);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(weightKg);
             ArgumentOutOfRangeException.ThrowIfNegative(charge);
+
             return new Baggage
             {
                 PassengerId = passenger.Id,

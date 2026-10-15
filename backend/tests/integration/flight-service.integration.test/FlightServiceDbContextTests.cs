@@ -157,8 +157,10 @@ public class FlightServiceDbContextTests
         await Assert.ThrowsAsync<DbUpdateException>(() => context.SaveChangesAsync());
     }
 
-    private static FlightServiceDbContext CreateContext(SqliteConnection connection) =>
-        new(new DbContextOptionsBuilder<FlightServiceDbContext>().UseSqlite(connection).Options);
+    private static FlightServiceDbContext CreateContext(SqliteConnection connection)
+    {
+        return new(new DbContextOptionsBuilder<FlightServiceDbContext>().UseSqlite(connection).Options);
+    }
 
     private static void AssertFieldAccess<TEntity>(FlightServiceDbContext context, string navigation, string field)
     {

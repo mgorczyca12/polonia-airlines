@@ -21,7 +21,8 @@ public sealed class FlightQueries(FlightServiceDbContext context) : IFlightQueri
 
     public async Task<Result<FlightResponse>> GetFlight(int flightId, CancellationToken cancellationToken)
     {
-        var flight = await context.Flights.AsNoTracking()
+        var flight = await context.Flights
+            .AsNoTracking()
             .Where(flight => flight.Id == flightId)
             .Select(Projection)
             .SingleOrDefaultAsync(cancellationToken);
@@ -32,15 +33,18 @@ public sealed class FlightQueries(FlightServiceDbContext context) : IFlightQueri
     }
 
     public async Task<Result<IReadOnlyList<FlightResponse>>> GetFlights(
-        SearchFlightsRequest request, CancellationToken cancellationToken)
+        SearchFlightsRequest request,
+        CancellationToken cancellationToken)
     {
         var start = request.DepartureDate.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
         var end = start.AddDays(1);
         var skip = checked((request.Page - 1) * request.PageSize);
-        var flights = await context.Flights.AsNoTracking()
+        var flights = await context.Flights
+            .AsNoTracking()
             .Where(flight => flight.DepartureAirport.IataCode == request.DepartureAirport
                 && flight.ArrivalAirport.IataCode == request.ArrivalAirport
-                && flight.DepartureTime >= start && flight.DepartureTime < end)
+                && flight.DepartureTime >= start
+                && flight.DepartureTime < end)
             .OrderBy(flight => flight.DepartureTime)
             .ThenBy(flight => flight.Id)
             .Skip(skip)

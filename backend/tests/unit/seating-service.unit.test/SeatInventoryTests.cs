@@ -35,8 +35,10 @@ public class SeatInventoryTests
     [InlineData(-1, 0)]
     [InlineData(180, -1)]
     [InlineData(int.MaxValue, 1)]
-    public void RejectsInvalidCapacity(int seats, int allowance) =>
+    public void RejectsInvalidCapacity(int seats, int allowance)
+    {
         Assert.Throws<ArgumentOutOfRangeException>(() => SeatInventory.Create("flight-1", "economy", seats, allowance));
+    }
 
     [Theory]
     [InlineData(null, "economy")]
@@ -45,8 +47,10 @@ public class SeatInventoryTests
     [InlineData("flight-1", null)]
     [InlineData("flight-1", "")]
     [InlineData("flight-1", " ")]
-    public void RejectsMissingExternalIds(string? flightId, string? cabinId) =>
+    public void RejectsMissingExternalIds(string? flightId, string? cabinId)
+    {
         Assert.ThrowsAny<ArgumentException>(() => SeatInventory.Create(flightId!, cabinId!, 180));
+    }
 
     [Fact]
     public void PreservesExternalIdentifierRepresentation()

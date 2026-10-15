@@ -17,9 +17,16 @@ public class Flight : AggregateRoot<int>
 
     public IReadOnlyCollection<FlightSegment> FlightSegments => flightSegments.AsReadOnly();
 
-    private Flight() { }
+    private Flight()
+    {
+    }
 
-    private Flight(string flightNumber, DateTime departureTime, DateTime arrivalTime, Airport departureAirport, Airport arrivalAirport)
+    private Flight(
+        string flightNumber,
+        DateTime departureTime,
+        DateTime arrivalTime,
+        Airport departureAirport,
+        Airport arrivalAirport)
     {
         FlightNumber = flightNumber;
         DepartureTime = departureTime;
@@ -30,14 +37,21 @@ public class Flight : AggregateRoot<int>
         ArrivalAirport = arrivalAirport;
     }
 
-    public static Flight Create(string flightNumber, DateTime departureTime, DateTime arrivalTime, Airport departureAirport, Airport arrivalAirport)
+    public static Flight Create(
+        string flightNumber,
+        DateTime departureTime,
+        DateTime arrivalTime,
+        Airport departureAirport,
+        Airport arrivalAirport)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(flightNumber);
         ArgumentNullException.ThrowIfNull(departureAirport);
         ArgumentNullException.ThrowIfNull(arrivalAirport);
 
         if (arrivalTime <= departureTime)
+        {
             throw new ArgumentException("Arrival time must be after departure time.", nameof(arrivalTime));
+        }
 
         return new Flight(flightNumber, departureTime, arrivalTime, departureAirport, arrivalAirport);
     }
@@ -46,7 +60,10 @@ public class Flight : AggregateRoot<int>
     {
         ArgumentNullException.ThrowIfNull(segment);
         if (flightSegments.Any(existing => ReferenceEquals(existing, segment)))
+        {
             throw new InvalidOperationException("Segment is already part of this flight.");
+        }
+
         segment.AttachTo(this);
         flightSegments.Add(segment);
     }

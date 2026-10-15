@@ -14,10 +14,15 @@ public sealed class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidat
         var validationContext = new ValidationContext<TRequest>(request);
         var results = await Task.WhenAll(
             validators.Select(validator => validator.ValidateAsync(validationContext, cancellationToken)));
-        var failures = results.SelectMany(result => result.Errors).Where(error => error is not null).ToArray();
+        var failures = results
+            .SelectMany(result => result.Errors)
+            .Where(error => error is not null)
+            .ToArray();
 
         if (failures.Length > 0)
+        {
             throw new ValidationException(failures);
+        }
 
         return await NextPipeline.Handle(request, cancellationToken);
     }

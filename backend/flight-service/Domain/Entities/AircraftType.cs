@@ -8,7 +8,9 @@ public class AircraftType : Entity<int>
     public string Model { get; private set; } = null!;
     public string Manufacturer { get; private set; } = null!;
 
-    private AircraftType() { }
+    private AircraftType()
+    {
+    }
 
     private AircraftType(string icaoCode, string model, string manufacturer)
     {

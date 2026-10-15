@@ -7,15 +7,21 @@ public sealed record BaggageAllowance
     public int MaxExtraPieces { get; private set; }
     public decimal ExtraPiecePrice { get; private set; }
 
-    private BaggageAllowance() { }
+    private BaggageAllowance()
+    {
+    }
 
-    public static BaggageAllowance Create(int includedPieces, decimal maxWeightPerPieceKg,
-        int maxExtraPieces, decimal extraPiecePrice)
+    public static BaggageAllowance Create(
+        int includedPieces,
+        decimal maxWeightPerPieceKg,
+        int maxExtraPieces,
+        decimal extraPiecePrice)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(includedPieces);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxWeightPerPieceKg);
         ArgumentOutOfRangeException.ThrowIfNegative(maxExtraPieces);
         ArgumentOutOfRangeException.ThrowIfNegative(extraPiecePrice);
+
         return new BaggageAllowance
         {
             IncludedPieces = includedPieces,
@@ -37,10 +43,17 @@ public sealed record BaggageAllowance
     public decimal ChargeForNextPiece(int existingPieces, decimal weightKg)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(existingPieces);
+
         if (weightKg > MaxWeightPerPieceKg)
+        {
             throw new InvalidOperationException("Baggage exceeds the maximum weight allowed by the fare.");
+        }
+
         if (existingPieces >= MaxPieces)
+        {
             throw new InvalidOperationException("Baggage exceeds the maximum number of pieces allowed by the fare.");
+        }
+
         return existingPieces < IncludedPieces ? 0m : ExtraPiecePrice;
     }
 }
