@@ -9,6 +9,7 @@
     <Project Path="backend/tests/integration/booking-service.integration.test/booking-service.integration.test.csproj" />
     <Project Path="backend/tests/integration/flight-service.integration.test/flight-service.integration.test.csproj" />
     <Project Path="backend/tests/integration/seating-service.integration.test/seating-service.integration.test.csproj" />
+    <Project Path="backend/tests/integration/shared.integration.test/shared.integration.test.csproj" />
     <Project Path="backend/tests/unit/booking-service.unit.test/booking-service.unit.test.csproj" />
     <Project Path="backend/tests/unit/flight-service.unit.test/flight-service.unit.test.csproj" />
     <Project Path="backend/tests/unit/seating-service.unit.test/seating-service.unit.test.csproj" />

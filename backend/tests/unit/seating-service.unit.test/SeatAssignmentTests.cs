@@ -5,7 +5,7 @@ namespace seating_service.unit.test;
 public class SeatAssignmentTests
 {
     [Fact]
-    public void OverbookingAllowsUnassignedAllocationsButNotExtraPhysicalSeats()
+    public void ConfirmAllocation_OverbookingEnabled_AllowsUnassignedAllocationsButNotExtraPhysicalSeats()
     {
         var inventory = SeatInventory.Create("flight", "economy", 1, 1);
         var first = inventory.ConfirmAllocation("reservation-1", "passenger-1", "seat-A");
@@ -23,7 +23,7 @@ public class SeatAssignmentTests
     }
 
     [Fact]
-    public void SeatChangesDoNotConsumeBookingCapacity()
+    public void AssignSeat_ExistingAllocations_PreservesBookingCapacityAndEnforcesSeatUniqueness()
     {
         var inventory = SeatInventory.Create("flight", "economy", 2);
         var first = inventory.ConfirmAllocation("reservation", "passenger-1", "seat-A");
@@ -42,7 +42,7 @@ public class SeatAssignmentTests
     }
 
     [Fact]
-    public void RejectsDuplicatePassengersForeignAllocationsAndInvalidIdsWithoutMutation()
+    public void ConfirmAllocationAndAssignSeatAndClearSeatAndReleaseAllocation_InvalidInputs_ThrowsWithoutMutation()
     {
         var inventory = SeatInventory.Create("flight", "economy", 3);
         var assignment = inventory.ConfirmAllocation(" Reservation ", "Passenger", " Seat ");

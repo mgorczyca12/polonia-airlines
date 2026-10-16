@@ -15,6 +15,7 @@ public static class SharedApplicationServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(applicationAssembly);
 
         services.AddValidatorsFromAssembly(applicationAssembly);
+        services.AddScoped<CommandExecutionState>();
         services.AddDispatchR(options =>
         {
             options.Assemblies.Add(typeof(SharedApplicationServiceCollectionExtensions).Assembly);
@@ -28,6 +29,7 @@ public static class SharedApplicationServiceCollectionExtensions
             options.PipelineOrder =
             [
                 typeof(ValidationBehavior<,>),
+                typeof(ExecutionStrategyBehavior<,>),
                 typeof(TransactionBehavior<,>)
             ];
         });

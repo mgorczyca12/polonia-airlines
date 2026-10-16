@@ -10,7 +10,7 @@ namespace flight_service.integration.test;
 public class FlightServiceDbContextTests
 {
     [Fact]
-    public void ModelMapsAllEntitiesWithoutShadowForeignKeysOrDomainEvents()
+    public void OnModelCreating_AllDomainEntities_MapsKeysAndFieldAccessWithoutShadowForeignKeysOrDomainEvents()
     {
         using var context = CreateContext(new SqliteConnection("Data Source=:memory:"));
         var entities = context.Model.GetEntityTypes().Where(entity => !entity.IsOwned()).ToList();
@@ -31,7 +31,7 @@ public class FlightServiceDbContextTests
     }
 
     [Fact]
-    public async Task FlightAirportAndScheduleGraphRoundTripsWithGeneratedKeys()
+    public async Task SaveChangesAsync_FlightAirportAndScheduleGraph_RoundTripsRelationshipsWithGeneratedKeys()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -74,7 +74,7 @@ public class FlightServiceDbContextTests
     }
 
     [Fact]
-    public async Task AircraftLayoutRoundTripsAndPreservesStateTransitionGuards()
+    public async Task SaveChangesAsync_AircraftLayout_RoundTripsStateAndPreservesTransitionGuards()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -119,7 +119,7 @@ public class FlightServiceDbContextTests
     }
 
     [Fact]
-    public async Task OwnedChildrenCascadeButReferencedAirportsCannotBeDeleted()
+    public async Task ExecuteSqlRawAsync_DeletingReferencedAirportsOrFlights_RestrictsAirportsAndCascadesOwnedSegments()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();
@@ -141,7 +141,7 @@ public class FlightServiceDbContextTests
     }
 
     [Fact]
-    public async Task DuplicateSegmentSequenceIsRejectedByTheDatabase()
+    public async Task SaveChangesAsync_DuplicateSegmentSequence_ThrowsDbUpdateException()
     {
         await using var connection = new SqliteConnection("Data Source=:memory:");
         await connection.OpenAsync();

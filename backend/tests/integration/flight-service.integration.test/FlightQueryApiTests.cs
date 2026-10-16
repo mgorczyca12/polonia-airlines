@@ -24,7 +24,7 @@ public class FlightQueryApiTests
     private const string Search = "/api/Flight/flights?DepartureAirport=WAW&ArrivalAirport=KRK&DepartureDate=2026-10-13";
 
     [Fact]
-    public async Task SingleFlightReturnsDtoWithUtcOffsetsAndNoEntityOrResultFields()
+    public async Task GetFlight_ExistingFlight_ReturnsDtoWithUtcOffsetsAndNoEntityOrResultFields()
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
@@ -45,7 +45,7 @@ public class FlightQueryApiTests
     }
 
     [Fact]
-    public async Task MissingFlightReturnsIdentifiableProblemDetails()
+    public async Task GetFlight_MissingFlight_ReturnsNotFoundWithIdentifiableProblemDetails()
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
@@ -60,7 +60,7 @@ public class FlightQueryApiTests
     }
 
     [Fact]
-    public async Task SearchFiltersUtcDayAndAirportsAndPaginatesStably()
+    public async Task GetFlights_MatchingAndNonmatchingFlights_FiltersUtcDayAndAirportsAndPaginatesStably()
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
@@ -76,7 +76,7 @@ public class FlightQueryApiTests
     }
 
     [Fact]
-    public async Task EmptySearchReturnsSuccessfulEmptyArray()
+    public async Task GetFlights_NoMatchingPage_ReturnsSuccessfulEmptyArray()
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
@@ -86,7 +86,7 @@ public class FlightQueryApiTests
     }
 
     [Fact]
-    public async Task SearchHonorsDefaultAndMaximumPageSizes()
+    public async Task GetFlights_DefaultAndMaximumPageSizes_ReturnsExpectedPageLengths()
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
@@ -125,7 +125,7 @@ public class FlightQueryApiTests
     [InlineData("/api/Flight/flights?DepartureAirport=WAW&ArrivalAirport=KRK&DepartureDate=invalid", "DepartureDate")]
     [InlineData("/api/Flight/flight/0", "flightId")]
     [InlineData("/api/Flight/flight/not-an-id", "flightId")]
-    public async Task InvalidInputsReturnFieldSpecificValidationProblemsBeforeQuerying(string path, string field)
+    public async Task GetFlightsAndGetFlight_InvalidInputs_ReturnFieldSpecificValidationProblemsBeforeQuerying(string path, string field)
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
@@ -146,7 +146,7 @@ public class FlightQueryApiTests
     [InlineData("application/json")]
     [InlineData("text/plain")]
     [InlineData("text/html")]
-    public async Task DatabaseFailureIsLoggedAndReturnsSafeProblemEvenInDevelopment(string accept)
+    public async Task GetFlights_DatabaseFailureInDevelopment_LogsExceptionAndReturnsSafeProblemDetails(string accept)
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
@@ -173,7 +173,7 @@ public class FlightQueryApiTests
     }
 
     [Fact]
-    public async Task QueriesAreUntrackedAndPropagateCancellation()
+    public async Task GetFlightAndGetFlights_ValidAndCancelledRequests_AvoidTrackingAndPropagateCancellation()
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
@@ -199,7 +199,7 @@ public class FlightQueryApiTests
     }
 
     [Fact]
-    public async Task HostStartsWithoutProductionProviderAndReadsFailSafely()
+    public async Task GetFlight_NoProductionDatabaseProvider_ReturnsSafeServerError()
     {
         using var factory = new WebApplicationFactory<Program>()
             .WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
@@ -215,7 +215,7 @@ public class FlightQueryApiTests
     }
 
     [Fact]
-    public async Task OpenApiDocumentsFlightResponsesAndErrors()
+    public async Task GetOpenApi_DevelopmentEnvironment_DocumentsFlightResponsesAndErrors()
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();

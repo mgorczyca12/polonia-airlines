@@ -5,7 +5,7 @@ namespace seating_service.unit.test;
 public class SeatInventoryTests
 {
     [Fact]
-    public void DefaultsToNoOverbookingAndNoAllocations()
+    public void Create_NoOverbookingAllowance_StartsWithFullCapacityAndNoAllocations()
     {
         var inventory = SeatInventory.Create("flight-1", "economy", 180);
 
@@ -20,7 +20,7 @@ public class SeatInventoryTests
     }
 
     [Fact]
-    public void AllowanceIncreasesBookingLimitNotPhysicalCapacityOrActualOverbooking()
+    public void Create_OverbookingAllowance_IncreasesBookingLimitWithoutChangingPhysicalCapacity()
     {
         var inventory = SeatInventory.Create("flight-1", "economy", 180, 5);
 
@@ -35,7 +35,7 @@ public class SeatInventoryTests
     [InlineData(-1, 0)]
     [InlineData(180, -1)]
     [InlineData(int.MaxValue, 1)]
-    public void RejectsInvalidCapacity(int seats, int allowance)
+    public void Create_InvalidCapacity_ThrowsArgumentOutOfRangeException(int seats, int allowance)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => SeatInventory.Create("flight-1", "economy", seats, allowance));
     }
@@ -47,13 +47,13 @@ public class SeatInventoryTests
     [InlineData("flight-1", null)]
     [InlineData("flight-1", "")]
     [InlineData("flight-1", " ")]
-    public void RejectsMissingExternalIds(string? flightId, string? cabinId)
+    public void Create_MissingExternalIds_ThrowsArgumentException(string? flightId, string? cabinId)
     {
         Assert.ThrowsAny<ArgumentException>(() => SeatInventory.Create(flightId!, cabinId!, 180));
     }
 
     [Fact]
-    public void PreservesExternalIdentifierRepresentation()
+    public void Create_ExternalIdsWithWhitespace_PreservesRepresentation()
     {
         var inventory = SeatInventory.Create(" Flight-A ", " Economy ", 180);
 

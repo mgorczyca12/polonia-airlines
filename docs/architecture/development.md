@@ -47,6 +47,12 @@ The tests use xUnit/VSTest. Flight integration tests configure in-memory SQLite;
 they are not proof of a configured production database. Booking and seating
 integration projects currently contain no test source files.
 
+Backend test methods use `MethodName_StateUnderTest_ExpectedBehavior`, for example
+`GetFlight_MissingFlight_ReturnsNotFoundWithIdentifiableProblemDetails`.
+Use the operation under test, the relevant input or state, and the observable
+outcome. Existing tests covering several operations name those operations together;
+empty scaffold tests explicitly identify themselves as placeholders without assertions.
+
 Frontend CI runs, from the web folder:
 
 ```powershell

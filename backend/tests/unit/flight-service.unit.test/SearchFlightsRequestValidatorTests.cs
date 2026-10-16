@@ -14,7 +14,7 @@ public class SearchFlightsRequestValidatorTests
     };
 
     [Fact]
-    public void DefaultsAndMaximumPageSizeAreValid()
+    public void Validate_DefaultPaginationOrMaximumPageSize_Succeeds()
     {
         Assert.True(validator.Validate(ValidRequest).IsValid);
         Assert.Equal(1, ValidRequest.Page);
@@ -33,7 +33,7 @@ public class SearchFlightsRequestValidatorTests
     [InlineData("WAW\n")]
     [InlineData("EPWA")]
     [InlineData("WA1")]
-    public void AirportCodesMustBeExactUppercaseIata(string code)
+    public void Validate_NonExactUppercaseIataCodes_ReturnsAirportFieldErrors(string code)
     {
         Assert.Contains(validator.Validate(ValidRequest with
         {
@@ -54,7 +54,7 @@ public class SearchFlightsRequestValidatorTests
     [InlineData(1, -1)]
     [InlineData(1, 101)]
     [InlineData(int.MaxValue, 100)]
-    public void InvalidPaginationIsRejected(int page, int pageSize)
+    public void Validate_InvalidPagination_ReturnsValidationFailure(int page, int pageSize)
     {
         Assert.False(validator.Validate(ValidRequest with
         {
@@ -64,7 +64,7 @@ public class SearchFlightsRequestValidatorTests
     }
 
     [Fact]
-    public void PaginationBoundaryDoesNotOverflow()
+    public void Validate_MaximumPageWithSingleItemPageSize_SucceedsWithoutOverflow()
     {
         Assert.True(validator.Validate(ValidRequest with
         {
@@ -74,7 +74,7 @@ public class SearchFlightsRequestValidatorTests
     }
 
     [Fact]
-    public void MissingDateAndUnrepresentableEndOfDayAreRejected()
+    public void Validate_MissingDateOrUnrepresentableEndOfDay_ReturnsValidationFailure()
     {
         Assert.False(validator.Validate(ValidRequest with
         {

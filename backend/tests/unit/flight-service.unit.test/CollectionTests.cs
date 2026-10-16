@@ -30,7 +30,7 @@ public class CollectionTests
     }
 
     [Fact]
-    public void SegmentsAreReadOnlyAndConnectedToOneFlight()
+    public void AddSegment_NewSegment_ExposesReadOnlyCollectionAndEnforcesSingleFlightOwnership()
     {
         var flight = Flight();
         var segment = FlightSegment.Create(1, Airport(), Airport());
@@ -48,7 +48,7 @@ public class CollectionTests
     }
 
     [Fact]
-    public void GatesAreReadOnlyAndMustBelongToAirport()
+    public void AddGate_NewGate_ExposesReadOnlyCollectionAndEnforcesAirportOwnership()
     {
         var airport = Airport();
         var gate = AirportGate.Create(airport, "A", "1");
@@ -62,7 +62,7 @@ public class CollectionTests
     }
 
     [Fact]
-    public void RowsAreReadOnlyAndMustBelongToConfiguration()
+    public void AddSeatMapRow_NewRow_ExposesReadOnlyCollectionAndEnforcesConfigurationOwnership()
     {
         var configuration = Configuration();
         var row = SeatMapRow.Create(configuration, SeatMapCabin.Create("Economy", "Y"), SeatMapRowType.Seats);
@@ -76,7 +76,7 @@ public class CollectionTests
     }
 
     [Fact]
-    public void PositionsAreReadOnlyAndConnectedToOneRow()
+    public void AddPosition_NewPosition_ExposesReadOnlyCollectionAndEnforcesSingleRowOwnership()
     {
         var configuration = Configuration();
         var cabin = SeatMapCabin.Create("Economy", "Y");

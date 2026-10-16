@@ -93,13 +93,83 @@ These are folders within each service project, not separate assemblies.
 - `Domain`: entities, aggregate invariants and value objects.
 - `Infrastructure`: EF mappings, concrete query services and external-system adapters.
 - [Shared](../../backend/shared/): reusable entity identities, aggregate domain-event
-  collection, DispatchR command and validation/transaction pipelines, and the
+  collection, DispatchR command and validation/execution-strategy/transaction pipelines, and the
   MassTransit-backed integration publisher.
 
 The existing flight application registers its query validator directly. It does
 not call `AddSharedApplication`; booking and seating do not wire command pipelines
 either. Do not infer active mediator processing from package references.
-The shared transaction pipeline requires an `IUnitOfWork` implementation.
+The shared transaction pipeline applies only to commands implementing
+[`ITransactionalCommand<TCommand, TResponse>`](../../backend/shared/Application/Commands/ITransactionalCommand.cs).
+Ordinary `ICommand` handlers still receive validation but own their orchestration
+and persistence boundaries; they do not require an `IUnitOfWork` registration.
+
+Services can register the shared EF implementation alongside their scoped context:
+
+```csharp
+services.AddDbContext<ServiceDbContext>(options => /* configure provider */);
+services.AddSharedUnitOfWork<ServiceDbContext>();
+services.AddSharedApplication(typeof(ApplicationAssemblyMarker).Assembly);
+```
+
+`AddSharedUnitOfWork` is in `Shared.Infrastructure.DependencyInjection` and
+registers both `IUnitOfWork` and the EF-backed `ICommandExecutionStrategy`.
+The context and repositories must share the same scope. For example, a command
+declares `ITransactionalCommand<CreateFlightCommand, Result>` instead of
+`ICommand<CreateFlightCommand, Result>` to opt in. Its handler changes tracked
+entities; the pipeline saves and commits successful responses and rolls back
+failed FluentResults responses, exceptions, or cancellation. Rollback uses an
+uncancelled token. If both execution and rollback throw, both exceptions surface
+in an `AggregateException`. Transactions are disposed after commit or rollback;
+nested transactions are rejected. A rollback does not reset tracked entities:
+end the failed command's scope rather than reusing its context.
+
+Transaction opt-in alone does **not** enable handler retries.
+[`IRetryableCommand<TCommand, TResponse>`](../../backend/shared/Application/Commands/IRetryableCommand.cs)
+opts into both transactions and replay of the entire command via EF Core's
+provider execution strategy:
+
+```csharp
+public sealed record CreateFlightCommand(/* immutable inputs */)
+    : IRetryableCommand<CreateFlightCommand, Result>;
+```
+
+The pipeline order is validation, execution strategy, then transaction. Each
+attempt redispatches the same command in a fresh async DI scope, giving it a new
+handler, scoped dependencies, DbContext, and transaction; validation also runs
+inside each attempt. Attempt scopes are disposed before retrying. The caller's
+tracked entities and initialized scoped state are not transferred into these
+scopes: provide required inputs through the command or independently resolvable
+dependencies. Commands must be immutable/replay-safe, return detached response
+DTOs rather than entities or deferred queries, and must not manually commit.
+
+`EfCommandExecutionStrategy<TContext>` calls
+`Database.CreateExecutionStrategy()`. Each service must configure the provider's
+retry policy (for example, SQL Server's `EnableRetryOnFailure`); the default
+non-retrying strategy still executes once. Only provider-classified transient
+exceptions before commit, with successful rollback where a transaction began,
+are eligible for retry. Retry limits and delays are controlled by the provider,
+not a second Polly policy. Transaction-only commands do not invoke this wrapper;
+a provider requiring an execution-strategy boundary for explicit transactions
+cannot be used with that path without an explicit service-level design.
+
+Failed FluentResults responses, validation failures, cancellation, and rollback
+failures are never replayed. Any exception once commit is attempted is rethrown
+outside the strategy's retry loop, even if it looks transient: the commit may
+already have succeeded. Such errors require reconciliation or durable
+idempotency/success verification before a caller retries; no generic commit
+verification is claimed here. Successful database commit followed by disposal
+failure is likewise not replayed.
+
+Nested command transactions and retry boundaries inside active command
+transactions are rejected. Use one top-level command boundary and compose
+application/domain operations inside it, rather than nesting opted-in commands.
+
+For database plus blob/API workflows, keep orchestration and compensation
+explicit rather than opting into automatic database rollback as a distributed
+transaction. MassTransit is planned for asynchronous messaging and optional saga
+coordination. Durable outbox/inbox and idempotency remain to be wired; Kafka rider
+and Service Bus delivery paths must be verified separately for outbox support.
 
 Cross-service references use opaque strings: booking references flight IDs, and
 seating references flight, cabin, reservation, passenger and optional seat IDs.
