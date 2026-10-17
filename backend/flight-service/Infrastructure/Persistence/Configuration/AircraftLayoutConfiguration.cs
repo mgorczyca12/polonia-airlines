@@ -21,9 +21,9 @@ public sealed class AircraftLayoutConfiguration : IEntityTypeConfiguration<Aircr
         }).IsUnique();
         builder.HasOne(configuration => configuration.AircraftType).WithMany()
             .HasForeignKey(configuration => configuration.AircraftTypeId).OnDelete(DeleteBehavior.Restrict);
-        builder.HasMany(configuration => configuration.SeatMapRows).WithOne(row => row.AircraftConfiguration)
-            .HasForeignKey(row => row.AircraftConfigurationId).OnDelete(DeleteBehavior.Cascade);
-        builder.Navigation(configuration => configuration.SeatMapRows)
-            .HasField("seatMapRows").UsePropertyAccessMode(PropertyAccessMode.Field);
+        builder.HasOne(configuration => configuration.SeatMap).WithOne(seatMap => seatMap.AircraftConfiguration)
+            .HasForeignKey<SeatMap>(seatMap => seatMap.AircraftConfigurationId)
+            .IsRequired().OnDelete(DeleteBehavior.Cascade);
+        builder.Navigation(configuration => configuration.SeatMap).IsRequired();
     }
 }

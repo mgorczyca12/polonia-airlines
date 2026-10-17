@@ -81,8 +81,44 @@ sequenceDiagram
 ## Domain and persistence
 
 The domain includes flights and ordered segments, schedules with operating days,
-airports and gates, aircraft and types, and aircraft configurations with cabin,
-row and position definitions. Aggregate methods control child collection changes.
+airports and gates, aircraft and types, and aircraft configurations with passenger
+seat maps. Aggregate methods control child collection changes.
+
+### Aircraft configuration and seat-map ownership
+
+[`AircraftConfiguration`](../../../backend/flight-service/Domain/Entities/AircraftConfiguration.cs)
+remains the aggregate root. Its factory creates one
+[`SeatMap`](../../../backend/flight-service/Domain/Entities/SeatMap.cs) child entity;
+maps have no independent creation workflow, version, or repository. Multiple
+aircraft may reference the same configuration, but different configurations do not
+share a seat map. Rows now reference a map rather than the configuration directly:
+
+```text
+Aircraft -> AircraftConfiguration -> SeatMap -> SeatMapRows -> SeatMapPositions
+```
+
+Create rows with `SeatMapRow.Create(configuration.SeatMap, cabin, rowType)` and
+add them with `configuration.SeatMap.AddRow(row)`. The map exposes its rows as a
+read-only collection and rejects duplicate additions and rows from another map.
+Cabins remain referenced descriptive entities rather than children deleted with a map.
+Load `SeatMap` and its rows/positions explicitly when editing the aggregate;
+there is no automatic eager loading.
+
+Domain ownership is mapped as a required one-to-one relationship in separate
+`SeatMaps` storage, not EF `OwnsOne`. A unique configuration foreign key prevents
+multiple maps for one configuration. Deleting an unreferenced configuration
+cascades through its map, rows, and positions; referenced configurations still
+cannot be deleted while aircraft use them.
+
+This changes the schema: add `SeatMaps` with `AircraftConfigurationId`, and move
+the row foreign key from `AircraftConfigurationId` to `SeatMapId`. No migrations
+are currently supplied in the repository. Existing databases need a reviewed
+migration that creates one map per configuration and backfills row references
+before dropping the old foreign key/column; `EnsureCreated` does not upgrade them.
+Cargo layouts, independent seat-map publishing, and new versioning rules remain
+deferred.
+
+### Schedule operating days
 
 Schedule operating days use the `OperatingDays` value object with
 `FromDays(IEnumerable<DayOfWeek>)` and `HasDay(DayOfWeek)`. Construction requires
@@ -97,6 +133,8 @@ is exposed through `FlightServiceDbContext.Schedules`. Its EF mapping retains
 the `FlightSchedules` table name for storage compatibility.
 The create command, handler, and validator live under
 [ScheduleFeatures/Commands/CreateSchedule](../../../backend/flight-service/Application/Features/ScheduleFeatures/Commands/CreateSchedule/).
+
+### Queries and infrastructure
 
 [FlightQueries](../../../backend/flight-service/Infrastructure/Persistence/Queries/FlightQueries.cs)
 filters departure times using UTC day boundaries and orders by departure time

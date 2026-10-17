@@ -57,6 +57,9 @@ public sealed class FlightInfrastructureTests
         var schema = context.Database.GenerateCreateScript();
         Assert.Contains("CREATE TABLE \"OutboxMessage\"", schema);
         Assert.Contains("CREATE TABLE \"OutboxState\"", schema);
+        Assert.Contains("CREATE TABLE \"SeatMaps\"", schema);
+        Assert.Contains("CREATE UNIQUE INDEX \"IX_SeatMaps_AircraftConfigurationId\"", schema);
+        Assert.Contains("FOREIGN KEY (\"SeatMapId\") REFERENCES \"SeatMaps\" (\"Id\") ON DELETE CASCADE", schema);
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
         Assert.IsType<MassTransitIntegrationEventPublisher>(
             scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>());

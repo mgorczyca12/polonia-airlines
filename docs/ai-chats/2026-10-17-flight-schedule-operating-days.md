@@ -48,3 +48,25 @@ Previous session: [2026-10-16](2026-10-16-editor-indentation.md).
 - User requested committing and pushing the accumulated schedule, operating-day, query-folder, and documentation changes on `main`.
 - Reviewed the pending tracked/untracked scope and confirmed `git diff --check` passed. The passing targeted tests and formatting checks above remain the validation baseline.
 - Commit/push outcome is reported in the final response after this record is saved.
+
+## SeatMap owned by AircraftConfiguration
+
+### Decisions and changes
+- Earlier schedule/query work was committed and pushed as `dda9cff`; the worktree was clean before this implementation.
+- User chose to extract passenger seat maps as child entities of the configuration aggregate, without independent lifecycle/versioning. Cargo layouts remain deferred.
+- Added [SeatMap](../../backend/flight-service/Domain/Entities/SeatMap.cs) as `Entity<int>`, created automatically by `AircraftConfiguration.Create`. It has no public factory, assignable owner, or separate repository.
+- Moved the read-only row collection and row-add ownership/duplicate guards from configuration to the map. `SeatMapRow.Create` now requires a map and stores `SeatMapId`.
+- Updated EF mapping to a required one-to-one configuration/map relationship with a unique owner FK; map deletion cascades to rows/positions. Aircraft still restrict configuration deletion and shared cabin/type reference data is retained.
+- Added the `SeatMaps` context set and mapping; updated graph loading, collection tests, persistence tests, and PostgreSQL schema-generation assertions.
+- Updated [flight documentation](../architecture/services/flight-service.md) with the new ownership/API and schema transition requirements.
+
+### Validation
+- 5 collection/ownership unit tests passed.
+- Final targeted persistence/infrastructure run: 11 integration cases passed, covering generated keys, round trips, editing a loaded map, duplicate-owner rejection, cascade deletion, retained reference data, and PostgreSQL schema generation.
+- Affected service/test projects built; the existing unread aircraft-controller mediator warning remains.
+- Full solution whitespace/style verification and `git diff --check` passed.
+
+### Deferred and deployment notes
+- No migration framework/files exist in this repository yet. Existing databases require a reviewed data migration: create one map for each configuration, backfill row map IDs, then replace the old configuration FK/column. No live PostgreSQL database migration was performed.
+- Configuration remains the aggregate boundary. Passenger configuration behavior is preserved; optional maps for cargo-only configurations and standalone map workflows were not introduced.
+- User subsequently requested committing and pushing the SeatMap extraction. Reviewed the pending scope and confirmed `git diff --check` passed; the 16 passing targeted tests and formatting checks above remain the validation baseline. Commit/push outcome is reported in the final response.

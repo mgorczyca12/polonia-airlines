@@ -16,6 +16,7 @@ public class FlightServiceDbContext : DbContext
     public DbSet<Schedule> Schedules { get; set; }
     public DbSet<FlightSegment> FlightSegments { get; set; }
     public DbSet<SeatMapCabin> SeatMapCabins { get; set; }
+    public DbSet<SeatMap> SeatMaps { get; set; }
     public DbSet<SeatMapPosition> SeatMapPositions { get; set; }
     public DbSet<SeatMapRow> SeatMapRows { get; set; }
 

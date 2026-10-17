@@ -17,7 +17,7 @@ public class FlightServiceDbContextTests
             .Where(entity => !entity.IsOwned() && entity.ClrType.Namespace == typeof(Flight).Namespace)
             .ToList();
 
-        Assert.Equal(11, entities.Count);
+        Assert.Equal(12, entities.Count);
         Assert.Equal("FlightSchedules", context.Model.FindEntityType(typeof(Schedule))!.GetTableName());
         Assert.All(entities, entity =>
         {
@@ -29,8 +29,13 @@ public class FlightServiceDbContextTests
         });
         AssertFieldAccess<Flight>(context, nameof(Flight.FlightSegments), "flightSegments");
         AssertFieldAccess<Airport>(context, nameof(Airport.Gates), "gates");
-        AssertFieldAccess<AircraftConfiguration>(context, nameof(AircraftConfiguration.SeatMapRows), "seatMapRows");
+        AssertFieldAccess<SeatMap>(context, nameof(SeatMap.SeatMapRows), "seatMapRows");
         AssertFieldAccess<SeatMapRow>(context, nameof(SeatMapRow.SeatMapPositions), "seatMapPositions");
+        var seatMapOwnership = context.Model.FindEntityType(typeof(SeatMap))!
+            .GetForeignKeys().Single(key => key.PrincipalEntityType.ClrType == typeof(AircraftConfiguration));
+        Assert.True(seatMapOwnership.IsUnique);
+        Assert.True(seatMapOwnership.IsRequired);
+        Assert.Equal(DeleteBehavior.Cascade, seatMapOwnership.DeleteBehavior);
     }
 
     [Fact]
@@ -89,30 +94,37 @@ public class FlightServiceDbContextTests
         await context.Database.EnsureCreatedAsync();
         var type = AircraftType.Create("B788", "787-8", "Boeing");
         var layout = AircraftConfiguration.Create(type, "STD", "Standard", 1);
-        var row = SeatMapRow.Create(layout, SeatMapCabin.Create("Economy", "Y"),
+        var row = SeatMapRow.Create(layout.SeatMap, SeatMapCabin.Create("Economy", "Y"),
             SeatMapRowType.Seats | SeatMapRowType.ExitRow);
         row.AddPosition(SeatMapPosition.Create("A", 0, true));
         row.AddPosition(SeatMapPosition.Create("B", 0, false));
-        layout.AddSeatMapRow(row);
+        layout.SeatMap.AddRow(row);
         var aircraft = Aircraft.Create("SP-LRA", "48AE00", type, layout);
         aircraft.Decommission();
         context.Aircrafts.Add(aircraft);
         await context.SaveChangesAsync();
 
         Assert.True(row.Id > 0);
-        Assert.Equal(layout.Id, row.AircraftConfigurationId);
+        Assert.True(layout.SeatMap.Id > 0);
+        Assert.Equal(layout.Id, layout.SeatMap.AircraftConfigurationId);
+        Assert.Equal(layout.SeatMap.Id, row.SeatMapId);
         Assert.All(row.SeatMapPositions, position => Assert.Equal(row.Id, position.SeatMapRowId));
         context.ChangeTracker.Clear();
 
         var loaded = await context.Aircrafts.Include(value => value.AircraftType)
-            .Include(value => value.AircraftConfiguration).ThenInclude(value => value.SeatMapRows)
+            .Include(value => value.AircraftConfiguration).ThenInclude(value => value.SeatMap)
+                .ThenInclude(value => value.SeatMapRows)
                 .ThenInclude(value => value.SeatMapPositions)
-            .Include(value => value.AircraftConfiguration).ThenInclude(value => value.SeatMapRows)
+            .Include(value => value.AircraftConfiguration).ThenInclude(value => value.SeatMap)
+                .ThenInclude(value => value.SeatMapRows)
                 .ThenInclude(value => value.Cabin).SingleAsync();
         Assert.Same(AircraftOperationalState.Decommissioned, loaded.OperationalState);
         Assert.Throws<InvalidOperationException>(loaded.Activate);
         Assert.Throws<InvalidOperationException>(loaded.Deactivate);
-        var loadedRow = Assert.Single(loaded.AircraftConfiguration.SeatMapRows);
+        var loadedMap = loaded.AircraftConfiguration.SeatMap;
+        Assert.Same(loaded.AircraftConfiguration, loadedMap.AircraftConfiguration);
+        var loadedRow = Assert.Single(loadedMap.SeatMapRows);
+        Assert.Same(loadedMap, loadedRow.SeatMap);
         Assert.Equal(SeatMapRowType.Seats | SeatMapRowType.ExitRow, loadedRow.Type);
         Assert.Equal("Economy", loadedRow.Cabin.Name);
         Assert.Equal(2, loadedRow.SeatMapPositions.Count);
@@ -123,6 +135,92 @@ public class FlightServiceDbContextTests
 
         Assert.Same(AircraftOperationalState.Maintenance, (await context.Aircrafts.SingleAsync()).OperationalState);
         Assert.All(await context.SeatMapPositions.ToListAsync(), position => Assert.True(position.IsSeat));
+    }
+
+    [Fact]
+    public async Task SaveChangesAsync_ExistingConfiguration_AddsRowsThroughItsLoadedSeatMap()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var context = CreateContext(connection);
+        await context.Database.EnsureCreatedAsync();
+        var configuration = AircraftConfiguration.Create(
+            AircraftType.Create("B788", "787-8", "Boeing"), "STD", "Standard", 1);
+        context.AircraftConfigurations.Add(configuration);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var loaded = await context.AircraftConfigurations
+            .Include(value => value.SeatMap).ThenInclude(value => value.SeatMapRows)
+            .SingleAsync();
+        Assert.Empty(loaded.SeatMap.SeatMapRows);
+        var row = SeatMapRow.Create(loaded.SeatMap, SeatMapCabin.Create("Economy", "Y"), SeatMapRowType.Seats);
+        row.AddPosition(SeatMapPosition.Create("A", 0, true));
+        loaded.SeatMap.AddRow(row);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        var reloaded = await context.AircraftConfigurations
+            .Include(value => value.SeatMap).ThenInclude(value => value.SeatMapRows)
+                .ThenInclude(value => value.SeatMapPositions)
+            .SingleAsync();
+        var savedRow = Assert.Single(reloaded.SeatMap.SeatMapRows);
+        Assert.Equal(reloaded.SeatMap.Id, savedRow.SeatMapId);
+        Assert.Equal("A", Assert.Single(savedRow.SeatMapPositions).Column);
+    }
+
+    [Fact]
+    public async Task ExecuteSqlInterpolatedAsync_SecondSeatMapForConfiguration_RejectsDuplicateOwnership()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var context = CreateContext(connection);
+        await context.Database.EnsureCreatedAsync();
+        var configuration = AircraftConfiguration.Create(
+            AircraftType.Create("B788", "787-8", "Boeing"), "STD", "Standard", 1);
+        context.AircraftConfigurations.Add(configuration);
+        await context.SaveChangesAsync();
+
+        await Assert.ThrowsAsync<SqliteException>(() =>
+            context.Database.ExecuteSqlInterpolatedAsync(
+                $"INSERT INTO SeatMaps (AircraftConfigurationId) VALUES ({configuration.Id})"));
+
+        Assert.Equal(1, await context.SeatMaps.CountAsync());
+    }
+
+    [Fact]
+    public async Task ExecuteSqlRawAsync_ConfigurationDeletion_CascadesSeatMapGraphButPreservesReferenceData()
+    {
+        await using var connection = new SqliteConnection("Data Source=:memory:");
+        await connection.OpenAsync();
+        await using var context = CreateContext(connection);
+        await context.Database.EnsureCreatedAsync();
+        var configuration = AircraftConfiguration.Create(
+            AircraftType.Create("B788", "787-8", "Boeing"), "STD", "Standard", 1);
+        var row = SeatMapRow.Create(configuration.SeatMap, SeatMapCabin.Create("Economy", "Y"), SeatMapRowType.Seats);
+        row.AddPosition(SeatMapPosition.Create("A", 0, true));
+        configuration.SeatMap.AddRow(row);
+        var aircraft = Aircraft.Create("SP-LRA", "48AE00", configuration.AircraftType, configuration);
+        context.Aircrafts.Add(aircraft);
+        await context.SaveChangesAsync();
+        context.ChangeTracker.Clear();
+
+        await Assert.ThrowsAsync<SqliteException>(() =>
+            context.Database.ExecuteSqlRawAsync("DELETE FROM AircraftConfigurations"));
+        Assert.Equal(1, await context.SeatMaps.CountAsync());
+        Assert.Equal(1, await context.SeatMapRows.CountAsync());
+        Assert.Equal(1, await context.SeatMapPositions.CountAsync());
+
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM Aircrafts");
+        Assert.Equal(1, await context.SeatMaps.CountAsync());
+        await context.Database.ExecuteSqlRawAsync("DELETE FROM AircraftConfigurations");
+
+        Assert.Equal(0, await context.AircraftConfigurations.CountAsync());
+        Assert.Equal(0, await context.SeatMaps.CountAsync());
+        Assert.Equal(0, await context.SeatMapRows.CountAsync());
+        Assert.Equal(0, await context.SeatMapPositions.CountAsync());
+        Assert.Equal(1, await context.AircraftTypes.CountAsync());
+        Assert.Equal(1, await context.SeatMapCabins.CountAsync());
     }
 
     [Fact]
