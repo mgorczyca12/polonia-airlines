@@ -69,3 +69,11 @@
 - User requested committing and pushing the pending session changes on `main`, including their flight command and repository edits alongside the shared persistence, messaging, documentation, and indentation changes.
 - Reviewed the pending scope and configuration; `git diff --check` passed. The prior 70 passing integration tests and known formatting/deployment limitations above remain the validation baseline.
 - Commit and push are to be attempted after saving this record; their outcome is reported in the final response.
+
+## Backend CI formatting repair
+- Prior session changes were committed as `1c45f59` and pushed to `origin/main`; remote HEAD was verified and the worktree was clean. GitHub reported bypassing PR/check requirements for that direct push.
+- Inspected failed CI run `38991705593` through GitHub tools because `gh` was unauthenticated.
+- Confirmed the backend whitespace step failed solely on missing final newlines in `CreateFlightCommand.cs`, `CreateFlightCommandHandler.cs`, and `CreateFlightCommandValidator.cs`. This was not an indentation-width or workflow configuration issue.
+- Applied the existing whitespace formatter to those three files. No logic or formatting policy changes.
+- Full solution whitespace verification, selected solution style verification, and `git diff --check` all passed after the repair.
+- Build/tests were not rerun for newline-only changes. User subsequently requested committing and pushing the repair; the commit includes only the three newline fixes and this summary. Remote outcome is reported in the final response.
