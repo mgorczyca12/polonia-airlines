@@ -1,13 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Storage;
 using Shared.Application.Abstractions;
+using Shared.Domain.Events;
 
 namespace Shared.Infrastructure.Persistence;
 
-public sealed class EfUnitOfWork<TContext>(TContext dbContext) : IUnitOfWork
+public sealed class EfUnitOfWork<TContext>(
+    TContext dbContext,
+    IDomainEventDispatcher domainEventDispatcher) : IUnitOfWork
     where TContext : DbContext
 {
     private IDbContextTransaction? transaction;
+    private bool saveInProgress;
+    private bool saveFailed;
 
     public async Task BeginTransactionAsync(CancellationToken cancellationToken)
     {
@@ -50,6 +55,53 @@ public sealed class EfUnitOfWork<TContext>(TContext dbContext) : IUnitOfWork
 
     public async Task<int> SaveChangesAsync(CancellationToken cancellationToken)
     {
-        return await dbContext.SaveChangesAsync(cancellationToken);
+        if (saveInProgress || saveFailed)
+        {
+            throw new InvalidOperationException(
+                "Saving cannot be nested or repeated after a failed save. Discard a failed command's scope.");
+        }
+
+        saveInProgress = true;
+        var completed = false;
+        try
+        {
+            await DispatchDomainEventsAsync(cancellationToken);
+            var affectedRows = await dbContext.SaveChangesAsync(cancellationToken);
+            completed = true;
+            return affectedRows;
+        }
+        finally
+        {
+            saveInProgress = false;
+            saveFailed = !completed;
+        }
+    }
+
+    private async Task DispatchDomainEventsAsync(CancellationToken cancellationToken)
+    {
+        while (true)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var aggregates = dbContext.ChangeTracker.Entries<IHasDomainEvents>()
+                .Select(entry => entry.Entity)
+                .Where(entity => entity.DomainEvents.Count > 0)
+                .ToArray();
+
+            if (aggregates.Length == 0)
+            {
+                break;
+            }
+
+            var events = aggregates.SelectMany(entity => entity.DomainEvents).ToArray();
+            foreach (var aggregate in aggregates)
+            {
+                aggregate.ClearDomainEvents();
+            }
+
+            foreach (var domainEvent in events)
+            {
+                await domainEventDispatcher.DispatchAsync(domainEvent, cancellationToken);
+            }
+        }
     }
 }

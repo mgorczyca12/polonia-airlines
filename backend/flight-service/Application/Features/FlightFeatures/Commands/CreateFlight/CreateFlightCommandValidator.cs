@@ -7,8 +7,8 @@ public sealed class CreateFlightCommandValidator : AbstractValidator<CreateFligh
     public CreateFlightCommandValidator()
     {
         RuleFor(x => x.FlightNumber).NotEmpty();
-        RuleFor(x => x.Departure).NotEmpty();
-        RuleFor(x => x.Destination).NotEmpty();
+        RuleFor(x => x.DepartureAirport).NotEmpty();
+        RuleFor(x => x.ArrivalAirport).NotEmpty();
         RuleFor(x => x.DepartureTime).LessThan(x => x.ArrivalTime);
         RuleFor(x => x.ArrivalTime).GreaterThan(x => x.DepartureTime);
     }

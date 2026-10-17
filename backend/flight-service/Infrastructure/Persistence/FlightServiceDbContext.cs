@@ -1,6 +1,7 @@
 using flight_service.Domain.Entities;
 using flight_service.Infrastructure.Persistence.Configuration;
 using Microsoft.EntityFrameworkCore;
+using MassTransit;
 
 namespace flight_service.Infrastructure.Persistence;
 
@@ -26,6 +27,9 @@ public class FlightServiceDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+        modelBuilder.AddInboxStateEntity();
+        modelBuilder.AddOutboxMessageEntity();
+        modelBuilder.AddOutboxStateEntity();
         modelBuilder.ApplyConfigurationsFromAssembly(
             typeof(FlightConfiguration).Assembly,
             type => type.Namespace == typeof(FlightConfiguration).Namespace);

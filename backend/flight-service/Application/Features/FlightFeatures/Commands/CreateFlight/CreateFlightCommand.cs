@@ -5,8 +5,8 @@ namespace flight_service.Application.Features.FlightFeatures.Commands.CreateFlig
 
 public sealed record CreateFlightCommand(
     string FlightNumber,
-    string Departure,
-    string Destination,
+    string DepartureAirport,
+    string ArrivalAirport,
     DateTime DepartureTime,
     DateTime ArrivalTime)
-    : ICommand<CreateFlightCommand, Result>;
+    : IRetryableCommand<CreateFlightCommand, Result>;

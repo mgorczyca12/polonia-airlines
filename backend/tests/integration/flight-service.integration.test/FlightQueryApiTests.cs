@@ -13,9 +13,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Hosting;
 
 namespace flight_service.integration.test;
 
@@ -199,10 +202,23 @@ public class FlightQueryApiTests
     }
 
     [Fact]
-    public async Task GetFlight_NoProductionDatabaseProvider_ReturnsSafeServerError()
+    public async Task GetFlight_NoDatabaseConnectionString_ReturnsSafeServerError()
     {
         using var factory = new WebApplicationFactory<Program>()
-            .WithWebHostBuilder(builder => builder.UseEnvironment("Production"));
+            .WithWebHostBuilder(builder =>
+            {
+                builder.UseEnvironment("Production");
+                builder.ConfigureAppConfiguration((_, configuration) =>
+                {
+                    configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                    {
+                        ["ConnectionStrings:FlightDatabase"] = null,
+                        ["RabbitMq:User"] = "unused",
+                        ["RabbitMq:Pass"] = "unused"
+                    });
+                });
+                builder.ConfigureServices(DisableMessagingHostedServices);
+            });
         using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
         {
             BaseAddress = new Uri("https://localhost")
@@ -212,6 +228,18 @@ public class FlightQueryApiTests
         var body = await response.Content.ReadAsStringAsync();
         Assert.DoesNotContain("provider", body, StringComparison.OrdinalIgnoreCase);
         Assert.DoesNotContain("InvalidOperationException", body);
+    }
+
+    private static void DisableMessagingHostedServices(IServiceCollection services)
+    {
+        var messagingServices = services
+            .Where(descriptor => descriptor.ServiceType == typeof(IHostedService)
+                && descriptor.ImplementationType?.Namespace?.StartsWith("MassTransit", StringComparison.Ordinal) == true)
+            .ToArray();
+        foreach (var descriptor in messagingServices)
+        {
+            services.Remove(descriptor);
+        }
     }
 
     [Fact]
@@ -248,10 +276,20 @@ public class FlightQueryApiTests
         protected override void ConfigureWebHost(IWebHostBuilder builder)
         {
             builder.UseEnvironment("Development");
+            builder.ConfigureAppConfiguration((_, configuration) =>
+            {
+                configuration.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["RabbitMq:User"] = "unused",
+                    ["RabbitMq:Pass"] = "unused"
+                });
+            });
             builder.ConfigureServices(services =>
             {
+                DisableMessagingHostedServices(services);
                 services.RemoveAll<FlightServiceDbContext>();
                 services.RemoveAll<DbContextOptions<FlightServiceDbContext>>();
+                services.RemoveAll<IDbContextOptionsConfiguration<FlightServiceDbContext>>();
                 services.AddDbContext<FlightServiceDbContext>(options => options.UseSqlite(connection));
                 services.AddSingleton<ILoggerProvider>(Logs);
             });

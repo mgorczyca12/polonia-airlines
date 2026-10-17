@@ -13,7 +13,9 @@ public class FlightServiceDbContextTests
     public void OnModelCreating_AllDomainEntities_MapsKeysAndFieldAccessWithoutShadowForeignKeysOrDomainEvents()
     {
         using var context = CreateContext(new SqliteConnection("Data Source=:memory:"));
-        var entities = context.Model.GetEntityTypes().Where(entity => !entity.IsOwned()).ToList();
+        var entities = context.Model.GetEntityTypes()
+            .Where(entity => !entity.IsOwned() && entity.ClrType.Namespace == typeof(Flight).Namespace)
+            .ToList();
 
         Assert.Equal(11, entities.Count);
         Assert.All(entities, entity =>

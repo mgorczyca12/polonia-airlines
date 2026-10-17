@@ -7,6 +7,28 @@
 - .NET SDK 10 for backend projects.
 - CI uses Node.js 26 and pnpm 12 for the web application.
 - Restore dependencies before using `--no-restore` commands.
+- For flight startup: provision PostgreSQL and RabbitMQ, and create the database
+  schema including `InboxState`, `OutboxMessage`, and `OutboxState`.
+  No migrations are checked in yet. Generate and review an initial migration
+  with EF Core 10 tooling and the matching `Microsoft.EntityFrameworkCore.Design`
+  development package before deploying; do not treat the table mappings as a
+  deployed schema. The host does not automatically migrate or create databases.
+
+Configure the following through environment variables, user secrets, or your
+deployment secret provider (do not commit credentials):
+
+| Setting | Purpose |
+| --- | --- |
+| `ConnectionStrings__FlightDatabase` | PostgreSQL connection string |
+| `RabbitMq__Host` | Broker hostname; defaults to `localhost` |
+| `RabbitMq__Port` | Optional AMQP port; defaults to `5672` |
+| `RabbitMq__VHost` | Virtual host; defaults to `/` |
+| `RabbitMq__User` | Broker user; checked-in local default is `polonia` |
+| `RabbitMq__Pass` | Required broker password; no checked-in default |
+| `RabbitMq__UseSsl` | Enable TLS when required by the broker |
+
+RabbitMQ credentials are validated at startup. Outbox delivery runs as a hosted
+service and needs the configured database schema and broker to be available.
 
 From the repository root:
 
@@ -17,8 +39,8 @@ dotnet run --project backend\flight-service\flight-service.csproj
 
 Other hosts can be run with their respective booking/seating project paths.
 Use launch-profile/console URLs; no unified gateway is configured.
-Flight data reads require database-provider configuration that normal startup
-does not yet provide. Booking/seating startup exposes weather scaffolding only.
+Flight data reads use the configured PostgreSQL database.
+Booking/seating startup exposes weather scaffolding only.
 
 For the web application:
 
@@ -43,8 +65,11 @@ dotnet build polonia-airlines.slnx --no-restore -c Release
 dotnet test polonia-airlines.slnx --no-build -c Release
 ```
 
-The tests use xUnit/VSTest. Flight integration tests configure in-memory SQLite;
-they are not proof of a configured production database. Booking and seating
+The tests use xUnit/VSTest. Flight API integration tests configure in-memory SQLite
+and disable only MassTransit hosted services to avoid external dependencies.
+Shared outbox tests persist actual EF outbox records using an unstarted in-memory
+bus and verify commit/rollback behavior; neither suite verifies live
+PostgreSQL-to-RabbitMQ delivery. Booking and seating
 integration projects currently contain no test source files.
 
 Backend test methods use `MethodName_StateUnderTest_ExpectedBehavior`, for example

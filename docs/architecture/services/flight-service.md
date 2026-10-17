@@ -51,8 +51,8 @@ The single-flight endpoint returns one DTO of the same shape.
 ## Query sequence
 
 Queries call [IFlightQueries](../../../backend/flight-service/Application/Features/FlightFeatures/Queries/IFlightQueries.cs)
-directly, not mediator handlers. This sequence assumes a provider is supplied,
-as it is by the integration-test fixture.
+directly, not mediator handlers. Normal startup selects PostgreSQL;
+the integration-test fixture replaces it with SQLite.
 
 ```mermaid
 sequenceDiagram
@@ -90,10 +90,12 @@ then ID before pagination. EF projections avoid serializing domain entities.
 Single reads discover absence during the read and return `FlightNotFoundError`.
 
 [FlightServiceDbContext](../../../backend/flight-service/Infrastructure/Persistence/FlightServiceDbContext.cs)
-loads mappings from its persistence configuration namespace. The normal host
-does not choose a database provider, connection string, migrations, or seed data.
-Consequently its data-backed endpoints need further configuration to work outside
-the tests; an unconfigured database read produces a server error, not sample data.
+loads mappings from its persistence configuration namespace and maps MassTransit's
+inbox/outbox tables. Normal startup selects PostgreSQL using
+`ConnectionStrings:FlightDatabase` and registers RabbitMQ with an EF bus outbox.
+See [development setup](../development.md#prerequisites-and-local-startup) for
+required settings and schema prerequisites. No migrations or seed data are supplied.
+An unconfigured database read produces a safe server error, not sample data.
 
 ## Commands, events and verification
 
@@ -104,4 +106,7 @@ implemented command/query path.
 
 Tests cover input validation, aggregate collection ownership, EF relationships,
 query ordering and UTC date boundaries, result mapping, safe exception responses
-and OpenAPI response metadata. See [development checks](../development.md#verification).
+and OpenAPI response metadata. Infrastructure tests verify PostgreSQL model/schema
+generation without opening a connection. Shared tests exercise domain-event
+dispatch and outbox persistence/rollback without a live broker.
+See [development checks](../development.md#verification).

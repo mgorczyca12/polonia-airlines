@@ -15,8 +15,8 @@ It describes checked-in implementation, not a deployed production environment.
 ## Read this first
 
 - The web application uses bundled JSON, not the backend APIs.
-- Flight queries have API and EF Core implementations, but the normal host does
-  not configure a database provider. Integration tests supply SQLite.
+- Flight configures PostgreSQL and a RabbitMQ EF bus outbox. External connection
+  settings, credentials, and schema provisioning are required; integration tests use SQLite.
 - Booking and seating have domain behavior but no wired business HTTP endpoints.
 - No implemented cross-service messaging or request flow currently connects these services.
 

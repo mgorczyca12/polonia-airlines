@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Shared.Application.Abstractions;
 using Shared.Application.Commands;
+using Shared.Application.Events;
 using Shared.Application.DependencyInjection;
 using Shared.Infrastructure.DependencyInjection;
 using Shared.Infrastructure.Persistence;
@@ -144,7 +145,7 @@ public sealed class CommandTransactionTests
         await using var context = new TestDbContext(
             new DbContextOptionsBuilder<TestDbContext>().UseSqlite(connection).Options);
         await using var transaction = await context.Database.BeginTransactionAsync();
-        var unitOfWork = new EfUnitOfWork<TestDbContext>(context);
+        var unitOfWork = new EfUnitOfWork<TestDbContext>(context, new DomainEventDispatcher([]));
 
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             unitOfWork.BeginTransactionAsync(CancellationToken.None));
