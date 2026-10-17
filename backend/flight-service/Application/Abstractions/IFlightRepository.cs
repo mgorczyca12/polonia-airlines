@@ -5,4 +5,5 @@ namespace flight_service.Application.Abstractions;
 
 public interface IFlightRepository : IRepository<Flight, int>
 {
+    Task<Flight?> GetByFlightNumberAsync(string flightNumber, bool includeSchedules, CancellationToken cancellationToken);
 }

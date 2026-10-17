@@ -13,7 +13,7 @@ public class FlightServiceDbContext : DbContext
     public DbSet<AircraftType> AircraftTypes { get; set; }
     public DbSet<Airport> Airports { get; set; }
     public DbSet<AirportGate> AirportGates { get; set; }
-    public DbSet<FlightSchedule> FlightSchedules { get; set; }
+    public DbSet<Schedule> Schedules { get; set; }
     public DbSet<FlightSegment> FlightSegments { get; set; }
     public DbSet<SeatMapCabin> SeatMapCabins { get; set; }
     public DbSet<SeatMapPosition> SeatMapPositions { get; set; }

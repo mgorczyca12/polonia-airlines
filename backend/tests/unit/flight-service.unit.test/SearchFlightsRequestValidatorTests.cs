@@ -1,5 +1,5 @@
 using flight_service.Application.Contracts.Requests;
-using flight_service.Application.Features.FlightFeatures.Queries;
+using flight_service.Application.Features.FlightFeatures.Queries.Validators;
 
 namespace flight_service.unit.test;
 

@@ -1,67 +1,80 @@
-using System.Collections.Generic;
-using System.Linq;
-
 namespace flight_service.Domain.ValueObjects;
 
 public sealed class OperatingDays : IEquatable<OperatingDays>
 {
-    public static readonly OperatingDays None = new("None", 0);
-    public static readonly OperatingDays Monday = new("Monday", 1 << 0);
-    public static readonly OperatingDays Tuesday = new("Tuesday", 1 << 1);
-    public static readonly OperatingDays Wednesday = new("Wednesday", 1 << 2);
-    public static readonly OperatingDays Thursday = new("Thursday", 1 << 3);
-    public static readonly OperatingDays Friday = new("Friday", 1 << 4);
-    public static readonly OperatingDays Saturday = new("Saturday", 1 << 5);
-    public static readonly OperatingDays Sunday = new("Sunday", 1 << 6);
+    public static readonly OperatingDays None = new(0);
 
-    private static readonly OperatingDays[] All =
+    private static readonly DayOfWeek[] All =
     {
-        Monday,
-        Tuesday,
-        Wednesday,
-        Thursday,
-        Friday,
-        Saturday,
-        Sunday
+        DayOfWeek.Monday,
+        DayOfWeek.Tuesday,
+        DayOfWeek.Wednesday,
+        DayOfWeek.Thursday,
+        DayOfWeek.Friday,
+        DayOfWeek.Saturday,
+        DayOfWeek.Sunday
     };
 
-    private OperatingDays(string name, int value)
+    private OperatingDays(int value)
     {
-        Name = name;
         Value = value;
     }
 
-    public string Name { get; }
+    public string Name => Value == 0 ? "None" : string.Join(", ", All.Where(HasDay));
     public int Value { get; }
 
-    public bool HasDay(OperatingDays day)
+    public bool HasDay(DayOfWeek day)
     {
-        return (Value & day.Value) == day.Value;
+        return (Value & GetMask(day)) != 0;
     }
 
-    public static OperatingDays operator |(OperatingDays left, OperatingDays right)
+    public static OperatingDays FromDays(IEnumerable<DayOfWeek> days)
     {
-        var value = left.Value | right.Value;
-        return new OperatingDays(string.Join(", ", GetNames(value)), value);
+        ArgumentNullException.ThrowIfNull(days);
+
+        var value = 0;
+        foreach (var day in days)
+        {
+            value |= GetMask(day);
+        }
+
+        if (value == 0)
+        {
+            throw new ArgumentException("At least one operating day is required.", nameof(days));
+        }
+
+        return new OperatingDays(value);
     }
 
-    public static bool operator ==(OperatingDays? left, OperatingDays? right) =>
-        ReferenceEquals(left, right) || left is not null && left.Equals(right);
+    public static bool operator ==(OperatingDays? left, OperatingDays? right)
+    {
+        return ReferenceEquals(left, right) || left is not null && left.Equals(right);
+    }
 
-    public static bool operator !=(OperatingDays? left, OperatingDays? right) => !(left == right);
+    public static bool operator !=(OperatingDays? left, OperatingDays? right)
+    {
+        return !(left == right);
+    }
 
     public static OperatingDays FromValue(int value)
     {
-        return value == 0
-            ? None
-            : new OperatingDays(string.Join(", ", GetNames(value)), value);
+        if (value < 0 || value > 127)
+        {
+            throw new ArgumentOutOfRangeException(nameof(value), value, "Operating days must use only the seven day bits.");
+        }
+
+        return value == 0 ? None : new OperatingDays(value);
     }
 
-    private static IEnumerable<string> GetNames(int value)
+    private static int GetMask(DayOfWeek day)
     {
-        return All
-            .Where(day => (value & day.Value) == day.Value)
-            .Select(day => day.Name);
+        if (!Enum.IsDefined(day))
+        {
+            throw new ArgumentOutOfRangeException(nameof(day), day, "A valid day of the week is required.");
+        }
+
+        // Preserve the persisted layout: Monday is bit 0 and Sunday is bit 6.
+        return 1 << (((int)day + 6) % 7);
     }
 
     public bool Equals(OperatingDays? other)

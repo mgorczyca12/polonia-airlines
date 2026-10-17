@@ -84,6 +84,20 @@ The domain includes flights and ordered segments, schedules with operating days,
 airports and gates, aircraft and types, and aircraft configurations with cabin,
 row and position definitions. Aggregate methods control child collection changes.
 
+Schedule operating days use the `OperatingDays` value object with
+`FromDays(IEnumerable<DayOfWeek>)` and `HasDay(DayOfWeek)`. Construction requires
+at least one valid day; duplicates are collapsed. Persistence retains the existing
+integer bitmask (Monday = 1 through Sunday = 64), not `DayOfWeek` enum numbers.
+`FromValue` supports valid stored masks including the `None` sentinel; schedules
+reject `None`. The schedule command accepts a typed day collection and validates
+nonempty input and defined enum values.
+
+The [Schedule](../../../backend/flight-service/Domain/Entities/Schedule.cs) aggregate
+is exposed through `FlightServiceDbContext.Schedules`. Its EF mapping retains
+the `FlightSchedules` table name for storage compatibility.
+The create command, handler, and validator live under
+[ScheduleFeatures/Commands/CreateSchedule](../../../backend/flight-service/Application/Features/ScheduleFeatures/Commands/CreateSchedule/).
+
 [FlightQueries](../../../backend/flight-service/Infrastructure/Persistence/Queries/FlightQueries.cs)
 filters departure times using UTC day boundaries and orders by departure time
 then ID before pagination. EF projections avoid serializing domain entities.

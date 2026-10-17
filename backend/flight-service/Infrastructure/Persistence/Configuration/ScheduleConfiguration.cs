@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace flight_service.Infrastructure.Persistence.Configuration;
 
-public sealed class FlightScheduleConfiguration : IEntityTypeConfiguration<FlightSchedule>
+public sealed class ScheduleConfiguration : IEntityTypeConfiguration<Schedule>
 {
-    public void Configure(EntityTypeBuilder<FlightSchedule> builder)
+    public void Configure(EntityTypeBuilder<Schedule> builder)
     {
         builder.ToTable("FlightSchedules");
         builder.HasKey(schedule => schedule.Id);

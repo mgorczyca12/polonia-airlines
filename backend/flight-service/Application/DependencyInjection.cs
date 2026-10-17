@@ -1,5 +1,5 @@
 using flight_service.Application.Contracts.Requests;
-using flight_service.Application.Features.FlightFeatures.Queries;
+using flight_service.Application.Features.FlightFeatures.Queries.Validators;
 using FluentValidation;
 
 namespace flight_service.Application;

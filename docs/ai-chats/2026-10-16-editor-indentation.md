@@ -77,3 +77,6 @@
 - Applied the existing whitespace formatter to those three files. No logic or formatting policy changes.
 - Full solution whitespace verification, selected solution style verification, and `git diff --check` all passed after the repair.
 - Build/tests were not rerun for newline-only changes. User subsequently requested committing and pushing the repair; the commit includes only the three newline fixes and this summary. Remote outcome is reported in the final response.
+
+Uncommitted OperatingDays and schedule-command work was carried forward to the
+[2026-10-17 session summary](2026-10-17-flight-schedule-operating-days.md).

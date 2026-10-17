@@ -3,7 +3,7 @@ namespace flight_service.Domain.Entities;
 using flight_service.Domain.ValueObjects;
 using Shared.Domain.Entities;
 
-public class FlightSchedule : AggregateRoot<int>
+public class Schedule : AggregateRoot<int>
 {
     public int FlightId { get; private set; }
     public Flight Flight { get; private set; } = null!;
@@ -22,11 +22,11 @@ public class FlightSchedule : AggregateRoot<int>
     public OperatingDays OperatingDays { get; private set; } = OperatingDays.None;
     public bool IsActive { get; private set; }
 
-    private FlightSchedule()
+    private Schedule()
     {
     }
 
-    private FlightSchedule(
+    private Schedule(
         Flight flight,
         Airport departureAirport,
         Airport arrivalAirport,
@@ -50,7 +50,7 @@ public class FlightSchedule : AggregateRoot<int>
         IsActive = true;
     }
 
-    public static FlightSchedule Create(
+    public static Schedule Create(
         Flight flight,
         Airport departureAirport,
         Airport arrivalAirport,
@@ -63,6 +63,7 @@ public class FlightSchedule : AggregateRoot<int>
         ArgumentNullException.ThrowIfNull(flight);
         ArgumentNullException.ThrowIfNull(departureAirport);
         ArgumentNullException.ThrowIfNull(arrivalAirport);
+        ArgumentNullException.ThrowIfNull(operatingDays);
 
         if (scheduledArrivalTime <= scheduledDepartureTime)
         {
@@ -83,7 +84,7 @@ public class FlightSchedule : AggregateRoot<int>
             throw new ArgumentException("At least one operating day is required.", nameof(operatingDays));
         }
 
-        return new FlightSchedule(
+        return new Schedule(
             flight,
             departureAirport,
             arrivalAirport,

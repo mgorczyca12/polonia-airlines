@@ -1,7 +1,7 @@
 using flight_service.Application.Contracts.Requests;
 using FluentValidation;
 
-namespace flight_service.Application.Features.FlightFeatures.Queries;
+namespace flight_service.Application.Features.FlightFeatures.Queries.Validators;
 
 public sealed class SearchFlightsRequestValidator : AbstractValidator<SearchFlightsRequest>
 {

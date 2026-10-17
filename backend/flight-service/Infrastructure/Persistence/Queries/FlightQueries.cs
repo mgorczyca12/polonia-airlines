@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 using flight_service.Application.Contracts.Requests;
 using flight_service.Application.Contracts.Responses;
 using flight_service.Application.Features.FlightFeatures.Queries;
+using flight_service.Application.Features.FlightFeatures.Queries.Errors;
 using flight_service.Domain.Entities;
 using FluentResults;
 using Microsoft.EntityFrameworkCore;

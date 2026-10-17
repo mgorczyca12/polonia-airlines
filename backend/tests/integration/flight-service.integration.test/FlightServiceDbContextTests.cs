@@ -18,6 +18,7 @@ public class FlightServiceDbContextTests
             .ToList();
 
         Assert.Equal(11, entities.Count);
+        Assert.Equal("FlightSchedules", context.Model.FindEntityType(typeof(Schedule))!.GetTableName());
         Assert.All(entities, entity =>
         {
             Assert.NotNull(entity.FindPrimaryKey());
@@ -45,10 +46,10 @@ public class FlightServiceDbContextTests
         var flight = Flight.Create("PA123", new DateTime(2026, 10, 13, 10, 0, 0),
             new DateTime(2026, 10, 13, 12, 0, 0), departure, arrival);
         flight.AddSegment(FlightSegment.Create(1, departure, arrival));
-        var schedule = FlightSchedule.Create(flight, departure, arrival,
+        var schedule = Schedule.Create(flight, departure, arrival,
             new TimeOnly(10, 0), new TimeOnly(12, 0), new DateOnly(2026, 10, 13),
-            new DateOnly(2026, 12, 31), OperatingDays.Monday | OperatingDays.Friday);
-        context.FlightSchedules.Add(schedule);
+            new DateOnly(2026, 12, 31), OperatingDays.FromDays([DayOfWeek.Monday, DayOfWeek.Friday]));
+        context.Schedules.Add(schedule);
         await context.SaveChangesAsync();
 
         Assert.True(flight.Id > 0);
@@ -56,7 +57,7 @@ public class FlightServiceDbContextTests
         Assert.Equal(departure.Id, departure.Gates.Single().AirportId);
         context.ChangeTracker.Clear();
 
-        var loaded = await context.FlightSchedules
+        var loaded = await context.Schedules
             .Include(value => value.Flight).ThenInclude(value => value.FlightSegments)
             .Include(value => value.DepartureAirport).ThenInclude(value => value.Gates)
             .Include(value => value.ArrivalAirport).SingleAsync();
@@ -65,7 +66,11 @@ public class FlightServiceDbContextTests
         Assert.Equal(new TimeOnly(12, 0), loaded.ScheduledArrivalTime);
         Assert.Equal(new DateOnly(2026, 10, 13), loaded.EffectiveFrom);
         Assert.Equal(new DateOnly(2026, 12, 31), loaded.EffectiveUntil);
-        Assert.Equal(OperatingDays.Monday | OperatingDays.Friday, loaded.OperatingDays);
+        Assert.Equal(OperatingDays.FromDays([DayOfWeek.Monday, DayOfWeek.Friday]), loaded.OperatingDays);
+        Assert.Equal(17, loaded.OperatingDays.Value);
+        Assert.True(loaded.OperatingDays.HasDay(DayOfWeek.Monday));
+        Assert.True(loaded.OperatingDays.HasDay(DayOfWeek.Friday));
+        Assert.False(loaded.OperatingDays.HasDay(DayOfWeek.Sunday));
         Assert.Equal(Address.Create("Warsaw", "Mazovia", "PL"), loaded.DepartureAirport.Address);
         Assert.Single(loaded.DepartureAirport.Gates);
         Assert.Same(loaded.Flight, loaded.Flight.FlightSegments.Single().Flight);
