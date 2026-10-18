@@ -13,6 +13,13 @@
   with EF Core 10 tooling and the matching `Microsoft.EntityFrameworkCore.Design`
   development package before deploying; do not treat the table mappings as a
   deployed schema. The host does not automatically migrate or create databases.
+- Existing flight databases also need the configuration-owned seat-map schema,
+  optional flight aircraft FK, and backfilled unique row numbers described in the
+  [flight-service schema notes](services/flight-service.md#aircraft-configuration-and-seat-map-ownership).
+  `EnsureCreated` cannot upgrade an existing database.
+- Flight configuration-management and aircraft-assignment APIs have no access
+  control yet. Keep them restricted to trusted development until production
+  authentication and authorization are implemented.
 
 Configure the following through environment variables, user secrets, or your
 deployment secret provider (do not commit credentials):

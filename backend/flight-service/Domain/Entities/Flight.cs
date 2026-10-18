@@ -1,6 +1,7 @@
 namespace flight_service.Domain.Entities;
 
 using Shared.Domain.Entities;
+using flight_service.Domain.ValueObjects;
 
 public class Flight : AggregateRoot<int>
 {
@@ -14,6 +15,9 @@ public class Flight : AggregateRoot<int>
 
     public int ArrivalAirportId { get; private set; }
     public Airport ArrivalAirport { get; private set; } = null!;
+
+    public int? AircraftId { get; private set; }
+    public Aircraft? Aircraft { get; private set; }
 
     public IReadOnlyCollection<FlightSegment> FlightSegments => flightSegments.AsReadOnly();
 
@@ -66,5 +70,23 @@ public class Flight : AggregateRoot<int>
 
         segment.AttachTo(this);
         flightSegments.Add(segment);
+    }
+
+    public void AssignAircraft(Aircraft aircraft)
+    {
+        ArgumentNullException.ThrowIfNull(aircraft);
+        if (!aircraft.AircraftType.Equals(aircraft.AircraftConfiguration.AircraftType))
+        {
+            throw new InvalidOperationException("The aircraft configuration must match its aircraft type.");
+        }
+
+        if (aircraft.OperationalState.Code != AircraftOperationalState.Active.Code
+            || !aircraft.AircraftConfiguration.IsActive)
+        {
+            throw new InvalidOperationException("Assignment requires an active aircraft and configuration.");
+        }
+
+        AircraftId = aircraft.Id;
+        Aircraft = aircraft;
     }
 }

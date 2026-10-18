@@ -5,6 +5,9 @@ using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Shared.Infrastructure.DependencyInjection;
+using flight_service.Application.Abstractions;
+using flight_service.Application.Features.ConfigurationFeatures.Queries;
+using flight_service.Infrastructure.Repositories;
 
 namespace flight_service.Infrastructure;
 
@@ -54,6 +57,12 @@ public static class DependencyInjection
             });
         });
         builder.Services.AddScoped<IFlightQueries, FlightQueries>();
+        builder.Services.AddScoped<IConfigurationQueries, ConfigurationQueries>();
+        builder.Services.AddScoped<IConfigurationRepository, ConfigurationRepository>();
+        builder.Services.AddScoped<IAircraftRepository, AircraftRepository>();
+        builder.Services.AddScoped<IFlightRepository, FlightRepository>();
+        builder.Services.AddScoped<IAirportRepository, AirportRepository>();
+        builder.Services.AddScoped<IScheduleRepository, ScheduleRepository>();
         return builder;
     }
 }

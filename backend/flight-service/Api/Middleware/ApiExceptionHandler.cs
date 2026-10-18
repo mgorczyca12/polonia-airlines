@@ -13,6 +13,24 @@ public sealed class ApiExceptionHandler(
         Exception exception,
         CancellationToken cancellationToken)
     {
+        if (exception is FluentValidation.ValidationException validation)
+        {
+            logger.LogWarning(exception, "Request validation failed for {Method} {Path}",
+                httpContext.Request.Method, httpContext.Request.Path);
+            httpContext.Response.StatusCode = StatusCodes.Status400BadRequest;
+            var problem = new ValidationProblemDetails(validation.Errors
+                .GroupBy(error => error.PropertyName)
+                .ToDictionary(group => group.Key, group => group.Select(error => error.ErrorMessage).ToArray()))
+            {
+                Status = StatusCodes.Status400BadRequest,
+                Title = "One or more validation errors occurred."
+            };
+            problem.Extensions["traceId"] = Activity.Current?.Id ?? httpContext.TraceIdentifier;
+            await httpContext.Response.WriteAsJsonAsync(
+                problem, options: null, contentType: "application/problem+json", cancellationToken: cancellationToken);
+            return true;
+        }
+
         logger.LogError(exception, "Unhandled exception processing {Method} {Path}",
             httpContext.Request.Method, httpContext.Request.Path);
 

@@ -39,6 +39,13 @@ public class SeatMapPosition : Entity<int>
         IsSeat = false;
     }
 
+    public void Update(int aisleGroup, bool isSeat)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(aisleGroup);
+        AisleGroup = aisleGroup;
+        IsSeat = isSeat;
+    }
+
     internal void AttachTo(SeatMapRow row)
     {
         if (SeatMapRow is not null && !ReferenceEquals(SeatMapRow, row))

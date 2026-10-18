@@ -35,6 +35,20 @@ public class SeatMap : Entity<int>
             throw new InvalidOperationException("Seat map row is already part of this seat map.");
         }
 
+        if (seatMapRows.Any(existing => existing.Number == row.Number))
+        {
+            throw new InvalidOperationException("A row with this number already exists in the seat map.");
+        }
+
         seatMapRows.Add(row);
+    }
+
+    public void RemoveRow(SeatMapRow row)
+    {
+        ArgumentNullException.ThrowIfNull(row);
+        if (!seatMapRows.Remove(row))
+        {
+            throw new InvalidOperationException("Row is not part of this seat map.");
+        }
     }
 }

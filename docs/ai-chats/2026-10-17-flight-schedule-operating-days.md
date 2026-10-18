@@ -70,3 +70,39 @@ Previous session: [2026-10-16](2026-10-16-editor-indentation.md).
 - No migration framework/files exist in this repository yet. Existing databases require a reviewed data migration: create one map for each configuration, backfill row map IDs, then replace the old configuration FK/column. No live PostgreSQL database migration was performed.
 - Configuration remains the aggregate boundary. Passenger configuration behavior is preserved; optional maps for cargo-only configurations and standalone map workflows were not introduced.
 - User subsequently requested committing and pushing the SeatMap extraction. Reviewed the pending scope and confirmed `git diff --check` passed; the 16 passing targeted tests and formatting checks above remain the validation baseline. Commit/push outcome is reported in the final response.
+
+## CargoLayout reminder
+- SeatMap extraction was committed and pushed as `f26c7ec`; the worktree was clean before this addition.
+- Added [CargoLayout](../../backend/flight-service/Domain/Entities/CargoLayout.cs) as an unimplemented `Entity<int>` with a private constructor and a TODO covering configuration ownership, main/lower decks, container positions, bulk holds, and capacity restrictions. Flight load plans remain a separate future concern.
+- No configuration navigation, DbSet, EF mapping, or runtime behavior was added.
+- Flight-service build and full solution whitespace/style checks passed; the existing unread aircraft-controller mediator warning remains. `git diff --check` passed. Tests were not run for this behavior-free placeholder.
+- Placeholder changes remain local and uncommitted.
+
+## Configuration management and flight seat-map query
+
+### Implemented
+- Added [ConfigurationFeatures](../../backend/flight-service/Application/Features/ConfigurationFeatures/) with transactional create-configuration, active-state, set-row and remove-row commands, validators, typed errors and direct layout-query contracts. Added tracked configuration/aircraft repositories and the missing schedule repository.
+- Wired shared DispatchR validation/transaction pipelines and required repositories into flight DI. Added narrow FluentValidation exception handling returning 400 validation problems; unexpected failures still surface as safe 500s.
+- Added [ConfigurationController](../../backend/flight-service/Api/Controllers/ConfigurationController.cs) for configuration creation/read/activation and row editing/removal. Creation returns the generated ID and Location, flushing through Unit of Work inside the pipeline-owned transaction.
+- Added nullable aircraft assignment to Flight, guarded assignment/reassignment commands and HTTP PUT, and GET `/api/Flight/flight/{flightId}/seat-map`. Missing flight returns 404; unassigned flight returns 409 `flight_aircraft_unassigned`. Inactive aircraft/configurations and type mismatches reject assignment.
+- [ConfigurationQueries](../../backend/flight-service/Infrastructure/Persistence/Queries/ConfigurationQueries.cs) reads the assigned aircraft/configuration/map in one no-tracking query and maps application DTOs for UI consumption. Includes registration/configuration metadata, cabin information, row numbers and seat/non-seat positions. Rows sort by number; positions by aisle group and ordinal column. No booking or seat-availability data is implied.
+- Added unique numbered rows, row/position editing/removal, duplicate-column guards and overflow-safe default numbering. PUT replaces a row's position list while retaining matching column IDs; deleting rows cascades positions.
+- Updated [HTTP examples](../../backend/flight-service/flight-service.http) and architecture/development/service documentation. Preserved the prior CargoLayout placeholder without wiring it into persistence.
+
+### Verification
+- Flight-service build passed; only the existing unread aircraft-controller mediator warning remains.
+- All 43 flight integration cases passed, including 13 new configuration/API cases covering real HTTP/mediator/transaction persistence, validation, generated identity/Location, row reconciliation/deletion, assignment/reassignment, missing resources, inactive/type-mismatch conflicts, empty maps, no tracking, cancellation and OpenAPI. PostgreSQL schema-generation assertions verify the new row index and assignment FK.
+- 29 selected domain/validator unit cases passed, including 4 new seat-map editing/assignment invariant cases.
+- Full solution whitespace and selected style verification passed; `git diff --check` passed. No dependencies were installed or restored.
+
+### Limits and deployment follow-up
+- No migration was created/applied. Existing databases need nullable `Flights.AircraftId` plus restricted-delete FK/index and a reviewed `SeatMapRows.Number` backfill before enforcing the unique `(SeatMapId, Number)` index, in addition to the prior map extraction schema.
+- Shared configuration edits are live across referencing aircraft/flights, without immutable publishing/snapshots. Existing assignments remain readable after deactivation. Schedule-overlap/capacity checks, seat inventory reconciliation, and optimistic concurrency remain deferred; racing unique writes can still surface as safe 500s.
+- New management endpoints have no authentication/authorization and must stay restricted to trusted development. SQLite integration tests and PostgreSQL schema generation do not verify live PostgreSQL/RabbitMQ delivery.
+- All changes remain local and uncommitted; no push was performed.
+
+## Observability direction and commit request
+- User plans OpenTelemetry with Honeycomb for system observability, BigQuery for business analytics, and Grafana for dashboards. No telemetry or analytics implementation was added. Proposed separation: OTLP telemetry via a collector versus durable business events via the outbox and analytics ingestion; Honeycomb/Grafana integration capabilities still need verification.
+- User requested committing and pushing the configuration/seat-map APIs, aircraft assignment, tests, documentation and CargoLayout placeholder directly to `main`.
+- Reviewed the pending scope; `git diff --check` passed. The previously recorded 43 passing integration cases, 29 selected unit cases and formatting checks remain the validation baseline; tests were not rerun solely for committing.
+- Commit and push outcome will be reported after execution.

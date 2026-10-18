@@ -11,6 +11,7 @@ public sealed class SeatMapRowConfiguration : IEntityTypeConfiguration<SeatMapRo
     {
         builder.ToTable("SeatMapRows");
         builder.HasKey(row => row.Id);
+        builder.HasIndex(row => new { row.SeatMapId, row.Number }).IsUnique();
         builder.Property(row => row.Type)
             .HasConversion(type => type.Value, value => SeatMapRowType.FromValue(value)).IsRequired();
         builder.HasOne(row => row.Cabin).WithMany()

@@ -12,10 +12,10 @@ differs by service.
 | Area | Implemented | Not wired or not implemented |
 | --- | --- | --- |
 | Web | Search, fare selection, booking preview from local JSON | Backend API client, persistent reservations, payment processing |
-| Flight | Validated query endpoints, DTOs, PostgreSQL registration, RabbitMQ EF bus outbox | Schema migrations, deployed infrastructure, working aircraft queries |
+| Flight | Validated flight/layout queries, configuration/assignment commands, PostgreSQL registration, RabbitMQ EF bus outbox | Schema migrations, deployed infrastructure, general aircraft queries and management authorization |
 | Booking | Reservation aggregate with passenger fares, baggage and recorded payments | Business endpoints, persistence and command handlers |
 | Seating | Inventory and seat-assignment domain rules | Business endpoints, persistence and command handlers |
-| Shared | Entity/aggregate bases, repositories, command pipelines, domain-event dispatch and EF outbox helpers | Host registration of shared command pipelines, business event handlers and consumers |
+| Shared | Entity/aggregate bases, repositories, command pipelines (wired in flight), domain-event dispatch and EF outbox helpers | Booking/seating host registration, business event handlers and consumers |
 
 ## C4 level 1: system context
 
@@ -136,9 +136,11 @@ currently registered. Future consumers must explicitly configure
 implement appropriate business idempotency; mapping inbox tables alone does not
 enable consumer deduplication.
 
-The existing flight application registers its query validator directly. It does
-not call `AddSharedApplication`; booking and seating do not wire command pipelines
-either. Do not infer active mediator processing from package references.
+The flight application calls `AddSharedApplication` to register validators,
+handlers and pipelines. Its configuration and aircraft-assignment endpoints use
+transactional commands; query interfaces remain direct reads. Booking and seating
+do not wire command pipelines. Do not infer active mediator processing from
+package references alone.
 The shared transaction pipeline applies only to commands implementing
 [`ITransactionalCommand<TCommand, TResponse>`](../../backend/shared/Application/Commands/ITransactionalCommand.cs).
 Ordinary `ICommand` handlers still receive validation but own their orchestration

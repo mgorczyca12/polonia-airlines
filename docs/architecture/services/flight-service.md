@@ -14,6 +14,13 @@ No authentication scheme or authorization requirement is configured on these con
 | --- | --- | --- |
 | GET | `/api/Flight/flights` | Validated, paginated flight search |
 | GET | `/api/Flight/flight/{flightId}` | Single-flight query with positive integer ID |
+| GET | `/api/Flight/flight/{flightId}/seat-map` | Current assigned aircraft's passenger layout; unassigned flight returns 409 |
+| PUT | `/api/Flight/flight/{flightId}/aircraft` | Assign/reassign an active aircraft with an active, type-compatible configuration; 204 |
+| POST | `/api/configurations` | Create a configuration with an empty map; 201 with `{ "id": ... }` and Location |
+| GET | `/api/configurations/{configurationId}` | Configuration metadata and its passenger map |
+| PUT | `/api/configurations/{configurationId}/active` | Set active state; 204 |
+| PUT | `/api/configurations/{configurationId}/seat-map/rows/{rowNumber}` | Add/update a numbered row, replacing its complete position list; 204 |
+| DELETE | `/api/configurations/{configurationId}/seat-map/rows/{rowNumber}` | Remove row and its positions; 204 |
 | GET | `/api/Aircraft/aircrafts` | Placeholder: returns empty `200 OK`; does not query aircraft |
 | GET | `/api/Aircraft/aircraft/{aircraftId}` | Placeholder: returns empty `200 OK` |
 
@@ -80,6 +87,55 @@ sequenceDiagram
 
 ## Domain and persistence
 
+### UI seat-map query and configuration management
+
+[ConfigurationFeatures](../../../backend/flight-service/Application/Features/ConfigurationFeatures/)
+groups configuration commands and direct layout queries.
+[IConfigurationQueries](../../../backend/flight-service/Application/Features/ConfigurationFeatures/Queries/IConfigurationQueries.cs)
+returns application DTO results, not entities or HTTP types. Both query endpoints
+validate positive IDs at the API boundary; the query implementation also validates
+IDs for non-HTTP callers. Reads are no-tracking, pass cancellation through EF,
+and discover missing resources during the actual read.
+
+The flight layout comes from `Flight -> Aircraft -> AircraftConfiguration -> SeatMap`
+in a single database query. The response includes flight/aircraft IDs, registration,
+configuration ID/code/version, and a nested `seatMap` with its ID and rows.
+Rows contain their ID, positive number, cabin ID/name/code, descriptive type string,
+and positions (`id`, `column`, `aisleGroup`, `isSeat`). Rows sort by number;
+positions sort by aisle group then ordinal column. Empty layouts succeed with
+empty rows. This is the **physical layout**, not bookings, seat availability,
+or seating-service inventory.
+
+Missing flights/configurations/aircraft/cabins return 404 with stable codes.
+An existing flight without an assignment returns 409 with
+`flight_aircraft_unassigned`. Assignment rejects inactive/maintenance/decommissioned
+aircraft and inactive configurations with `aircraft_unavailable`, and rejects type
+mismatches with `aircraft_configuration_mismatch`. Existing assignments stay
+readable if a configuration is subsequently deactivated. Duplicate configuration
+type/code/version returns 409 with `configuration_exists` when discovered before
+creation; simultaneous conflicting writes are still protected by database unique
+constraints and may surface as safe 500 errors. There is no optimistic concurrency
+or schedule-overlap detection yet.
+
+Commands run through DispatchR validation and transaction pipelines, with tracked
+repositories and the scoped Unit of Work. Create configuration flushes the Unit
+of Work inside that transaction to obtain its generated ID before returning;
+the pipeline still owns commit/rollback. Other new handlers only mutate tracked
+aggregates. Configuration rows use positive unique numbers; PUT updates cabin,
+row types, and the entire position list. Matching ordinal column names retain
+position IDs, absent columns are removed, and new columns receive new IDs.
+Row type accepts names/flag combinations (`Seats`, `ExitRow`, `Bulkhead`, `Galley`,
+`Lavatory`) or valid numeric masks 1..31. Columns must be nonblank, at most 16
+characters, and ordinal-unique within the row; aisle groups must be nonnegative.
+An empty position list is valid for service/non-seat rows.
+
+Layouts are **shared and edited live**: changing a configuration affects every
+aircraft/flight referencing it, with no published snapshot or version freeze.
+Create a new configuration/version for an intentionally separate layout.
+The management endpoints currently have **no authentication/authorization**.
+They must be access-controlled before exposing them beyond trusted development.
+Requests for each endpoint are in [flight-service.http](../../../backend/flight-service/flight-service.http).
+
 The domain includes flights and ordered segments, schedules with operating days,
 airports and gates, aircraft and types, and aircraft configurations with passenger
 seat maps. Aggregate methods control child collection changes.
@@ -115,6 +171,12 @@ the row foreign key from `AircraftConfigurationId` to `SeatMapId`. No migrations
 are currently supplied in the repository. Existing databases need a reviewed
 migration that creates one map per configuration and backfills row references
 before dropping the old foreign key/column; `EnsureCreated` does not upgrade them.
+Assignment/layout management additionally requires nullable `Flights.AircraftId`
+with a restricted-delete aircraft FK and index, and non-null `SeatMapRows.Number`
+with a unique `(SeatMapId, Number)` index. Backfill existing row numbers with
+explicitly reviewed display order per map (for example, deterministic ID order
+only if it matches the real aircraft layout), then enforce non-null/uniqueness.
+No schema upgrade or live database migration has been applied.
 Cargo layouts, independent seat-map publishing, and new versioning rules remain
 deferred.
 
@@ -151,10 +213,17 @@ An unconfigured database read produces a safe server error, not sample data.
 
 ## Commands, events and verification
 
-No flight command handlers, concrete integration events, consumers, or
+Configuration/seat-map management and flight assignment handlers are wired through
+the shared DispatchR pipelines. No concrete integration events, consumers, or
 cross-service flows are currently wired.
 The aircraft controller has an unused mediator constructor parameter, not an
 implemented command/query path.
+
+Configuration API tests exercise real HTTP routes, validators, mediator handlers,
+transactions and SQLite persistence, including generated IDs/Location, row/position
+reconciliation, cascade removal, reassignment, explicit errors, no-tracking reads,
+cancellation, and OpenAPI metadata. They do not verify live PostgreSQL/RabbitMQ
+delivery or concurrent management edits.
 
 Tests cover input validation, aggregate collection ownership, EF relationships,
 query ordering and UTC date boundaries, result mapping, safe exception responses

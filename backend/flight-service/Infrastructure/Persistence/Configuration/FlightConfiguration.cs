@@ -11,6 +11,8 @@ public sealed class FlightConfiguration : IEntityTypeConfiguration<Flight>
         builder.ToTable("Flights");
         builder.HasKey(flight => flight.Id);
         builder.Ignore(flight => flight.DomainEvents);
+        builder.HasOne(flight => flight.Aircraft).WithMany()
+            .HasForeignKey(flight => flight.AircraftId).OnDelete(DeleteBehavior.Restrict);
         builder.Property(flight => flight.FlightNumber).IsRequired().HasMaxLength(32);
         builder.HasOne(flight => flight.DepartureAirport).WithMany()
             .HasForeignKey(flight => flight.DepartureAirportId).OnDelete(DeleteBehavior.Restrict);

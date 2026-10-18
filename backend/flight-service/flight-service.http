@@ -12,6 +12,59 @@ Accept: application/json
 GET {{flight_service_HostAddress}}/api/Flight/flight/2147483647
 Accept: application/problem+json
 
+### Get the physical layout of a flight's assigned aircraft (409 when unassigned)
+GET {{flight_service_HostAddress}}/api/Flight/flight/1/seat-map
+Accept: application/json
+
+### Assign or reassign an aircraft (replace IDs with seeded data)
+PUT {{flight_service_HostAddress}}/api/Flight/flight/1/aircraft
+Content-Type: application/json
+
+{
+  "aircraftId": 1
+}
+
+### Create a configuration with an empty passenger map (returns generated id and Location)
+POST {{flight_service_HostAddress}}/api/configurations
+Content-Type: application/json
+
+{
+  "aircraftTypeId": 1,
+  "code": "STD",
+  "name": "Standard passenger layout",
+  "version": 1
+}
+
+### Get a configuration and its seat map
+GET {{flight_service_HostAddress}}/api/configurations/1
+Accept: application/json
+
+### Activate/deactivate a configuration (inactive configurations cannot receive new assignments)
+PUT {{flight_service_HostAddress}}/api/configurations/1/active
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+### Add/update row 1, replacing its complete position list (matching columns retain IDs)
+PUT {{flight_service_HostAddress}}/api/configurations/1/seat-map/rows/1
+Content-Type: application/json
+
+{
+  "cabinId": 1,
+  "type": "Seats, ExitRow",
+  "positions": [
+    { "column": "A", "aisleGroup": 0, "isSeat": true },
+    { "column": "B", "aisleGroup": 0, "isSeat": true },
+    { "column": "C", "aisleGroup": 1, "isSeat": true },
+    { "column": "D", "aisleGroup": 1, "isSeat": false }
+  ]
+}
+
+### Remove a row and all its positions
+DELETE {{flight_service_HostAddress}}/api/configurations/1/seat-map/rows/1
+
 ### Invalid search input
 GET {{flight_service_HostAddress}}/api/Flight/flights?DepartureAirport=waw&ArrivalAirport=KRK&DepartureDate=2026-10-13&PageSize=101
 Accept: application/problem+json

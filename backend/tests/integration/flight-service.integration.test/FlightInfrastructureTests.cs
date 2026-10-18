@@ -60,6 +60,10 @@ public sealed class FlightInfrastructureTests
         Assert.Contains("CREATE TABLE \"SeatMaps\"", schema);
         Assert.Contains("CREATE UNIQUE INDEX \"IX_SeatMaps_AircraftConfigurationId\"", schema);
         Assert.Contains("FOREIGN KEY (\"SeatMapId\") REFERENCES \"SeatMaps\" (\"Id\") ON DELETE CASCADE", schema);
+        Assert.Contains("CREATE UNIQUE INDEX \"IX_SeatMapRows_SeatMapId_Number\"", schema);
+        Assert.Contains("\"Number\" integer NOT NULL", schema);
+        Assert.Contains("\"AircraftId\" integer", schema);
+        Assert.Contains("FOREIGN KEY (\"AircraftId\") REFERENCES \"Aircrafts\" (\"Id\") ON DELETE RESTRICT", schema);
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
         Assert.IsType<MassTransitIntegrationEventPublisher>(
             scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>());
