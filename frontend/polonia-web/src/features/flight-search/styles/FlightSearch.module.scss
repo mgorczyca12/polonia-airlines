@@ -1,86 +1,164 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+
 .panel {
-  composes: global(polonia-card);
-  width: 100%;
-  max-width: 38.75rem;
-  padding: var(--spacing-xl);
-}
-
-.panel :global(.mantine-Input-input),
-.panel :global(.mantine-Select-input),
-.panel :global(.mantine-DatePickerInput-input) {
-  color: var(--color-text);
-  background: var(--color-bg);
-  border-color: var(--color-muted);
-}
-
-.panel :global(.mantine-Input-input::placeholder),
-.panel :global(.mantine-Select-input::placeholder),
-.panel :global(.mantine-DatePickerInput-input::placeholder),
-.panel :global(.mantine-Input-section),
-.panel :global(.mantine-Select-section),
-.panel :global(.mantine-DatePickerInput-section) {
-  color: var(--color-ink);
-}
-
-.panel :global(.mantine-Input-input:focus),
-.panel :global(.mantine-Select-input:focus),
-.panel :global(.mantine-DatePickerInput-input:focus) {
-  border-color: var(--color-primary);
-}
-
-.content {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-md);
+  gap: 1.5rem;
+  padding: 1.75rem;
+  background: var(--color-surface);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-raised);
+}
+
+.tabList {
+  flex-wrap: nowrap;
+  gap: 2rem;
+  overflow-x: auto;
+
+  &::before {
+    display: none;
+  }
+}
+
+.tab {
+  padding: 0 0 0.75rem;
+  border-bottom-width: 2px;
+  color: var(--color-text-muted);
+  font-size: 0.8125rem;
+  white-space: nowrap;
+
+  &:hover {
+    background: transparent;
+    color: var(--color-text);
+  }
+
+  &[data-active] {
+    border-color: var(--color-primary);
+    color: var(--color-primary-text);
+    font-weight: 600;
+  }
+
+  &[data-disabled] {
+    opacity: 1;
+    color: var(--color-text-muted);
+    cursor: not-allowed;
+  }
+}
+
+.tabSection {
+  margin-inline-end: 0.5rem;
+}
+
+.tripTypes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
 }
 
 .fields {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--spacing-md);
+  grid-template-areas: 'from swap to dates travellers';
+  grid-template-columns:
+    minmax(0, 1.1fr) auto minmax(0, 1fr) minmax(0, 1.25fr)
+    minmax(0, 1.2fr);
+  gap: 0.875rem;
+  align-items: start;
 }
 
-.tripToggle {
-  padding: var(--spacing-xs);
-  background: var(--color-bg);
-  border-radius: var(--radius-md);
+.fromField {
+  grid-area: from;
 }
 
-.tripToggle :global(.mantine-SegmentedControl-indicator) {
-  background: var(--color-secondary);
+.toField {
+  grid-area: to;
 }
 
-.tripToggle :global(.mantine-SegmentedControl-label[data-active]) {
-  color: var(--color-ink);
+.dateField {
+  grid-area: dates;
 }
 
-.tripToggle :global(.mantine-SegmentedControl-label) {
+.travellersField {
+  grid-area: travellers;
+}
+
+.fieldLabel {
+  margin-bottom: 0.5rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.fieldInput {
+  height: 3.0625rem;
+  min-height: 3.0625rem;
+  padding-inline-start: 0.875rem;
+  overflow: hidden;
+  border-color: var(--color-border);
+  border-radius: var(--radius-control);
+  background: var(--color-surface);
   color: var(--color-text);
+  font-size: 0.875rem;
+  text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &:focus,
+  &:focus-within,
+  &[data-expanded] {
+    border-color: var(--color-primary);
+  }
 }
 
-.dateFields {
-  display: grid;
-  grid-column: 2;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--spacing-md);
+.fieldSection {
+  color: var(--color-text-muted);
 }
 
-.oneWayDateFields > :global(*) {
-  grid-column: 1 / -1;
-  width: 100%;
+.swapButton {
+  grid-area: swap;
+  align-self: start;
+  margin-top: calc(1.5rem + 0.59375rem);
+  color: var(--color-primary-text);
 }
 
-.searchButton {
-  composes: global(polonia-button-primary);
+.actions {
+  display: flex;
+  justify-content: flex-end;
 }
 
-@media (max-width: 36rem) {
-  .fields,
-  .dateFields {
-    grid-template-columns: 1fr;
+@include below($bp-lg) {
+  .fields {
+    grid-template-areas:
+      'from swap to'
+      'dates dates travellers';
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+}
+
+@include below($bp-md) {
+  .panel {
+    padding: 1.25rem;
   }
 
-  .dateFields {
-    grid-column: auto;
+  .fields {
+    grid-template-areas:
+      'from'
+      'swap'
+      'to'
+      'dates'
+      'travellers';
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.5rem;
+  }
+
+  .swapButton {
+    justify-self: end;
+    margin-top: -0.25rem;
+    margin-bottom: -0.75rem;
+    transform: rotate(90deg);
+  }
+
+  .searchButton {
+    width: 100%;
   }
 }

@@ -3,6 +3,9 @@ import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ColorSchemeScript, MantineProvider } from '@mantine/core'
 import { ApplicationShell } from '#/app/ApplicationShell'
+import { theme } from '#/app/theme'
+import '@fontsource-variable/inter'
+import '@fontsource/lora/400.css'
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';
 import '#/styles/index.scss'
@@ -20,7 +23,7 @@ export const Route = createRootRoute({
         content: 'width=device-width, initial-scale=1',
       },
       {
-        title: 'TanStack Start Starter',
+        title: 'Polonia Airlines',
       },
     ]
   }),
@@ -37,7 +40,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <ColorSchemeScript defaultColorScheme="auto" />
       </head>
       <body>
-        <MantineProvider defaultColorScheme="auto">
+        <MantineProvider theme={theme} defaultColorScheme="auto">
           <ApplicationShell>{children}</ApplicationShell>
         </MantineProvider>
         <TanStackDevtools

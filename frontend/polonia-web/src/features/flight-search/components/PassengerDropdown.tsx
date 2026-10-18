@@ -1,126 +1,135 @@
 import {
-  Input,
-  InputBase,
-  Text,
-  Box,
-  Combobox,
-  useCombobox,
+  ActionIcon,
   Button,
+  Combobox,
+  InputBase,
+  Radio,
+  useCombobox,
 } from '@mantine/core'
-import { IconCaretDown, IconCaretUp } from '@tabler/icons-react'
-import { useFormContext } from '#/features/flight-search/model/form-context'
+import { ChevronDown, Minus, Plus } from 'lucide-react'
+import { useFormContext } from '../model/form-context'
+import {
+  CABIN_OPTIONS,
+  formatTravellers,
+  isValidTravellerCounts,
+} from '../model/search-params'
+import type { TravellerCounts } from '../model/search-params'
 import styles from '../styles/PassengerDropdown.module.scss'
 
-const PassengerDropdown = () => {
-  const form = useFormContext()
-  const { adult, child, infant } = form.values.passengers
-  const passengersList = Object.keys(form.values.passengers) as Array<
-    keyof typeof form.values.passengers
-  >
+const TRAVELLER_TYPES: Array<{
+  type: keyof TravellerCounts
+  label: string
+  description: string
+}> = [
+  { type: 'adult', label: 'Adults', description: 'Age 12+' },
+  { type: 'child', label: 'Children', description: 'Age 2–11' },
+  { type: 'infant', label: 'Infants', description: "Under 2, on an adult's lap" },
+]
 
+interface PassengerDropdownProps {
+  classNames?: Partial<Record<'root' | 'label' | 'input' | 'section', string>>
+}
+
+export function PassengerDropdown({ classNames }: PassengerDropdownProps) {
+  const form = useFormContext()
+  const { passengers, cabin } = form.values
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
   })
 
-  // Helper to handle updates
-  const updateCount = (
-    type: keyof typeof form.values.passengers,
-    delta: number,
-  ) => {
-    const {
-      adult: adultCount,
-      child: childCount,
-      infant: infantCount,
-    } = form.values.passengers
-    const currentValue = form.values.passengers[type]
-    const nextValue = currentValue + delta
+  const nextCounts = (type: keyof TravellerCounts, delta: number): TravellerCounts => ({
+    ...passengers,
+    [type]: passengers[type] + delta,
+  })
 
-    // 1. Prevent negative numbers
-    if (nextValue < 0) return
+  const canChange = (type: keyof TravellerCounts, delta: number) =>
+    isValidTravellerCounts(nextCounts(type, delta))
 
-    // 2. Max 8 total (Adults + Children)
-    if ((type === 'adult' || type === 'child') && delta > 0) {
-      if (adultCount + childCount >= 8) {
-        // Optional: Add a notification or error message here
-        return
-      }
+  const updateCount = (type: keyof TravellerCounts, delta: number) => {
+    if (canChange(type, delta)) {
+      form.setFieldValue('passengers', nextCounts(type, delta))
     }
-
-    // 3. Max 1 Infant per Adult
-    if (type === 'infant' && delta > 0) {
-      if (nextValue > adultCount) {
-        // Cannot have more infants than adults
-        return
-      }
-    }
-
-    // 4. Special Case: If decreasing adults, check if infants exceed new adult count
-    if (type === 'adult' && delta < 0) {
-      // If reducing an adult would leave more infants than remaining adults, block it
-      // Or alternatively: form.setFieldValue('passengers.infant', Math.min(infant, nextValue))
-      if (infantCount > nextValue) {
-        return
-      }
-    }
-
-    form.setFieldValue(`passengers.${type}`, nextValue)
   }
 
   return (
-    <Combobox store={combobox} width="400" position="bottom-start">
+    <Combobox store={combobox} width={340} position="bottom-end" shadow="md">
       <Combobox.Target>
         <InputBase
           component="button"
           type="button"
+          label="Travellers & cabin"
           pointer
-          rightSection={<Combobox.Chevron />}
+          rightSection={<ChevronDown size={17} aria-hidden="true" />}
+          rightSectionPointerEvents="none"
+          classNames={classNames}
+          aria-haspopup="dialog"
+          aria-expanded={combobox.dropdownOpened}
           onClick={() => combobox.toggleDropdown()}
         >
-          {/* Display current counts in the input */}
-          {adult + child + infant > 0 ? (
-            `${adult} Adult, ${child} Child, ${infant} Infant`
-          ) : (
-            <Input.Placeholder>Passengers</Input.Placeholder>
-          )}
+          {formatTravellers(passengers)} · {cabin}
         </InputBase>
       </Combobox.Target>
 
       <Combobox.Dropdown>
-        <Box className={styles.menu}>
-          {passengersList.map((type) => (
-            <Box className={styles.passengerRow} key={type}>
-              <Text size="md" tt="capitalize">
-                {type}
-              </Text>
-              <Button.Group>
-                <Button variant="default" onClick={() => updateCount(type, -1)}>
-                  <IconCaretDown color="var(--mantine-color-red-text)" />
-                </Button>
-                <Button.GroupSection
+        <div className={styles.menu} role="group" aria-label="Travellers and cabin">
+          {TRAVELLER_TYPES.map(({ type, label, description }) => (
+            <div className={styles.travellerRow} key={type}>
+              <div>
+                <p className={styles.travellerLabel}>{label}</p>
+                <p className={styles.travellerDescription}>{description}</p>
+              </div>
+              <div className={styles.stepper}>
+                <ActionIcon
                   variant="default"
-                  bg="var(--mantine-color-body)"
-                  miw={80}
+                  radius="xl"
+                  aria-label={`Remove one ${label.toLowerCase()}`}
+                  disabled={!canChange(type, -1)}
+                  onClick={() => updateCount(type, -1)}
                 >
-                  {form.values.passengers[type]}
-                </Button.GroupSection>
-                <Button
+                  <Minus size={14} />
+                </ActionIcon>
+                <span className={styles.count} aria-live="polite">
+                  {passengers[type]}
+                </span>
+                <ActionIcon
                   variant="default"
+                  radius="xl"
+                  aria-label={`Add one ${label.toLowerCase()}`}
+                  disabled={!canChange(type, 1)}
                   onClick={() => updateCount(type, 1)}
-                  disabled={
-                    (type === 'infant' && infant >= adult) ||
-                    ((type === 'adult' || type === 'child') &&
-                      adult + child >= 8)
-                  }
                 >
-                  <IconCaretUp color="var(--mantine-color-teal-text)" />
-                </Button>
-              </Button.Group>
-            </Box>
+                  <Plus size={14} />
+                </ActionIcon>
+              </div>
+            </div>
           ))}
-        </Box>
+
+          <Radio.Group
+            label="Cabin"
+            value={cabin}
+            onChange={(value) => {
+              const selectedCabin = CABIN_OPTIONS.find((option) => option === value)
+
+              if (selectedCabin) {
+                form.setFieldValue('cabin', selectedCabin)
+              }
+            }}
+            classNames={{ label: styles.cabinLabel }}
+          >
+            <div className={styles.cabinOptions}>
+              {CABIN_OPTIONS.map((option) => (
+                <Radio key={option} value={option} label={option} size="xs" />
+              ))}
+            </div>
+          </Radio.Group>
+
+          <p className={styles.note}>Up to 8 seated travellers. One infant per adult.</p>
+
+          <Button variant="outline" fullWidth onClick={() => combobox.closeDropdown()}>
+            Done
+          </Button>
+        </div>
       </Combobox.Dropdown>
     </Combobox>
   )
 }
-
-export default PassengerDropdown

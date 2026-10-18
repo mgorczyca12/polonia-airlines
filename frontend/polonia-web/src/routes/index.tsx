@@ -1,21 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { Box, Container, Text, Title } from '@mantine/core'
-import { FlightSearch } from '#/features/flight-search/components/FlightSearch'
+import { FlightSearch } from '#/features/flight-search'
+import { parseFlightSearchParams } from '#/features/flight-search/model/search-params'
+import { DestinationHighlights, HomeHero, ServicePromises } from '#/features/home'
 
 export const Route = createFileRoute('/')({
+  validateSearch: parseFlightSearchParams,
   component: HomeRoute,
 })
 
 function HomeRoute() {
+  const search = Route.useSearch()
+
   return (
-    <Container size="lg" py="xl">
-      <Box>
-        <Box>
-          <Text c="dimmed" size="sm">Flight search</Text>
-          <Title order={1}>Plan your trip</Title>
-        </Box>
-        <FlightSearch />
-      </Box>
-    </Container>
+    <>
+      <HomeHero>
+        <FlightSearch initialSearch={search} />
+      </HomeHero>
+      <ServicePromises />
+      <DestinationHighlights />
+    </>
   )
 }

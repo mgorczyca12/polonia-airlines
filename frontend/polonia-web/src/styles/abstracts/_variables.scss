@@ -1,28 +1,48 @@
-// Color variables for the Polonia Airlines design system Light Theme
+// Polonia Airlines design tokens. The palette follows the booking-flow designs:
+// a deep Polonia red, a warm gold accent and calm neutral surfaces.
 
 // Brand
-$polonia-red: #D4213D;
-$polonia-gold: #D4AF37;
+$polonia-red: #a51d35;
+$polonia-red-tint: #faf0f2;
+$polonia-red-tint-border: #e8cbd1;
+$polonia-gold: #ac8a51;
 
-// Backgrounds
-$air-white: #f7f7f9;
-$cloud-gray: #e3e3e8;
-$steel-gray: #d9d9dd;
+// Status
+$runway-green: #346a54;
+$runway-green-tint: #edf5ef;
 
-// Text
-$cabin-black: #1c1c1c;
-$slate-ink: #2a2c41;
+// Light theme surfaces
+$linen: #f7f6f3;
+$cabin-white: #ffffff;
+$jet-bridge: #e4e3df;
+$night-sky: #222b30;
+$night-sky-text: #d6dcdd;
 
-// Color variables for the Polonia Airlines design system Dark Theme (if needed)
+// Light theme text
+$cabin-ink: #242729;
+$slate-gray: #717578;
 
-// Backgrounds
-$night-charcoal: #0F0F11;
-$cabin-graphite: #1A1B1F;
+// Dark theme surfaces
+$night-charcoal: #0f0f11;
+$cabin-graphite: #1a1b1f;
+$fog-gray: #32343c;
+$midnight: #0b0d0f;
 
-// Text
-$polar-white: #F5F5F7;
-$mist-gray: #C7C7CC;
+// Dark theme text
+$polar-white: #f5f5f7;
+$mist-gray: #a9aab0;
 
-// Neutrals
-$runway-gray: #2A2C41;
-$fog-gray: #3A3C45;
+// Dark theme accents, lifted for contrast on dark surfaces
+$polonia-red-dark: #b8243e;
+$polonia-red-text-dark: #f2899b;
+$polonia-gold-dark: #c9a86e;
+$runway-green-dark: #7cc4a2;
+
+// Layout
+$page-max-width: 80rem;
+$sidebar-width: 22.5rem;
+
+// Breakpoints
+$bp-sm: 36rem;
+$bp-md: 48rem;
+$bp-lg: 64rem;

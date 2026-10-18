@@ -1,0 +1,85 @@
+@use '../../styles/abstracts/variables' as *;
+@use '../../styles/abstracts/mixins' as *;
+
+.page {
+  @include page-container;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+  padding-block: 2.25rem 3rem;
+}
+
+.heading {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.eyebrow {
+  @include eyebrow;
+}
+
+.title {
+  @include display-heading;
+  font-size: clamp(1.875rem, 4vw, 2.375rem);
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+.withSidebar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) $sidebar-width;
+  align-items: start;
+  gap: 2rem;
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.sidebar {
+  position: sticky;
+  top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.nextStep {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding-top: 0.5rem;
+}
+
+.nextStepNote {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+@include below($bp-md) {
+  .nextStep > :last-child {
+    width: 100%;
+  }
+}
+
+@include below($bp-lg) {
+  .withSidebar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .sidebar {
+    position: static;
+  }
+}

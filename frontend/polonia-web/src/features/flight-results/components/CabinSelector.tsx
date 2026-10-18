@@ -1,37 +1,36 @@
-import { Box, Card, Text, UnstyledButton } from '@mantine/core'
+import { UnstyledButton } from '@mantine/core'
+import { formatUsd } from '#/shared/lib/formatting'
+import { getLowestCabinFare } from '../model/flight.helpers'
 import type { FlightCabin } from '../model/flight.types'
 import styles from '../styles/CabinSelector.module.scss'
 
 interface CabinSelectorProps {
   cabins: FlightCabin[]
-  selectedCabinId: number | null
+  selectedCabinId: number
   onSelect: (cabinId: number) => void
 }
 
 export function CabinSelector({ cabins, selectedCabinId, onSelect }: CabinSelectorProps) {
   return (
-    <Box className={styles.selector}>
+    <div className={styles.selector} role="group" aria-label="Cabin">
       {cabins.map((cabin) => {
-        const isSelected = selectedCabinId === cabin.classId
-        const lowestPrice = Math.min(...cabin.fares.map((fare) => fare.farePriceUsd))
+        const isSelected = cabin.classId === selectedCabinId
+        const lowestFare = getLowestCabinFare(cabin)
 
         return (
-          <UnstyledButton key={cabin.classId} onClick={() => onSelect(cabin.classId)}>
-            <Card
-              className={`${styles.card} ${isSelected ? styles.selected : ''}`}
-              withBorder
-              p="sm"
-            >
-              <Text className={styles.name} size="xs" c={isSelected ? undefined : 'dimmed'} fw={500}>
-                {cabin.className}
-              </Text>
-              <Text className={`${styles.price} ${isSelected ? styles.selectedPrice : ''}`} size="md" fw={700}>
-                ${lowestPrice.toLocaleString()}
-              </Text>
-            </Card>
+          <UnstyledButton
+            key={cabin.classId}
+            className={`${styles.cabin} ${isSelected ? styles.selected : ''}`}
+            aria-pressed={isSelected}
+            onClick={() => onSelect(cabin.classId)}
+          >
+            <span className={styles.name}>{cabin.className}</span>
+            {lowestFare !== null && (
+              <span className={styles.price}>from {formatUsd(lowestFare)}</span>
+            )}
           </UnstyledButton>
         )
       })}
-    </Box>
+    </div>
   )
 }

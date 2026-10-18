@@ -1,0 +1,149 @@
+@use '../../../styles/abstracts/mixins' as *;
+
+.summary {
+  @include surface-card;
+  overflow: hidden;
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1.5rem 1rem;
+}
+
+.title {
+  @include display-heading;
+  font-size: 1.4375rem;
+}
+
+.headingIcon {
+  color: var(--color-primary-text);
+}
+
+.destination {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+  padding: 0 1.5rem 1.25rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.route,
+.meta,
+.legLabel,
+.legRoute,
+.legDetail,
+.legPending,
+.breakdownTitle,
+.totalLabel,
+.totalNote,
+.totalValue,
+.reassurance {
+  margin: 0;
+}
+
+.route {
+  color: var(--color-text);
+  font-size: 1.1875rem;
+  font-weight: 600;
+}
+
+.meta,
+.legDetail,
+.legPending {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.leg {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+
+  & + & {
+    margin-top: 0.5rem;
+  }
+}
+
+.legLabel {
+  color: var(--color-text-muted);
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.legRoute {
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.breakdownTitle {
+  color: var(--color-text);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.priceItem {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.priceValue {
+  color: var(--color-text);
+  text-align: end;
+}
+
+.divider {
+  height: 1px;
+  background: var(--color-border);
+}
+
+.total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.totalLabel {
+  color: var(--color-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.totalNote {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.6875rem;
+}
+
+.totalValue {
+  color: var(--color-text);
+  font-size: 1.5625rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.reassurance {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.9375rem 1.5rem;
+  background: var(--color-success-tint);
+  color: var(--color-success);
+  font-size: 0.6875rem;
+}

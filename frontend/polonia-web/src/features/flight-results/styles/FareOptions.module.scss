@@ -1,41 +1,102 @@
-.container {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
 
 .options {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: 1rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12.5rem, 1fr));
+  gap: 0.75rem;
 }
 
-.card {
-  height: 12.5rem;
-  color: var(--color-text);
-  background: var(--color-bg);
-  border-color: var(--color-muted);
+.fare {
+  display: flex;
+  flex-direction: column;
+  gap: 1.0625rem;
+  padding: 1.125rem;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
 }
 
 .selected {
-  border-color: var(--color-primary);
-  box-shadow: inset 0 0 0 1px var(--color-primary);
-}
+  padding: calc(1.125rem - 0.5px);
+  background: var(--color-primary-tint);
+  border: 1.5px solid var(--color-primary);
 
-.fareContent {
-  display: flex;
-  height: 100%;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.selectedText {
-  color: var(--color-primary);
-}
-
-@media (max-width: 48rem) {
-  .options {
-    flex-direction: column;
+  .divider {
+    background: var(--color-primary-tint-border);
   }
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.name,
+.price,
+.priceNote {
+  margin: 0;
+}
+
+.name {
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.selectedIcon {
+  flex-shrink: 0;
+  color: var(--color-primary-text);
+}
+
+.price {
+  color: var(--color-text);
+  font-size: 1.5625rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.priceNote {
+  margin-top: 0.25rem;
+  color: var(--color-text-muted);
+  font-size: 0.625rem;
+}
+
+.divider {
+  height: 1px;
+  background: var(--color-border);
+}
+
+.perks {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.perk {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5625rem;
+  color: var(--color-text);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.perkIcon {
+  flex-shrink: 0;
+  margin-top: 0.0625rem;
+  color: var(--color-success);
+}
+
+.selectButton {
+  height: 2.3125rem;
+  font-size: 0.75rem;
+  font-weight: 600;
 }

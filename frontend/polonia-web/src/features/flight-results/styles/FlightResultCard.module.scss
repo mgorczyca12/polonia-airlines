@@ -1,29 +1,134 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+
 .card {
-  width: 100%;
-  max-width: 62.5rem;
-  //background-color: color-mix(in srgb, var(--color-surface), white 30%);
+  @include surface-card;
+  overflow: hidden;
 }
 
-.header {
+.recommendation {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 0.25rem 1rem;
+  padding: 0.75rem 1.5rem;
+  background: var(--color-banner);
 }
 
-.content {
+.recommendationTitle,
+.recommendationDetail,
+.startingPrice,
+.footnote {
+  margin: 0;
+}
+
+.recommendationTitle {
+  color: #fff;
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.recommendationDetail {
+  color: var(--color-banner-text);
+  font-size: 0.6875rem;
+}
+
+.body {
+  padding: 1.375rem;
+}
+
+.expanded .body {
+  padding: 1.5rem;
+}
+
+.summary {
+  display: flex;
+  align-items: center;
+  gap: 1.375rem;
+}
+
+.schedule {
+  flex: 1;
+  min-width: 0;
+}
+
+.startingFare {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  align-items: flex-end;
+  gap: 0.4375rem;
+  white-space: nowrap;
 }
 
-.continueButton {
-  align-self: flex-end;
+.badge {
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+  background: var(--color-primary-tint);
+  color: var(--color-primary-text);
+  font-size: 0.625rem;
+  font-weight: 600;
 }
 
-@media (max-width: 64rem) {
-  .header {
-    align-items: stretch;
+.startingPrice {
+  color: var(--color-text);
+  font-size: 1.375rem;
+  font-weight: 600;
+}
+
+.fromLabel {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+  font-weight: 400;
+}
+
+.viewFares {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--color-primary-text);
+  font-size: 0.6875rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.fares {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding-top: 1.5rem;
+}
+
+.footnote {
+  color: var(--color-text-muted);
+  font-size: 0.625rem;
+  line-height: 1.6;
+}
+
+@include below($bp-md) {
+  .body,
+  .expanded .body {
+    padding: 1.125rem;
+  }
+
+  .summary {
     flex-direction: column;
+    align-items: stretch;
+  }
+
+  .startingFare {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .badge {
+    order: -1;
   }
 }

@@ -2,50 +2,99 @@
 @use 'abstracts/mixins' as *;
 
 :root {
-  /* Light Theme */
-  --color-bg: #{$air-white};
-  --color-surface: #{$air-white};
-  
-  --color-text: #{$cabin-black};
-  --color-ink: #{$slate-ink};
+  /* Light theme */
+  --color-bg: #{$linen};
+  --color-surface: #{$cabin-white};
+  --color-surface-subtle: #{$linen};
+  --color-border: #{$jet-bridge};
 
-  --color-primary: color-mix(in srgb, #{$polonia-red}, white 10%);
-  --color-secondary: #{$polonia-gold};
+  --color-text: #{$cabin-ink};
+  --color-text-muted: #{$slate-gray};
 
-  --color-muted: #{$steel-gray};
+  --color-primary: #{$polonia-red};
+  --color-primary-text: #{$polonia-red};
+  --color-on-primary: #{$cabin-white};
+  --color-primary-tint: #{$polonia-red-tint};
+  --color-primary-tint-border: #{$polonia-red-tint-border};
+  --color-accent: #{$polonia-gold};
 
-  /* Mantine spacing scale */
-  --spacing-xs: 0.25rem;  /* 4px */
-  --spacing-sm: 0.5rem;   /* 8px */
-  --spacing-md: 1rem;     /* 16px */
-  --spacing-lg: 1.5rem;   /* 24px */
-  --spacing-xl: 2rem;     /* 32px */
+  --color-success: #{$runway-green};
+  --color-success-tint: #{$runway-green-tint};
 
-  /* Mantine font sizes */
+  --color-banner: #{$night-sky};
+  --color-banner-text: #{$night-sky-text};
+
+  --hero-scrim: linear-gradient(
+    90deg,
+    rgba(21, 36, 44, 0.86) 0%,
+    rgba(23, 40, 49, 0.21) 65%,
+    rgba(23, 40, 49, 0) 100%
+  );
+  --placeholder-hero: linear-gradient(135deg, #3b4a52 0%, #5d6b70 55%, #8a8478 100%);
+  --placeholder-photo: linear-gradient(135deg, #ebe7df 0%, #dcd6cb 100%);
+  --placeholder-icon: #{$slate-gray};
+
+  --shadow-raised: 0 8px 28px rgba(32, 39, 45, 0.07);
+
+  --font-body: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: Lora, Georgia, 'Times New Roman', serif;
+
+  --radius-control: 0.25rem;
+  --radius-card: 0.5rem;
+
+  --page-gutter: clamp(1.25rem, 5.5vw, 5rem);
+
+  /* Legacy aliases used by screens not yet redesigned */
+  --color-muted: var(--color-border);
+  --color-ink: var(--color-text-muted);
+  --color-secondary: var(--color-accent);
+
+  /* Spacing scale */
+  --spacing-xs: 0.25rem;
+  --spacing-sm: 0.5rem;
+  --spacing-md: 1rem;
+  --spacing-lg: 1.5rem;
+  --spacing-xl: 2rem;
+
+  /* Font sizes */
   --font-xs: 0.75rem;
   --font-sm: 0.875rem;
   --font-md: 1rem;
   --font-lg: 1.125rem;
   --font-xl: 1.25rem;
 
-  /* Mantine radii */
+  /* Radii */
   --radius-sm: 0.25rem;
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
 }
 
-/* Dark theme (Mantine-driven) */
 @include polonia-dark-theme {
   --color-bg: #{$night-charcoal};
   --color-surface: #{$cabin-graphite};
+  --color-surface-subtle: #{$night-charcoal};
+  --color-border: #{$fog-gray};
 
   --color-text: #{$polar-white};
-  --color-ink: #{$mist-gray};
+  --color-text-muted: #{$mist-gray};
 
-  --color-primary: #{$polonia-red};
-  --color-secondary: #{$polonia-gold};
+  --color-primary: #{$polonia-red-dark};
+  --color-primary-text: #{$polonia-red-text-dark};
+  --color-primary-tint: rgba(184, 36, 62, 0.16);
+  --color-primary-tint-border: rgba(242, 137, 155, 0.45);
+  --color-accent: #{$polonia-gold-dark};
 
-  --color-muted: #{$runway-gray};
+  --color-success: #{$runway-green-dark};
+  --color-success-tint: rgba(52, 106, 84, 0.24);
+
+  --color-banner: #{$midnight};
+  --color-banner-text: #{$mist-gray};
+
+  --placeholder-hero: linear-gradient(135deg, #1d2529 0%, #2c363b 55%, #3f3b34 100%);
+  --placeholder-photo: linear-gradient(135deg, #24262c 0%, #2e3037 100%);
+  --placeholder-icon: #{$mist-gray};
+
+  --shadow-raised: 0 8px 28px rgba(0, 0, 0, 0.35);
 }
 
 html {
@@ -54,29 +103,15 @@ html {
 }
 
 body {
+  margin: 0;
   background-color: var(--color-bg);
+  font-family: var(--font-body);
 }
 
 .polonia-card {
+  @include surface-card;
   color: var(--color-text);
-  border: 1px solid var(--color-muted);
-  border-radius: var(--radius-sm);
   padding: var(--spacing-md);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.polonia-button-primary {
-  background-color: var(--color-primary);
-  color: var(--color-text);
-  border: 1px solid var(--color-primary);
-  border-radius: var(--radius-sm);
-  padding: var(--spacing-sm) var(--spacing-md);
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.polonia-button-primary:hover {
-  background-color: var(--color-secondary);
 }
 
 .polonia-box-stack {
@@ -89,4 +124,22 @@ body {
   display: flex;
   flex-direction: row;
   gap: var(--spacing-md);
+}
+
+.polonia-action-button {
+  padding-inline: 1.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.polonia-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
 }

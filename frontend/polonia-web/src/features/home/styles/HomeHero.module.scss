@@ -1,0 +1,67 @@
+@use '../../../styles/abstracts/variables' as *;
+@use '../../../styles/abstracts/mixins' as *;
+
+.hero {
+  position: relative;
+}
+
+.backdrop {
+  position: absolute;
+  inset: 0 0 auto;
+  height: 29.0625rem;
+  background: var(--hero-scrim), var(--placeholder-hero);
+}
+
+.content {
+  @include page-container;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 2.75rem;
+  padding-top: 4rem;
+}
+
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  max-width: 47.5rem;
+  color: #fff;
+}
+
+.eyebrow,
+.title,
+.subtitle {
+  margin: 0;
+}
+
+.eyebrow {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(2.25rem, 6vw, 3.75rem);
+  font-weight: 400;
+  line-height: 1.07;
+}
+
+.subtitle {
+  max-width: 32rem;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+@include below($bp-md) {
+  .backdrop {
+    height: 22rem;
+  }
+
+  .content {
+    gap: 2rem;
+    padding-top: 2.5rem;
+  }
+}

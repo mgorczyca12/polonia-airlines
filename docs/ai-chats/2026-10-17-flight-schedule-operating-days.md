@@ -106,3 +106,30 @@ Previous session: [2026-10-16](2026-10-16-editor-indentation.md).
 - User requested committing and pushing the configuration/seat-map APIs, aircraft assignment, tests, documentation and CargoLayout placeholder directly to `main`.
 - Reviewed the pending scope; `git diff --check` passed. The previously recorded 43 passing integration cases, 29 selected unit cases and formatting checks remain the validation baseline; tests were not rerun solely for committing.
 - Commit and push outcome will be reported after execution.
+  - Outcome: committed and pushed `3be751c` to `main`.
+
+## Figma connection and frontend redesign (search and results)
+
+### Decisions
+- Connected the official Figma MCP server; it exposed five booking-flow frames (search, results, passengers, payment, confirmation) created from an Emirates-inspired prompt with placeholder "Aurel Airways" branding.
+- User chose: keep **Polonia Airlines** naming with the design's layout, typography and colors; neutral image placeholders (Polonia photos to be supplied later); payment as a clearly labelled demo form later; this pass covers **search and results only**.
+- Screens stay driven by bundled sample data. No invented fares, taxes, return flights or support claims; unavailable services are shown disabled.
+
+### Implemented
+- Design tokens (red `#A51D35`, gold `#AC8A51`, warm neutrals) with light/dark values, Mantine theme, and self-hosted Lora/Inter (`@fontsource`). Adding fonts also re-resolved `latest`-tagged TanStack packages to patch versions in the lockfile.
+- New header/footer/shell, booking progress stepper, search recap, reusable booking layout and journey summary sidebar.
+- Home: hero placeholder, search panel (tabs, trip type, airport swap, date range, travellers and cabin picker), service highlights, data-driven destination card.
+- Results: UTC date filtering with ±2-day fare strip and nearest-date fallback, sorting, recommended flight banner, cabin tabs, fare cards, flight details, return-unavailable notice, price summary and continue to `/booking`.
+- Shared, validated search parameters across `/` and `/flightlist` (including travellers and cabin) so "Modify search" prefills the form.
+- Fixed the pre-existing search crash: Mantine 9 date pickers return strings, so `toISOString()` failed once a date was chosen.
+- Updated [frontend documentation](../architecture/frontend.md).
+
+### Checks
+- `tsc --noEmit`, `pnpm lint`, `pnpm build` and `pnpm test --passWithNoTests` (no frontend tests exist) passed. Imported the search-param parser directly to keep the main chunk at 397 KB (baseline 357 KB) without the size warning.
+- Production-preview checks in Edge (Playwright) at 1440 px and 390 px, light and dark: layouts rendered, fare selection updated the summary, and continue navigated to `/booking`. The scripted run was stopped before the search-form and empty-date checks finished; those interactions were not fully verified.
+- Dev mode logged a hydration mismatch in TanStack devtools `data-tsd-source` attributes on the root document; devtools console piping re-logged it between browser and server in a growing loop, flooding the log and crashing the integrated browser.
+- Fix in `vite.config.ts`: disabled devtools console piping and excluded `__root.tsx` from source injection. A headless Edge check on the dev server then loaded home and results with zero console errors, and fare selection enabled Continue. Type-check, lint, build and `git diff --check` passed again.
+
+### Deferred
+- Passenger details, payment (demo) and confirmation redesigns; replace photo placeholders; frontend tests.
+- User requested committing and pushing the search/results redesign directly to `main`; outcome reported in the final response.

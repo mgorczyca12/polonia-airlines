@@ -1,4 +1,6 @@
-import { Box, Card, Divider, Text, UnstyledButton } from '@mantine/core'
+import { Button } from '@mantine/core'
+import { Check, CircleCheck } from 'lucide-react'
+import { formatUsd } from '#/shared/lib/formatting'
 import type { FlightCabin } from '../model/flight.types'
 import styles from '../styles/FareOptions.module.scss'
 
@@ -10,35 +12,50 @@ interface FareOptionsProps {
 
 export function FareOptions({ cabin, selectedFareId, onSelect }: FareOptionsProps) {
   return (
-    <Box className={styles.container}>
-      <Divider label={`Select a ${cabin.className} fare`} labelPosition="center" />
-      <Box className={styles.options}>
-        {cabin.fares.map((fare) => {
-          const isSelected = selectedFareId === fare.fareId
+    <div className={styles.options} role="group" aria-label={`${cabin.className} fares`}>
+      {cabin.fares.map((fare) => {
+        const isSelected = fare.fareId === selectedFareId
 
-          return (
-            <UnstyledButton key={fare.fareId} onClick={() => onSelect(fare.fareId)}>
-              <Card className={`${styles.card} ${isSelected ? styles.selected : ''}`} withBorder>
-                <Box className={styles.fareContent}>
-                  <div>
-                    <Text className={isSelected ? styles.selectedText : ''} fw={700} size="md">
-                      {fare.fareName}
-                    </Text>
-                    {fare.perks.slice(0, 2).map((perk) => (
-                      <Text key={perk} size="xs" c={isSelected ? undefined : 'dimmed'} mt={8}>
-                        • {perk}
-                      </Text>
-                    ))}
-                  </div>
-                  <Text fw={700} size="lg" ta="right">
-                    ${fare.farePriceUsd.toLocaleString()}
-                  </Text>
-                </Box>
-              </Card>
-            </UnstyledButton>
-          )
-        })}
-      </Box>
-    </Box>
+        return (
+          <article
+            key={fare.fareId}
+            className={`${styles.fare} ${isSelected ? styles.selected : ''}`}
+          >
+            <div className={styles.heading}>
+              <h4 className={styles.name}>{fare.fareName}</h4>
+              {isSelected && (
+                <CircleCheck className={styles.selectedIcon} size={19} aria-hidden="true" />
+              )}
+            </div>
+
+            <div>
+              <p className={styles.price}>{formatUsd(fare.farePriceUsd)}</p>
+              <p className={styles.priceNote}>per adult · this flight</p>
+            </div>
+
+            <span className={styles.divider} aria-hidden="true" />
+
+            <ul className={styles.perks}>
+              {fare.perks.map((perk) => (
+                <li key={perk} className={styles.perk}>
+                  <Check className={styles.perkIcon} size={15} aria-hidden="true" />
+                  <span>{perk}</span>
+                </li>
+              ))}
+            </ul>
+
+            <Button
+              className={styles.selectButton}
+              variant={isSelected ? 'filled' : 'default'}
+              fullWidth
+              aria-pressed={isSelected}
+              onClick={() => onSelect(fare.fareId)}
+            >
+              {isSelected ? 'Selected' : 'Select fare'}
+            </Button>
+          </article>
+        )
+      })}
+    </div>
   )
 }

@@ -1,3 +1,6 @@
+export { BookingProgress } from './components/BookingProgress'
+export type { BookingStep } from './components/BookingProgress'
 export { BookingSummary } from './components/BookingSummary'
+export { JourneySummary } from './components/JourneySummary'
 export { PassengerDetailsForm } from './components/PassengerDetailsForm'
 export type { PassengerDetails } from './model/booking.types'

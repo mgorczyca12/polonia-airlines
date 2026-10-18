@@ -1,3 +1,41 @@
+@use 'variables' as *;
+
+@mixin page-container {
+  width: 100%;
+  max-width: calc(#{$page-max-width} + 2 * var(--page-gutter));
+  margin-inline: auto;
+  padding-inline: var(--page-gutter);
+}
+
+@mixin below($breakpoint) {
+  @media (max-width: calc(#{$breakpoint} - 0.0625rem)) {
+    @content;
+  }
+}
+
+@mixin eyebrow {
+  margin: 0;
+  color: var(--color-primary-text);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@mixin display-heading {
+  margin: 0;
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+@mixin surface-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+}
+
 @mixin polonia-dark-theme {
   [data-mantine-color-scheme='dark'] #{&} {
     @content;

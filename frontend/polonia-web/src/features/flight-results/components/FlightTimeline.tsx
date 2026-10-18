@@ -1,85 +1,99 @@
-import { Box, Text, UnstyledButton } from '@mantine/core'
+import { UnstyledButton } from '@mantine/core'
+import { ChevronDown, Plane } from 'lucide-react'
+import { formatDuration, formatTime } from '#/shared/lib/formatting'
+import {
+  getAircraftLabel,
+  getCityName,
+  getFlightNumbersLabel,
+  getFlightTimes,
+  getStopsLabel,
+} from '../model/flight.helpers'
 import type { Flight } from '../model/flight.types'
 import styles from '../styles/FlightTimeline.module.scss'
 
 interface FlightTimelineProps {
   flight: Flight
   detailsOpened: boolean
+  detailsId: string
   onToggleDetails: () => void
-}
-
-function formatFlightTime(dateTime: string): string {
-  const time = dateTime.split(' ')[1]
-
-  if (!time) {
-    return dateTime
-  }
-
-  const [hours, minutes] = time.split(':').map(Number)
-  const period = hours >= 12 ? 'PM' : 'AM'
-  const displayHours = hours % 12 || 12
-
-  return `${displayHours}:${String(minutes).padStart(2, '0')} ${period}`
 }
 
 export function FlightTimeline({
   flight,
   detailsOpened,
+  detailsId,
   onToggleDetails,
 }: FlightTimelineProps) {
-  const firstSegment = flight.segments.at(0)
-  const lastSegment = flight.segments.at(-1)
+  const times = getFlightTimes(flight)
 
-  if (!firstSegment || !lastSegment) {
+  if (!times) {
     return null
   }
 
+  const departureCode = flight.departureAirport.airportCode
+  const arrivalCode = flight.arrivalAirport.airportCode
+  const dayOffset = times.arrivalDayOffset
+
   return (
-    <Box className={styles.timeline}>
-      <Box className={styles.route}>
-        <Text className={styles.endpoint} fw={700} size="lg">
-          {formatFlightTime(firstSegment.departureDateTimeUtc)}{' '}
-          {flight.departureAirport.airportCode}
-        </Text>
-        <Box className={styles.track}>
-          <Box className={styles.line} />
-          {flight.layovers.map((_, index) => (
-            <Box
-              key={`${flight.flightNumber}-layover-${index}`}
-              className={styles.stopMarker}
-              style={{
-                '--stop-position': `${((index + 1) / (flight.layovers.length + 1)) * 100}%`,
-              }}
-            />
-          ))}
-        </Box>
-        <Text className={styles.endpoint} fw={700} size="lg">
-          {formatFlightTime(lastSegment.arrivalDateTimeUtc)}{' '}
-          {flight.arrivalAirport.airportCode}
-        </Text>
-      </Box>
-      <Box className={styles.metadata}>
-        <Text size="xs" c="dimmed">
-          Duration: {Math.floor(flight.totalDurationMinutes / 60)}h{' '}
-          {flight.totalDurationMinutes % 60}m
-        </Text>
-        <Text size="xs" c="dimmed">
-          •
-        </Text>
-        <Text className={styles.stopText} size="xs" fw={600}>
-          {flight.isNonStop
-            ? 'Nonstop'
-            : `${flight.layovers.length} stop${flight.layovers.length === 1 ? '' : 's'}`}
-        </Text>
+    <div className={styles.schedule}>
+      <div className={styles.endpoint}>
+        <p className={styles.time}>{formatTime(times.departure)}</p>
+        <p className={styles.place}>
+          {departureCode} · {getCityName(departureCode)}
+        </p>
+      </div>
+
+      <div className={styles.journey}>
+        <p className={styles.duration}>
+          <span className="polonia-visually-hidden">Journey time </span>
+          {formatDuration(flight.totalDurationMinutes)}
+        </p>
+        <div className={styles.path} aria-hidden="true">
+          <span className={styles.line} />
+          <Plane className={styles.plane} size={17} strokeWidth={1.75} />
+          <span className={styles.line} />
+        </div>
+        <p className={flight.isNonStop ? styles.nonStop : styles.stops}>
+          {getStopsLabel(flight)}
+        </p>
+      </div>
+
+      <div className={styles.endpoint}>
+        <p className={styles.time}>
+          {formatTime(times.arrival)}
+          {dayOffset > 0 && (
+            <sup className={styles.dayOffset}>
+              +{dayOffset}
+              <span className="polonia-visually-hidden">
+                {` day${dayOffset === 1 ? '' : 's'} later`}
+              </span>
+            </sup>
+          )}
+        </p>
+        <p className={styles.place}>
+          {arrivalCode} · {getCityName(arrivalCode)}
+        </p>
+      </div>
+
+      <span className={styles.divider} aria-hidden="true" />
+
+      <div className={styles.aircraft}>
+        <p className={styles.flightNumber}>{getFlightNumbersLabel(flight)}</p>
+        <p className={styles.aircraftType}>{getAircraftLabel(flight)}</p>
         <UnstyledButton
           className={styles.detailsButton}
+          aria-expanded={detailsOpened}
+          aria-controls={detailsId}
           onClick={onToggleDetails}
         >
-          <Text className={styles.detailsText} size="xs" fw={500}>
-            {detailsOpened ? 'Hide flight details' : 'View flight details'}
-          </Text>
+          {detailsOpened ? 'Hide details' : 'Flight details'}
+          <ChevronDown
+            className={detailsOpened ? styles.chevronOpen : undefined}
+            size={13}
+            aria-hidden="true"
+          />
         </UnstyledButton>
-      </Box>
-    </Box>
+      </div>
+    </div>
   )
 }
