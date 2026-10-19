@@ -55,23 +55,16 @@
 
 .nextStep {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem 1.5rem;
-  padding-top: 0.5rem;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
 }
 
 .nextStepNote {
   margin: 0;
   color: var(--color-text-muted);
   font-size: 0.75rem;
-}
-
-@include below($bp-md) {
-  .nextStep > :last-child {
-    width: 100%;
-  }
+  text-align: center;
 }
 
 @include below($bp-lg) {

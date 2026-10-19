@@ -1,5 +1,11 @@
 import { useNavigate } from '@tanstack/react-router'
-import { ActionIcon, Button, Radio, Select, Tabs } from '@mantine/core'
+import {
+  ActionIcon,
+  Button,
+  SegmentedControl,
+  Select,
+  Tabs,
+} from '@mantine/core'
 import { DatePickerInput } from '@mantine/dates'
 import { useForm } from '@mantine/form'
 import {
@@ -133,24 +139,31 @@ export function FlightSearch({ initialSearch = {} }: FlightSearchProps) {
           </Tabs.List>
         </Tabs>
 
-        <Radio.Group
+        <SegmentedControl
           value={tripType}
           onChange={handleTripTypeChange}
-          label="Trip type"
-          classNames={{ label: 'polonia-visually-hidden' }}
-        >
-          <div className={styles.tripTypes}>
-            <Radio value="roundTrip" label="Return" size="xs" />
-            <Radio value="oneWay" label="One way" size="xs" />
-            <Radio
-              value="multiCity"
-              label="Multi-city"
-              size="xs"
-              disabled
-              title="Multi-city journeys are coming soon"
-            />
-          </div>
-        </Radio.Group>
+          aria-label="Trip type"
+          data={[
+            { value: 'roundTrip', label: 'Return' },
+            { value: 'oneWay', label: 'One way' },
+            {
+              value: 'multiCity',
+              label: (
+                <span title="Multi-city journeys are coming soon">
+                  Multi-city
+                </span>
+              ),
+              disabled: true,
+            },
+          ]}
+          withItemsBorders
+          classNames={{
+            root: styles.tripTypeControl,
+            control: styles.tripTypeControlItem,
+            label: styles.tripTypeLabel,
+            indicator: styles.tripTypeIndicator,
+          }}
+        />
 
         <div className={styles.fields}>
           <Select

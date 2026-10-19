@@ -50,10 +50,35 @@
   margin-inline-end: 0.5rem;
 }
 
-.tripTypes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem 1.5rem;
+.tripTypeControl {
+  --sc-color: var(--color-surface);
+  --sc-font-size: 0.8125rem;
+  --sc-label-color: var(--color-text);
+  --sc-padding: 0.625rem 1rem;
+  --sc-radius: 0.375rem;
+
+  align-self: flex-start;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-subtle);
+  border-radius: 0.5rem;
+}
+
+.tripTypeControlItem {
+  --separator-color: var(--color-border);
+}
+
+.tripTypeLabel {
+  color: var(--color-text-muted);
+  font-weight: 400;
+
+  &[data-active] {
+    color: var(--color-text);
+    font-weight: 600;
+  }
+}
+
+.tripTypeIndicator {
+  border: 1px solid var(--color-border);
 }
 
 .fields {

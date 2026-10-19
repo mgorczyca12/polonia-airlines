@@ -28,9 +28,13 @@ function FlightListingRoute() {
   const travellers = resolveTravellers(search)
   const tripType = resolveTripType(search)
   const cabin = search.cabin ?? DEFAULT_CABIN
-  const selectedFlight = selection ? getFlightByNumber(selection.flightNumber) : undefined
+  const selectedFlight = selection
+    ? getFlightByNumber(selection.flightNumber)
+    : undefined
   const selectedFare =
-    selectedFlight && selection ? findFare(selectedFlight, selection.fareId)?.fare : undefined
+    selectedFlight && selection
+      ? findFare(selectedFlight, selection.fareId)?.fare
+      : undefined
 
   const changeDepartureDate = (departure: string) => {
     setSelection(null)
@@ -38,7 +42,10 @@ function FlightListingRoute() {
       search: (previous) => ({
         ...previous,
         departure,
-        return: previous.return && previous.return >= departure ? previous.return : undefined,
+        return:
+          previous.return && previous.return >= departure
+            ? previous.return
+            : undefined,
       }),
       replace: true,
     })
@@ -62,16 +69,36 @@ function FlightListingRoute() {
         title="Find your perfect flight."
         description="Choose a little more comfort, a little more freedom. Every fare includes our signature service."
         sidebar={
-          <JourneySummary
-            from={search.from}
-            to={search.to}
-            tripType={tripType}
-            travellers={travellers}
-            cabinLabel={cabin}
-            returnDate={search.return}
-            flight={selectedFlight}
-            fare={selectedFare}
-          />
+          <>
+            <JourneySummary
+              from={search.from}
+              to={search.to}
+              tripType={tripType}
+              travellers={travellers}
+              cabinLabel={cabin}
+              returnDate={search.return}
+              flight={selectedFlight}
+              fare={selectedFare}
+            />
+            <BookingNextStep
+              note={
+                selection
+                  ? 'Review your selection, then add passenger details.'
+                  : 'Select a fare to continue.'
+              }
+            >
+              <Button
+                className="polonia-action-button"
+                size="lg"
+                fullWidth
+                disabled={!selection}
+                rightSection={<ArrowRight size={17} />}
+                onClick={continueToPassengers}
+              >
+                Continue to passengers
+              </Button>
+            </BookingNextStep>
+          </>
         }
       >
         <FlightResults
@@ -87,27 +114,11 @@ function FlightListingRoute() {
         {tripType === 'roundTrip' && search.from && search.to && (
           <ReturnFlightNotice
             routeLabel={`${getCityName(search.to)} to ${getCityName(search.from)}`}
-            returnDateLabel={search.return ? formatShortDate(search.return) : undefined}
+            returnDateLabel={
+              search.return ? formatShortDate(search.return) : undefined
+            }
           />
         )}
-
-        <BookingNextStep
-          note={
-            selection
-              ? 'Review your selection, then add passenger details.'
-              : 'Select a fare to continue.'
-          }
-        >
-          <Button
-            className="polonia-action-button"
-            size="lg"
-            disabled={!selection}
-            rightSection={<ArrowRight size={17} />}
-            onClick={continueToPassengers}
-          >
-            Continue to passengers
-          </Button>
-        </BookingNextStep>
       </BookingLayout>
     </>
   )

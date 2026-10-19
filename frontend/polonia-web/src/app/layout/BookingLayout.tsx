@@ -18,8 +18,8 @@ export function BookingNextStep({
 }) {
   return (
     <div className={styles.nextStep}>
-      <p className={styles.nextStepNote}>{note}</p>
       {children}
+      <p className={styles.nextStepNote}>{note}</p>
     </div>
   )
 }
