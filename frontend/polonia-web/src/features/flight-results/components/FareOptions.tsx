@@ -7,14 +7,29 @@ import styles from '../styles/FareOptions.module.scss'
 interface FareOptionsProps {
   cabin: FlightCabin
   selectedFareId: number | null
+  selectLabel?: string
+  assignedLabels?: Record<number, string[]>
+  reserveAssignmentRow?: boolean
   onSelect: (fareId: number) => void
 }
 
-export function FareOptions({ cabin, selectedFareId, onSelect }: FareOptionsProps) {
+export function FareOptions({
+  cabin,
+  selectedFareId,
+  selectLabel = 'Select fare',
+  assignedLabels = {},
+  reserveAssignmentRow = false,
+  onSelect,
+}: FareOptionsProps) {
   return (
-    <div className={styles.options} role="group" aria-label={`${cabin.className} fares`}>
+    <div
+      className={styles.options}
+      role="group"
+      aria-label={`${cabin.className} fares`}
+    >
       {cabin.fares.map((fare) => {
         const isSelected = fare.fareId === selectedFareId
+        const assignedTo = assignedLabels[fare.fareId] ?? []
 
         return (
           <article
@@ -24,13 +39,24 @@ export function FareOptions({ cabin, selectedFareId, onSelect }: FareOptionsProp
             <div className={styles.heading}>
               <h4 className={styles.name}>{fare.fareName}</h4>
               {isSelected && (
-                <CircleCheck className={styles.selectedIcon} size={19} aria-hidden="true" />
+                <CircleCheck
+                  className={styles.selectedIcon}
+                  size={19}
+                  aria-hidden="true"
+                />
               )}
             </div>
 
             <div>
               <p className={styles.price}>{formatUsd(fare.farePriceUsd)}</p>
               <p className={styles.priceNote}>per adult · this flight</p>
+              {(assignedTo.length > 0 || reserveAssignmentRow) && (
+                <p className={styles.assigned}>
+                  {assignedTo.length > 0
+                    ? `Chosen by ${assignedTo.join(', ')}`
+                    : '\u00A0'}
+                </p>
+              )}
             </div>
 
             <span className={styles.divider} aria-hidden="true" />
@@ -38,7 +64,11 @@ export function FareOptions({ cabin, selectedFareId, onSelect }: FareOptionsProp
             <ul className={styles.perks}>
               {fare.perks.map((perk) => (
                 <li key={perk} className={styles.perk}>
-                  <Check className={styles.perkIcon} size={15} aria-hidden="true" />
+                  <Check
+                    className={styles.perkIcon}
+                    size={15}
+                    aria-hidden="true"
+                  />
                   <span>{perk}</span>
                 </li>
               ))}
@@ -51,7 +81,7 @@ export function FareOptions({ cabin, selectedFareId, onSelect }: FareOptionsProp
               aria-pressed={isSelected}
               onClick={() => onSelect(fare.fareId)}
             >
-              {isSelected ? 'Selected' : 'Select fare'}
+              {isSelected ? 'Selected' : selectLabel}
             </Button>
           </article>
         )

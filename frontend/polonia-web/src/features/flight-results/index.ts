@@ -2,6 +2,7 @@ export { FlightResults } from './components/FlightResults'
 export { ReturnFlightNotice } from './components/ReturnFlightNotice'
 export { getFlightByNumber, getFlights } from './data/flight.repository'
 export {
+  assignFare,
   findFare,
   getCityName,
   getDepartureDateKey,

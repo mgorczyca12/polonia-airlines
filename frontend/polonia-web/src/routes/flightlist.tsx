@@ -7,6 +7,7 @@ import { BookingProgress, JourneySummary } from '#/features/booking'
 import {
   FlightResults,
   ReturnFlightNotice,
+  assignFare,
   findFare,
   getCityName,
   getFlightByNumber,
@@ -15,6 +16,7 @@ import type { FareSelection } from '#/features/flight-results'
 import {
   DEFAULT_CABIN,
   SearchRecap,
+  getSeatedPassengers,
   resolveTravellers,
   resolveTripType,
 } from '#/features/flight-search'
@@ -26,15 +28,40 @@ function FlightListingRoute() {
   const navigate = Route.useNavigate()
   const [selection, setSelection] = useState<FareSelection | null>(null)
   const travellers = resolveTravellers(search)
+  const passengers = getSeatedPassengers(travellers)
   const tripType = resolveTripType(search)
   const cabin = search.cabin ?? DEFAULT_CABIN
   const selectedFlight = selection
     ? getFlightByNumber(selection.flightNumber)
     : undefined
-  const selectedFare =
-    selectedFlight && selection
-      ? findFare(selectedFlight, selection.fareId)?.fare
-      : undefined
+  const passengerFares = passengers.map((passenger) => {
+    const fareId = selection?.fareIds[passenger.id]
+
+    return {
+      passenger,
+      fare:
+        selectedFlight && fareId !== undefined
+          ? findFare(selectedFlight, fareId)?.fare
+          : undefined,
+    }
+  })
+  const pendingPassengers = passengerFares.filter(({ fare }) => !fare)
+  const hasAllFares = passengers.length > 0 && pendingPassengers.length === 0
+  const nextStepNote = hasAllFares
+    ? 'Review your selection, then add passenger details.'
+    : pendingPassengers.length === passengers.length
+      ? 'Select a fare to continue.'
+      : `Choose a fare for ${pendingPassengers.map(({ passenger }) => passenger.label).join(', ')}.`
+
+  const selectFare = (
+    flightNumber: string,
+    passengerIds: string[],
+    fareId: number,
+  ) => {
+    setSelection((current) =>
+      assignFare(current, flightNumber, passengerIds, fareId),
+    )
+  }
 
   const changeDepartureDate = (departure: string) => {
     setSelection(null)
@@ -52,10 +79,15 @@ function FlightListingRoute() {
   }
 
   const continueToPassengers = () => {
-    if (selection) {
+    if (selection && hasAllFares) {
       void navigate({
         to: '/booking',
-        search: { flight: selection.flightNumber, fare: selection.fareId },
+        search: {
+          flight: selection.flightNumber,
+          fares: passengerFares.flatMap(({ fare }) =>
+            fare ? [fare.fareId] : [],
+          ),
+        },
       })
     }
   }
@@ -78,20 +110,14 @@ function FlightListingRoute() {
               cabinLabel={cabin}
               returnDate={search.return}
               flight={selectedFlight}
-              fare={selectedFare}
+              passengerFares={passengerFares}
             />
-            <BookingNextStep
-              note={
-                selection
-                  ? 'Review your selection, then add passenger details.'
-                  : 'Select a fare to continue.'
-              }
-            >
+            <BookingNextStep note={nextStepNote}>
               <Button
                 className="polonia-action-button"
                 size="lg"
                 fullWidth
-                disabled={!selection}
+                disabled={!hasAllFares}
                 rightSection={<ArrowRight size={17} />}
                 onClick={continueToPassengers}
               >
@@ -107,7 +133,8 @@ function FlightListingRoute() {
           departureDate={search.departure}
           preferredCabin={cabin}
           selection={selection}
-          onSelectFare={setSelection}
+          passengers={passengers}
+          onSelectFare={selectFare}
           onDepartureDateChange={changeDepartureDate}
         />
 

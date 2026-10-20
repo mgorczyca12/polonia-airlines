@@ -18,7 +18,11 @@ export interface TravellerCounts {
   infant: number
 }
 
-export const DEFAULT_TRAVELLERS: TravellerCounts = { adult: 1, child: 0, infant: 0 }
+export const DEFAULT_TRAVELLERS: TravellerCounts = {
+  adult: 1,
+  child: 0,
+  infant: 0,
+}
 export const DEFAULT_CABIN: CabinPreference = 'Economy'
 
 /** Flight search criteria carried in the URL between the search and results pages. */
@@ -37,7 +41,9 @@ export interface FlightSearchParams {
 const AIRPORT_CODE = /^[A-Z]{3}$/
 
 function readAirportCode(value: unknown): string | undefined {
-  return typeof value === 'string' && AIRPORT_CODE.test(value) ? value : undefined
+  return typeof value === 'string' && AIRPORT_CODE.test(value)
+    ? value
+    : undefined
 }
 
 function readCount(value: unknown, minimum: number): number | undefined {
@@ -53,11 +59,23 @@ function isCabinPreference(value: unknown): value is CabinPreference {
   return CABIN_OPTIONS.some((cabin) => cabin === value)
 }
 
-export function isValidTravellerCounts({ adult, child, infant }: TravellerCounts): boolean {
-  return adult >= 1 && child >= 0 && infant >= 0 && adult + child <= MAX_SEATED_TRAVELLERS && infant <= adult
+export function isValidTravellerCounts({
+  adult,
+  child,
+  infant,
+}: TravellerCounts): boolean {
+  return (
+    adult >= 1 &&
+    child >= 0 &&
+    infant >= 0 &&
+    adult + child <= MAX_SEATED_TRAVELLERS &&
+    infant <= adult
+  )
 }
 
-export function parseFlightSearchParams(search: Record<string, unknown>): FlightSearchParams {
+export function parseFlightSearchParams(
+  search: Record<string, unknown>,
+): FlightSearchParams {
   const tripType: TripType | undefined =
     search.tripType === 'oneWay' || search.tripType === 'roundTrip'
       ? search.tripType
@@ -109,7 +127,11 @@ function pluralize(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`
 }
 
-export function formatTravellers({ adult, child, infant }: TravellerCounts): string {
+export function formatTravellers({
+  adult,
+  child,
+  infant,
+}: TravellerCounts): string {
   return [
     pluralize(adult, 'adult', 'adults'),
     child > 0 ? pluralize(child, 'child', 'children') : null,
@@ -119,6 +141,31 @@ export function formatTravellers({ adult, child, infant }: TravellerCounts): str
     .join(', ')
 }
 
-export function seatedTravellerCount({ adult, child }: TravellerCounts): number {
+export function seatedTravellerCount({
+  adult,
+  child,
+}: TravellerCounts): number {
   return adult + child
+}
+
+export interface SeatedPassenger {
+  id: string
+  label: string
+}
+
+/** Seated travellers in booking order. Infants travel on a lap and have no fare of their own. */
+export function getSeatedPassengers({
+  adult,
+  child,
+}: TravellerCounts): SeatedPassenger[] {
+  const adults = Array.from({ length: adult }, (_, index) => ({
+    id: `adult-${index + 1}`,
+    label: `Adult ${index + 1}`,
+  }))
+  const children = Array.from({ length: child }, (_, index) => ({
+    id: `child-${index + 1}`,
+    label: `Child ${index + 1}`,
+  }))
+
+  return [...adults, ...children]
 }

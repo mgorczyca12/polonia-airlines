@@ -5,6 +5,7 @@ export {
   CABIN_OPTIONS,
   DEFAULT_CABIN,
   formatTravellers,
+  getSeatedPassengers,
   parseFlightSearchParams,
   resolveTravellers,
   resolveTripType,
@@ -13,6 +14,7 @@ export {
 export type {
   CabinPreference,
   FlightSearchParams,
+  SeatedPassenger,
   TravellerCounts,
   TripType,
 } from './model/search-params'

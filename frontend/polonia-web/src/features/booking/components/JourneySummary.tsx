@@ -6,8 +6,12 @@ import {
   getFlightTimes,
   getStopsLabel,
 } from '#/features/flight-results'
-import { formatTravellers, seatedTravellerCount } from '#/features/flight-search'
-import type { TravellerCounts, TripType } from '#/features/flight-search'
+import { formatTravellers } from '#/features/flight-search'
+import type {
+  SeatedPassenger,
+  TravellerCounts,
+  TripType,
+} from '#/features/flight-search'
 import {
   formatDuration,
   formatShortDate,
@@ -17,6 +21,11 @@ import {
 } from '#/shared/lib/formatting'
 import styles from '../styles/JourneySummary.module.scss'
 
+interface PassengerFareLine {
+  passenger: SeatedPassenger
+  fare?: BrandedFare
+}
+
 interface JourneySummaryProps {
   from?: string
   to?: string
@@ -25,7 +34,7 @@ interface JourneySummaryProps {
   cabinLabel: string
   returnDate?: string
   flight?: Flight
-  fare?: BrandedFare
+  passengerFares: PassengerFareLine[]
 }
 
 function OutboundLeg({ flight }: { flight?: Flight }) {
@@ -40,11 +49,14 @@ function OutboundLeg({ flight }: { flight?: Flight }) {
     )
   }
 
-  const dayOffset = times.arrivalDayOffset > 0 ? ` +${times.arrivalDayOffset}` : ''
+  const dayOffset =
+    times.arrivalDayOffset > 0 ? ` +${times.arrivalDayOffset}` : ''
 
   return (
     <div className={styles.leg}>
-      <p className={styles.legLabel}>Outbound · {formatShortDate(toDateKey(times.departure))}</p>
+      <p className={styles.legLabel}>
+        Outbound · {formatShortDate(toDateKey(times.departure))}
+      </p>
       <p className={styles.legRoute}>
         {flight.departureAirport.airportCode} {formatTime(times.departure)} →{' '}
         {flight.arrivalAirport.airportCode} {formatTime(times.arrival)}
@@ -66,19 +78,32 @@ export function JourneySummary({
   cabinLabel,
   returnDate,
   flight,
-  fare,
+  passengerFares,
 }: JourneySummaryProps) {
   const isReturn = tripType === 'roundTrip'
-  const seatedTravellers = seatedTravellerCount(travellers)
-  const fareTotal = fare ? fare.farePriceUsd * seatedTravellers : null
-  const seatedTravellerLabel = formatTravellers({ ...travellers, infant: 0 })
+  const selectedFares = passengerFares.flatMap(({ fare }) =>
+    fare ? [fare] : [],
+  )
+  const isComplete =
+    passengerFares.length > 0 && selectedFares.length === passengerFares.length
+  const fareTotal = isComplete
+    ? selectedFares.reduce((total, fare) => total + fare.farePriceUsd, 0)
+    : null
+  const fareNames = new Set(selectedFares.map((fare) => fare.fareName))
+  const fareLabel =
+    fareNames.size > 1
+      ? 'Mixed fares'
+      : (selectedFares.at(0)?.fareName ?? cabinLabel)
   const routeLabel =
     from && to
       ? `${getCityName(from)} ${isReturn ? '↔' : '→'} ${getCityName(to)}`
       : 'Your flights'
 
   return (
-    <section className={styles.summary} aria-labelledby="journey-summary-heading">
+    <section
+      className={styles.summary}
+      aria-labelledby="journey-summary-heading"
+    >
       <div className={styles.heading}>
         <h2 id="journey-summary-heading" className={styles.title}>
           Your journey
@@ -90,7 +115,7 @@ export function JourneySummary({
         <p className={styles.route}>{routeLabel}</p>
         <p className={styles.meta}>
           {isReturn ? 'Return' : 'One way'} · {formatTravellers(travellers)} ·{' '}
-          {fare?.fareName ?? cabinLabel}
+          {fareLabel}
         </p>
       </div>
 
@@ -101,19 +126,25 @@ export function JourneySummary({
             <p className={styles.legLabel}>
               Return{returnDate ? ` · ${formatShortDate(returnDate)}` : ''}
             </p>
-            <p className={styles.legPending}>Not available in the current schedule.</p>
+            <p className={styles.legPending}>
+              Not available in the current schedule.
+            </p>
           </div>
         )}
       </div>
 
       <div className={styles.section}>
         <p className={styles.breakdownTitle}>Price breakdown</p>
-        <div className={styles.priceItem}>
-          <span>Fares · {seatedTravellerLabel}</span>
-          <span className={styles.priceValue}>
-            {fareTotal === null ? '—' : formatUsd(fareTotal, { exact: true })}
-          </span>
-        </div>
+        {passengerFares.map(({ passenger, fare }) => (
+          <div key={passenger.id} className={styles.priceItem}>
+            <span>
+              {passenger.label} · {fare?.fareName ?? 'Fare not chosen'}
+            </span>
+            <span className={styles.priceValue}>
+              {fare ? formatUsd(fare.farePriceUsd, { exact: true }) : '—'}
+            </span>
+          </div>
+        ))}
         {travellers.infant > 0 && (
           <div className={styles.priceItem}>
             <span>Infants · {travellers.infant}</span>

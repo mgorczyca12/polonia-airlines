@@ -6,9 +6,29 @@ import {
 } from '#/shared/lib/formatting'
 import type { BrandedFare, Flight, FlightCabin } from './flight.types'
 
+export type PassengerFareIds = Partial<Record<string, number>>
+
+/** One flight with a fare chosen per passenger, keyed by passenger ID. */
 export interface FareSelection {
   flightNumber: string
-  fareId: number
+  fareIds: PassengerFareIds
+}
+
+export function assignFare(
+  selection: FareSelection | null,
+  flightNumber: string,
+  passengerIds: string[],
+  fareId: number,
+): FareSelection {
+  const currentFares =
+    selection?.flightNumber === flightNumber ? selection.fareIds : {}
+  const fareIds = { ...currentFares }
+
+  for (const passengerId of passengerIds) {
+    fareIds[passengerId] = fareId
+  }
+
+  return { flightNumber, fareIds }
 }
 
 export type FlightSortOrder = 'recommended' | 'price' | 'duration' | 'departure'
@@ -54,7 +74,9 @@ export function getFlightNumbersLabel(flight: Flight): string {
 }
 
 export function getAircraftLabel(flight: Flight): string {
-  return [...new Set(flight.segments.map((segment) => segment.aircraftType))].join(' · ')
+  return [
+    ...new Set(flight.segments.map((segment) => segment.aircraftType)),
+  ].join(' · ')
 }
 
 export function getStopsLabel(flight: Flight): string {
@@ -65,7 +87,8 @@ export function getStopsLabel(flight: Flight): string {
   const stopCount = flight.layovers.length
   const places = flight.layovers
     .map((layover) => {
-      const city = getAirportByCode(layover.airportCode)?.City ?? layover.airportName
+      const city =
+        getAirportByCode(layover.airportCode)?.City ?? layover.airportName
       return `${city} (${layover.airportCode})`
     })
     .join(', ')
@@ -73,7 +96,10 @@ export function getStopsLabel(flight: Flight): string {
   return `${stopCount} ${stopCount === 1 ? 'stop' : 'stops'} · ${places}`
 }
 
-export function findCabin(flight: Flight, cabinName: string): FlightCabin | undefined {
+export function findCabin(
+  flight: Flight,
+  cabinName: string,
+): FlightCabin | undefined {
   return flight.brandedFares.find((cabin) => cabin.className === cabinName)
 }
 
@@ -103,11 +129,16 @@ export function getLowestCabinFare(cabin: FlightCabin): number | null {
 }
 
 /** Lowest fare in the preferred cabin, falling back to the lowest fare on the flight. */
-export function getLowestFare(flight: Flight, preferredCabin?: string): number | null {
+export function getLowestFare(
+  flight: Flight,
+  preferredCabin?: string,
+): number | null {
   const cabin = preferredCabin ? findCabin(flight, preferredCabin) : undefined
   const cabinPrice = cabin ? lowestPrice(cabin.fares) : null
 
-  return cabinPrice ?? lowestPrice(flight.brandedFares.flatMap((item) => item.fares))
+  return (
+    cabinPrice ?? lowestPrice(flight.brandedFares.flatMap((item) => item.fares))
+  )
 }
 
 export function getRecommendedFlight(flights: Flight[]): Flight | undefined {
@@ -132,9 +163,15 @@ export function sortFlights(
   return [...flights].sort((first, second) => {
     switch (order) {
       case 'price':
-        return price(first) - price(second) || departureTime(first) - departureTime(second)
+        return (
+          price(first) - price(second) ||
+          departureTime(first) - departureTime(second)
+        )
       case 'duration':
-        return first.totalDurationMinutes - second.totalDurationMinutes || price(first) - price(second)
+        return (
+          first.totalDurationMinutes - second.totalDurationMinutes ||
+          price(first) - price(second)
+        )
       case 'departure':
         return departureTime(first) - departureTime(second)
       case 'recommended':

@@ -2,6 +2,7 @@ import { Link } from '@tanstack/react-router'
 import { Button, Select } from '@mantine/core'
 import { PlaneTakeoff } from 'lucide-react'
 import { useMemo, useState } from 'react'
+import type { SeatedPassenger } from '#/features/flight-search'
 import { addDaysToDateKey, formatLongDate } from '#/shared/lib/formatting'
 import { getFlights } from '../data/flight.repository'
 import {
@@ -32,11 +33,19 @@ interface FlightResultsProps {
   departureDate?: string
   preferredCabin: string
   selection: FareSelection | null
-  onSelectFare: (selection: FareSelection) => void
+  passengers: SeatedPassenger[]
+  onSelectFare: (
+    flightNumber: string,
+    passengerIds: string[],
+    fareId: number,
+  ) => void
   onDepartureDateChange: (dateKey: string) => void
 }
 
-function findNearestDate(dateKeys: string[], target: string): string | undefined {
+function findNearestDate(
+  dateKeys: string[],
+  target: string,
+): string | undefined {
   return dateKeys.find((dateKey) => dateKey >= target) ?? dateKeys.at(-1)
 }
 
@@ -46,15 +55,21 @@ export function FlightResults({
   departureDate,
   preferredCabin,
   selection,
+  passengers,
   onSelectFare,
   onDepartureDateChange,
 }: FlightResultsProps) {
   const [sortOrder, setSortOrder] = useState<FlightSortOrder>('recommended')
   const [expandedFlight, setExpandedFlight] = useState<string | null>(null)
+  const [sameFareForAll, setSameFareForAll] = useState(true)
   const routeFlights = useMemo(() => getFlights({ from, to }), [from, to])
   const availableDates = useMemo(
     () =>
-      [...new Set(routeFlights.map(getDepartureDateKey).filter((key) => key !== null))].sort(),
+      [
+        ...new Set(
+          routeFlights.map(getDepartureDateKey).filter((key) => key !== null),
+        ),
+      ].sort(),
     [routeFlights],
   )
   const activeDate = departureDate ?? availableDates.at(0)
@@ -62,7 +77,8 @@ export function FlightResults({
     (flight) => getDepartureDateKey(flight) === activeDate,
   )
   const sortedFlights = sortFlights(flightsOnDate, sortOrder, preferredCabin)
-  const recommendedFlight = flightsOnDate.length > 1 ? getRecommendedFlight(flightsOnDate) : undefined
+  const recommendedFlight =
+    flightsOnDate.length > 1 ? getRecommendedFlight(flightsOnDate) : undefined
   const isListed = (flightNumber: string | null | undefined) =>
     sortedFlights.some((flight) => flight.flightNumber === flightNumber)
   const openFlight = isListed(expandedFlight)
@@ -71,7 +87,9 @@ export function FlightResults({
       ? selection?.flightNumber
       : sortedFlights.at(0)?.flightNumber
   const routeLabel =
-    from && to ? `${getCityName(from)} to ${getCityName(to)}` : 'All available routes'
+    from && to
+      ? `${getCityName(from)} to ${getCityName(to)}`
+      : 'All available routes'
 
   if (routeFlights.length === 0 || !activeDate) {
     return (
@@ -98,7 +116,10 @@ export function FlightResults({
         .map((flight) => getLowestFare(flight, preferredCabin))
         .filter((fare) => fare !== null)
 
-      return { dateKey, lowestFare: fares.length > 0 ? Math.min(...fares) : null }
+      return {
+        dateKey,
+        lowestFare: fares.length > 0 ? Math.min(...fares) : null,
+      }
     },
   )
   const nearestDate = findNearestDate(availableDates, activeDate)
@@ -107,7 +128,11 @@ export function FlightResults({
     <section className={styles.results} aria-labelledby="outbound-heading">
       <div className={styles.directionHeading}>
         <h2 id="outbound-heading" className={styles.direction}>
-          <PlaneTakeoff className={styles.directionIcon} size={21} aria-hidden="true" />
+          <PlaneTakeoff
+            className={styles.directionIcon}
+            size={21}
+            aria-hidden="true"
+          />
           Outbound · {routeLabel}
         </h2>
         <p className={styles.directionDate}>{formatLongDate(activeDate)}</p>
@@ -125,7 +150,10 @@ export function FlightResults({
             There are no flights on {formatLongDate(activeDate)}.
           </p>
           {nearestDate && (
-            <Button variant="outline" onClick={() => onDepartureDateChange(nearestDate)}>
+            <Button
+              variant="outline"
+              onClick={() => onDepartureDateChange(nearestDate)}
+            >
               View flights on {formatLongDate(nearestDate)}
             </Button>
           )}
@@ -134,8 +162,9 @@ export function FlightResults({
         <>
           <div className={styles.toolbar}>
             <p className={styles.count} role="status">
-              {sortedFlights.length} {sortedFlights.length === 1 ? 'flight' : 'flights'}{' '}
-              available · Prices per adult
+              {sortedFlights.length}{' '}
+              {sortedFlights.length === 1 ? 'flight' : 'flights'} available ·
+              Prices per adult
             </p>
             <Select
               label="Sort by"
@@ -167,12 +196,17 @@ export function FlightResults({
                 isRecommended={flight === recommendedFlight}
                 expanded={flight.flightNumber === openFlight}
                 preferredCabin={preferredCabin}
-                selectedFareId={
-                  selection?.flightNumber === flight.flightNumber ? selection.fareId : null
+                passengers={passengers}
+                fareIds={
+                  selection?.flightNumber === flight.flightNumber
+                    ? selection.fareIds
+                    : {}
                 }
+                sameFareForAll={sameFareForAll}
+                onSameFareForAllChange={setSameFareForAll}
                 onExpand={() => setExpandedFlight(flight.flightNumber)}
-                onSelectFare={(fareId) =>
-                  onSelectFare({ flightNumber: flight.flightNumber, fareId })
+                onSelectFare={(passengerIds, fareId) =>
+                  onSelectFare(flight.flightNumber, passengerIds, fareId)
                 }
               />
             ))}

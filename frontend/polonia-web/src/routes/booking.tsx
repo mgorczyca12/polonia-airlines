@@ -2,15 +2,23 @@ import { createFileRoute, Link } from '@tanstack/react-router'
 import { Alert, Box, Button, Container, Text, Title } from '@mantine/core'
 import { BookingSummary, PassengerDetailsForm } from '#/features/booking'
 import { getFlightByNumber } from '#/features/flight-results/data/flight.repository'
+import { findFare } from '#/features/flight-results/model/flight.helpers'
 
 function BookingRoute() {
-  const { flight, fare } = Route.useSearch()
+  const { flight, fares } = Route.useSearch()
   const selectedFlight = flight ? getFlightByNumber(flight) : undefined
-  const selectedFare = selectedFlight?.brandedFares
-    .flatMap((cabin) => cabin.fares)
-    .find((brandedFare) => brandedFare.fareId === fare)
+  const selectedFares = selectedFlight
+    ? (fares ?? []).flatMap((fareId) => {
+        const match = findFare(selectedFlight, fareId)
+        return match ? [match.fare] : []
+      })
+    : []
 
-  if (!selectedFlight || !selectedFare) {
+  if (
+    !selectedFlight ||
+    selectedFares.length === 0 ||
+    selectedFares.length !== fares?.length
+  ) {
     return (
       <Container size="sm" py="xl">
         <Alert title="Choose a flight first" color="blue">
@@ -36,7 +44,7 @@ function BookingRoute() {
           </Text>
           <Title order={1}>Review your flight</Title>
         </Box>
-        <BookingSummary flight={selectedFlight} fare={selectedFare} />
+        <BookingSummary flight={selectedFlight} fares={selectedFares} />
         <PassengerDetailsForm />
         <Button component={Link} to="/">
           Change flight
@@ -49,7 +57,11 @@ function BookingRoute() {
 export const Route = createFileRoute('/booking')({
   validateSearch: (search: Record<string, unknown>) => ({
     flight: typeof search.flight === 'string' ? search.flight : undefined,
-    fare: typeof search.fare === 'number' ? search.fare : undefined,
+    fares:
+      Array.isArray(search.fares) &&
+      search.fares.every((fareId) => typeof fareId === 'number')
+        ? search.fares
+        : undefined,
   }),
   component: BookingRoute,
 })
