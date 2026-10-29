@@ -11,6 +11,9 @@ public class PassengerFare : Entity<int>
     public ReservationFlight ReservationFlight { get; private set; } = null!;
     public string ProductCode { get; private set; } = null!;
     public string CabinClass { get; private set; } = null!;
+    public string? CabinId { get; private set; }
+    public int ProductVersion { get; private set; }
+    public string Brand { get; private set; } = null!;
     public decimal Amount { get; private set; }
     public string Currency { get; private set; } = null!;
     public BaggageAllowance BaggageAllowance { get; private set; } = null!;
@@ -33,9 +36,16 @@ public class PassengerFare : Entity<int>
             ReservationFlight = flight,
             ProductCode = quote.ProductCode,
             CabinClass = quote.CabinClass,
+            CabinId = quote.CabinId,
+            ProductVersion = quote.ProductVersion,
+            Brand = quote.Brand,
             Amount = quote.Amount,
             Currency = quote.Currency,
-            BaggageAllowance = quote.BaggageAllowance
+            BaggageAllowance = BaggageAllowance.Create(
+                quote.BaggageAllowance.IncludedPieces,
+                quote.BaggageAllowance.MaxWeightPerPieceKg,
+                quote.BaggageAllowance.MaxExtraPieces,
+                quote.BaggageAllowance.ExtraPiecePrice)
         };
     }
 }

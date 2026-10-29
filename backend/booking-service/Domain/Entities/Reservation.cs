@@ -1,3 +1,4 @@
+using System.Net.Mail;
 using Shared.Domain.Entities;
 using booking_service.Domain.ValueObjects;
 
@@ -9,9 +10,11 @@ namespace booking_service.Domain.Entities
         private readonly List<Passenger> passengers = new();
         private readonly List<Payment> payments = new();
 
-        public string Code { get; private set; } = null!;
+        public PnrCode Code { get; private set; } = null!;
         public DateTimeOffset ReservationDate { get; private set; }
-        public int UserId { get; private set; }
+        public int? UserId { get; private set; }
+        public string ContactName { get; private set; } = null!;
+        public string ContactEmail { get; private set; } = null!;
         public ReservationStatus Status { get; private set; } = ReservationStatus.Created;
         public string Currency { get; private set; } = null!;
         public decimal TotalAmount => passengers.Sum(passenger => passenger.TotalAmount);
@@ -29,15 +32,29 @@ namespace booking_service.Domain.Entities
         }
 
         public static Reservation Create(
-            string code,
-            int userId,
+            PnrCode code,
+            int? userId,
+            string contactName,
+            string contactEmail,
             IEnumerable<string> flightIds,
             string currency,
             DateTimeOffset reservationDate)
         {
-            ArgumentException.ThrowIfNullOrWhiteSpace(code);
+            ArgumentNullException.ThrowIfNull(code);
             ArgumentNullException.ThrowIfNull(flightIds);
-            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(userId);
+            if (userId is <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(userId));
+            }
+
+            ArgumentException.ThrowIfNullOrWhiteSpace(contactName);
+            ArgumentException.ThrowIfNullOrWhiteSpace(contactEmail);
+            var trimmedEmail = contactEmail.Trim();
+            if (!MailAddress.TryCreate(trimmedEmail, out var address) ||
+                address.Address != trimmedEmail)
+            {
+                throw new ArgumentException("A valid contact email address is required.", nameof(contactEmail));
+            }
 
             if (reservationDate == default)
             {
@@ -54,8 +71,10 @@ namespace booking_service.Domain.Entities
 
             var reservation = new Reservation
             {
-                Code = code.Trim(),
+                Code = code,
                 UserId = userId,
+                ContactName = contactName.Trim(),
+                ContactEmail = address.Address,
                 Currency = CurrencyCode.Normalize(currency),
                 ReservationDate = reservationDate
             };

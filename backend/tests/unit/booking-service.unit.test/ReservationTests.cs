@@ -13,7 +13,14 @@ public class ReservationTests
 
     private static Reservation Create(params string[] flightIds)
     {
-        return Reservation.Create(" ABC123 ", 1, flightIds, " pln ", BookingDate);
+        return Reservation.Create(
+            PnrCode.From("ABC123"),
+            1,
+            " Jan Kowalski ",
+            " jan@example.com ",
+            flightIds,
+            " pln ",
+            BookingDate);
     }
 
     private static FareQuote Quote(
@@ -60,8 +67,11 @@ public class ReservationTests
         var reservation = Create(flights);
         flights[0] = "99";
 
-        Assert.Equal("ABC123", reservation.Code);
+        Assert.Equal(PnrCode.From("ABC123"), reservation.Code);
+        Assert.Equal("ABC123", reservation.Code.Value);
         Assert.Equal(1, reservation.UserId);
+        Assert.Equal("Jan Kowalski", reservation.ContactName);
+        Assert.Equal("jan@example.com", reservation.ContactEmail);
         Assert.Equal(BookingDate, reservation.ReservationDate);
         Assert.Equal(ReservationStatus.Created, reservation.Status);
         Assert.Equal("1", reservation.FlightIds[0]);
@@ -75,6 +85,23 @@ public class ReservationTests
     public void Create_InvalidItinerary_ThrowsArgumentException(string[] flights)
     {
         Assert.Throws<ArgumentException>(() => Create(flights));
+    }
+
+    [Fact]
+    public void Create_GuestReservation_StoresContactWithoutUserAccount()
+    {
+        var reservation = Reservation.Create(
+            PnrCode.From("GUEST1"),
+            null,
+            " Jane Doe ",
+            " jane@example.com ",
+            ["1"],
+            "PLN",
+            BookingDate);
+
+        Assert.Null(reservation.UserId);
+        Assert.Equal("Jane Doe", reservation.ContactName);
+        Assert.Equal("jane@example.com", reservation.ContactEmail);
     }
 
     [Fact]
@@ -311,7 +338,8 @@ public class ReservationTests
     public void Create_MalformedCurrency_ThrowsArgumentException(string currency)
     {
         Assert.Throws<ArgumentException>(() => Quote("1", currency: currency));
-        Assert.Throws<ArgumentException>(() => Reservation.Create("Code", 1, ["1"], currency, BookingDate));
+        Assert.Throws<ArgumentException>(() =>
+            Reservation.Create(PnrCode.From("ABC123"), 1, "Jan Kowalski", "jan@example.com", ["1"], currency, BookingDate));
     }
 
     [Fact]
@@ -361,10 +389,18 @@ public class ReservationTests
     [Fact]
     public void Create_MissingReservationIdentityCurrencyOrDate_ThrowsArgumentException()
     {
-        Assert.Throws<ArgumentException>(() => Reservation.Create("", 1, ["1"], "PLN", BookingDate));
-        Assert.Throws<ArgumentOutOfRangeException>(() => Reservation.Create("Code", 0, ["1"], "PLN", BookingDate));
-        Assert.Throws<ArgumentException>(() => Reservation.Create("Code", 1, ["1"], " ", BookingDate));
-        Assert.Throws<ArgumentException>(() => Reservation.Create("Code", 1, ["1"], "PLN", default));
+        Assert.Throws<ArgumentNullException>(() =>
+            Reservation.Create(null!, 1, "Jan Kowalski", "jan@example.com", ["1"], "PLN", BookingDate));
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            Reservation.Create(PnrCode.From("ABC123"), 0, "Jan Kowalski", "jan@example.com", ["1"], "PLN", BookingDate));
+        Assert.Throws<ArgumentException>(() =>
+            Reservation.Create(PnrCode.From("ABC123"), 1, " ", "jan@example.com", ["1"], "PLN", BookingDate));
+        Assert.Throws<ArgumentException>(() =>
+            Reservation.Create(PnrCode.From("ABC123"), 1, "Jan Kowalski", "invalid", ["1"], "PLN", BookingDate));
+        Assert.Throws<ArgumentException>(() =>
+            Reservation.Create(PnrCode.From("ABC123"), 1, "Jan Kowalski", "jan@example.com", ["1"], " ", BookingDate));
+        Assert.Throws<ArgumentException>(() =>
+            Reservation.Create(PnrCode.From("ABC123"), null, "Jan Kowalski", "jan@example.com", ["1"], "PLN", default));
     }
 
     [Fact]

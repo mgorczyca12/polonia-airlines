@@ -4,7 +4,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using flight_service.Application.Contracts.Requests;
 using flight_service.Application.Contracts.Responses;
-using flight_service.Api.Middleware;
+using Shared.Api.Middleware;
 using flight_service.Domain.Entities;
 using flight_service.Domain.ValueObjects;
 using flight_service.Infrastructure.Persistence;

@@ -4,10 +4,11 @@
 
 ## Implementation status
 
-[Program.cs](../../../backend/seating-service/Program.cs) exposes only the generated
-`GET /weatherforecast` scaffold, development OpenAPI and HTTPS redirection.
-There are no seating business endpoints, command/query handlers, database
-registration, consumers or service-to-service calls.
+The host participates in booking's MassTransit workflow using Redis temporary
+holds and PostgreSQL confirmed allocations. Holds consume cabin capacity and can
+also name physical seats. There is no public anonymous inventory-management API.
+See the [service README](../../../backend/seating-service/README.md) for provisioning,
+configuration, consistency assumptions, and recovery procedures.
 
 ## Seat inventory and allocations
 
@@ -56,6 +57,23 @@ sequenceDiagram
     end
 ```
 
-No allocation event is emitted, and no booking-service integration is present.
-Unit tests cover capacities, overbooking, seat changes, ownership, invalid inputs
-and identifier preservation. The seating integration-test project has no test source files.
+## Reservation workflow participant
+
+The shared contracts expose hold, confirm, and release operations correlated by
+workflow ID. Redis owns temporary hold validity, owner tokens, and expiration;
+confirmed allocations remain authoritative in SQL. A durable operation ledger
+supports idempotency and terminal cancellation without becoming a second
+authoritative temporary-capacity counter.
+
+Cross-store confirmation is not an atomic Redis/SQL transaction. SQL capacity and
+physical-seat constraints must remain authoritative at confirmation, with Redis
+cleanup after commit. Stale Redis holds may conservatively reduce availability;
+they must never make SQL-confirmed seats available. Release must remain safe when
+it arrives before a delayed hold or confirmation request.
+
+Cabin-capacity reservation is separate from optional physical-seat assignment.
+Booking does not need to select a seat to secure a cabin allocation.
+Redis loss or unavailability must not silently fall back to granting holds.
+
+Test sources cover domain and participant behavior. Tests for this implementation,
+including live Redis/PostgreSQL checks, were deferred by the user.

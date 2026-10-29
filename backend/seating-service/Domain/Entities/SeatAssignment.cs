@@ -5,6 +5,7 @@ namespace seating_service.Domain.Entities;
 public class SeatAssignment : Entity<int>
 {
     public int SeatInventoryId { get; private set; }
+    public string FlightId { get; private set; } = null!;
     public SeatInventory SeatInventory { get; private set; } = null!;
     public string ReservationId { get; private set; } = null!;
     public string PassengerId { get; private set; } = null!;
@@ -29,6 +30,7 @@ public class SeatAssignment : Entity<int>
         {
             SeatInventoryId = inventory.Id,
             SeatInventory = inventory,
+            FlightId = inventory.FlightId,
             ReservationId = reservationId,
             PassengerId = passengerId,
             SeatId = seatId

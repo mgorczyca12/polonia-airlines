@@ -5,7 +5,12 @@ A production-grade full-stack airline ecosystem for a fictional Polish flag carr
 
 The web application currently uses sample JSON data. Flight queries have API and
 EF Core implementations, with SQLite supplied by integration tests rather than
-normal startup. Booking and seating have domain models but no wired business APIs.
+normal startup. Booking includes a fare catalog, expiring offers, guest reservation
+APIs, and a durable MassTransit reservation workflow. Seating participates through
+Redis temporary holds and PostgreSQL confirmed allocations. These backend paths
+require configured infrastructure; the web application is not connected to them.
+See the [booking](backend/booking-service/README.md) and
+[seating](backend/seating-service/README.md) setup and recovery documentation.
 
 ## Documentation
 

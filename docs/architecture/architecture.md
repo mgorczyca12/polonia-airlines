@@ -13,9 +13,9 @@ differs by service.
 | --- | --- | --- |
 | Web | Search, fare selection, booking preview from local JSON | Backend API client, persistent reservations, payment processing |
 | Flight | Validated flight/layout queries, configuration/assignment commands, PostgreSQL registration, RabbitMQ EF bus outbox | Schema migrations, deployed infrastructure, general aircraft queries and management authorization |
-| Booking | Reservation aggregate with passenger fares, baggage and recorded payments | Business endpoints, persistence and command handlers |
-| Seating | Inventory and seat-assignment domain rules | Business endpoints, persistence and command handlers |
-| Shared | Entity/aggregate bases, repositories, command pipelines (wired in flight), domain-event dispatch and EF outbox helpers | Booking/seating host registration, business event handlers and consumers |
+| Booking | Fare catalog, priced offers, guest reservation API/persistence, MassTransit completion saga | Payment processing, authenticated catalog-management API, frontend integration |
+| Seating | Redis temporary holds, SQL confirmed allocations, idempotent messaging participant | Public inventory-management API, live infrastructure verification |
+| Shared | Entity/aggregate bases, repositories, command pipelines, domain-event dispatch, EF outbox helpers and reservation workflow contracts | A generic business-saga framework (not needed) |
 
 ## C4 level 1: system context
 
@@ -34,8 +34,9 @@ C4Context
 ## C4 level 2: containers
 
 These are code-level runtime boundaries, not a claim about deployed infrastructure.
-The SQLite container exists only inside integration tests. The isolated service
-containers have no drawn inter-service links because none are implemented.
+SQLite exists only inside integration tests. Booking and seating communicate
+through RabbitMQ; Redis is seating's temporary-hold store, not its confirmed
+allocation database. These runtime dependencies require external provisioning.
 
 ```mermaid
 C4Container
@@ -45,14 +46,22 @@ C4Container
     System_Boundary(polonia, "Polonia Airlines repository") {
         Container(web, "polonia-web", "React, TanStack Start/Router, Mantine", "Local JSON-backed search and booking preview")
         Container(flight, "flight-service", "ASP.NET Core / EF Core", "Flight query API; PostgreSQL and RabbitMQ outbox configured in code, infrastructure required")
-        Container(booking, "booking-service", "ASP.NET Core", "Reservation domain library in a host exposing weather scaffold")
-        Container(seating, "seating-service", "ASP.NET Core", "Seat-inventory domain library in a host exposing weather scaffold")
+        Container(booking, "booking-service", "ASP.NET Core / MassTransit / EF Core", "Fare catalog, offers, guest reservations and completion saga")
+        Container(seating, "seating-service", "ASP.NET Core / MassTransit / EF Core", "Capacity/seat holds and confirmed allocations")
+        ContainerQueue(bus, "RabbitMQ", "Message broker", "Durable reservation workflow messages")
+        ContainerDb(bookingDb, "Booking database", "PostgreSQL", "Catalog, offers, reservations, saga state and outbox")
+        ContainerDb(seatingDb, "Seating database", "PostgreSQL", "Confirmed allocations, operation ledger and outbox")
+        ContainerDb(redis, "Temporary holds", "Redis", "Expiring owner-aware cabin-capacity and optional seat holds")
         ContainerDb(testDb, "Flight test database", "SQLite in memory", "Integration-test fixture only; not production storage")
     }
     Rel(customer, web, "Uses search and booking-preview pages", "Browser")
     Rel(apiCaller, flight, "Queries flights", "HTTP")
-    Rel(apiCaller, booking, "Calls scaffold weather route", "HTTP")
-    Rel(apiCaller, seating, "Calls scaffold weather route", "HTTP")
+    Rel(apiCaller, booking, "Requests offers and creates/reads guest reservations", "HTTP")
+    Rel(booking, bookingDb, "Persists local state and outgoing messages", "EF Core")
+    Rel(seating, seatingDb, "Persists confirmed inventory and operation outcomes", "EF Core")
+    Rel(seating, redis, "Atomically acquires and validates temporary holds", "Redis/Lua")
+    Rel(booking, bus, "Publishes commands and consumes inventory outcomes", "AMQP")
+    Rel(seating, bus, "Consumes commands and publishes outcomes", "AMQP")
     Rel(flight, testDb, "Reads and writes when the test fixture supplies the provider", "EF Core / SQLite")
 ```
 
@@ -130,17 +139,19 @@ are captured as outbox rows, saved with business changes, and sent to RabbitMQ
 by MassTransit's delivery service only after commit. Use the scoped publisher,
 not `IBus.Publish`, which bypasses this scope's outbox.
 
-This is at-least-once delivery, not exactly-once processing. No consumers are
-currently registered. Future consumers must explicitly configure
+This is at-least-once delivery, not exactly-once processing. Booking's saga and
+seating's participant endpoints explicitly configure
 `UseEntityFrameworkOutbox<TContext>(context)` on their receive endpoints and
 implement appropriate business idempotency; mapping inbox tables alone does not
 enable consumer deduplication.
 
 The flight application calls `AddSharedApplication` to register validators,
 handlers and pipelines. Its configuration and aircraft-assignment endpoints use
-transactional commands; query interfaces remain direct reads. Booking and seating
-do not wire command pipelines. Do not infer active mediator processing from
-package references alone.
+transactional commands; query interfaces remain direct reads. Booking also registers
+application handlers; its offer-acceptance use case owns the bounded local
+transaction/retry boundary needed for idempotent creation and PNR collisions.
+Seating's message consumers coordinate local inventory operations. Do not infer
+active mediator processing from package references alone.
 The shared transaction pipeline applies only to commands implementing
 [`ITransactionalCommand<TCommand, TResponse>`](../../backend/shared/Application/Commands/ITransactionalCommand.cs).
 Ordinary `ICommand` handlers still receive validation but own their orchestration
@@ -225,8 +236,9 @@ application/domain operations inside it, rather than nesting opted-in commands.
 
 For database plus blob/API workflows, keep orchestration and compensation
 explicit rather than opting into automatic database rollback as a distributed
-transaction. Flight has initial RabbitMQ bus-outbox registration; saga
-coordination, consumer inbox middleware, and business idempotency are not wired.
+transaction. Booking uses an EF-persisted MassTransit saga with consumer inbox/outbox
+middleware and durable operation identities; seating participates through
+hold/confirm/release messages and compensating release.
 Kafka rider and Service Bus delivery paths must be verified separately for outbox support.
 
 Cross-service references use opaque strings: booking references flight IDs, and
@@ -235,16 +247,18 @@ They are not cross-service foreign keys or entity navigations.
 
 ## Integration and persistence limitations
 
-No production integration-event contracts, domain-event mappings, consumers,
-or implemented service-to-service calls are wired. There is therefore no current
-cross-service sequence diagram. Tests verify domain-event dispatch and atomic
-business/outbox persistence with SQLite and an unstarted in-memory bus, not live
-PostgreSQL-to-RabbitMQ delivery.
+Shared reservation contracts connect booking and seating through MassTransit.
+The [booking](services/booking-service.md) and [seating](services/seating-service.md)
+pages describe the workflow and ownership boundaries. Redis/SQL handoff is an
+explicit recoverable protocol, not a distributed ACID transaction. Payment is
+deferred. Tests for the new implementation were deferred by the user; compiled
+test source must not be interpreted as verified live Redis/PostgreSQL/RabbitMQ delivery.
 
 The flight service has EF configurations and relational integration tests, but
 normal startup now selects PostgreSQL and requires external database and RabbitMQ
 configuration. No migrations are checked in; schema creation and deployment
-remain prerequisites. Booking and seating have no configured DbContext.
+remain prerequisites. Booking and seating have configured contexts; follow their
+service READMEs for schema initialization and inventory/catalog provisioning.
 Do not describe a production database, gateway, or distributed deployment as implemented.
 
 See [development](development.md) for commands and [frontend](frontend.md) for the

@@ -16,8 +16,8 @@ namespace flight_service.Api.Controllers;
 [Route("api/[controller]")]
 public class FlightController(
     IFlightQueries flightQueries,
-    IValidator<SearchFlightsRequest> searchValidator,
     IConfigurationQueries configurationQueries,
+    IValidator<SearchFlightsRequest> searchValidator,
     IValidator<int> idValidator,
     IMediator mediator) : ControllerBase
 {

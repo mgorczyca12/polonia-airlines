@@ -1,43 +1,31 @@
-var builder = WebApplication.CreateBuilder(args);
+using booking_service.Api.Extensions;
+using booking_service.Application;
+using booking_service.Infrastructure;
+using booking_service.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 
-// Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+var schemaOnly = args.Contains("--schema-script", StringComparer.Ordinal);
+var builder = WebApplication.CreateBuilder(args.Where(argument => argument != "--schema-script").ToArray());
+builder.AddApplication().AddInfrastructure().AddApi();
 
 var app = builder.Build();
+if (schemaOnly)
+{
+    await using var scope = app.Services.CreateAsyncScope();
+    var database = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+    Console.WriteLine(database.Database.GenerateCreateScript());
+    return;
+}
 
-// Configure the HTTP request pipeline.
+await app.InitializeBooking();
+app.UseExceptionHandler();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
-
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
+app.MapControllers();
 app.Run();
-
-record WeatherForecast(DateOnly Date, int TemperatureC, string? Summary)
-{
-    public int TemperatureF => 32 + (int)(TemperatureC / 0.5556);
-}
 
 public partial class Program;
