@@ -1,13 +1,20 @@
 using System.Text.Json;
 using booking_service.Application;
+using booking_service.Application.Errors;
+using booking_service.Application.Features.CheckoutFeatures.Commands.CreateCheckout;
+using booking_service.Application.Features.CheckoutFeatures.Commands.CreateOffer;
+using booking_service.Application.Features.CheckoutFeatures.Queries;
+using booking_service.Application.Features.ReservationFeatures.Queries;
+using booking_service.Infrastructure.Repositories;
 using booking_service.Application.Abstractions;
-using booking_service.Application.Contracts;
-using booking_service.Application.Features.Checkout;
+using booking_service.Application.Contracts.Requests;
+using booking_service.Application.Contracts.Responses;
 using booking_service.Application.Features.ReservationFeatures.Commands.CreateReservation;
 using booking_service.Domain.Entities;
 using booking_service.Domain.ValueObjects;
 using booking_service.Infrastructure;
 using booking_service.Infrastructure.Persistence;
+using booking_service.Infrastructure.Persistence.Queries;
 using DispatchR;
 using MassTransit;
 using MassTransit.EntityFrameworkCoreIntegration;
@@ -76,7 +83,7 @@ public sealed class BookingCheckoutTests
             selections.Select(x => x.GetProperty("passengerId").GetString()).Order());
         Assert.All(selections, x => Assert.Equal(" opaque cabin ", x.GetProperty("cabinId").GetString()));
         Assert.Equal(fixture.Clock.GetUtcNow().AddMinutes(10), payload.GetProperty("holdUntil").GetDateTimeOffset());
-        Assert.True((await context.Offers.SingleAsync()).Consumed);
+        Assert.True((await context.CheckoutOffers.SingleAsync()).Consumed);
     }
 
     [Fact]
@@ -119,11 +126,11 @@ public sealed class BookingCheckoutTests
 
         await using (var scope = fixture.Provider.CreateAsyncScope())
         {
-            var queries = scope.ServiceProvider.GetRequiredService<IBookingQueries>();
-            AssertCode(await queries.Offer(offer.Id, stranger, default), "not_found");
-            var service = scope.ServiceProvider.GetRequiredService<IBookingService>();
-            AssertCode(await service.CreateOffer(new string('A', 64),
-                new OfferRequest("PLN", 1, [new("flight/opaque", fixture.ProductId)]), default), "not_found");
+            var queries = scope.ServiceProvider.GetRequiredService<IOfferQueries>();
+            AssertCode(await queries.GetOffer(new GetOfferRequest(offer.Id, stranger), default), "not_found");
+            var mediator = scope.ServiceProvider.GetRequiredService<IMediator>();
+            AssertCode(await mediator.Send(new CreateOfferCommand(new string('A', 64),
+                new OfferRequest("PLN", 1, [new("flight/opaque", fixture.ProductId)])), default), "not_found");
         }
 
         fixture.Clock.Advance(TimeSpan.FromMinutes(15));
@@ -131,9 +138,9 @@ public sealed class BookingCheckoutTests
         fixture.Clock.Advance(TimeSpan.FromMinutes(-15));
         var reservation = await fixture.Reserve(owner, Request(offer.Id));
         await using var lookup = fixture.Provider.CreateAsyncScope();
-        var query = lookup.ServiceProvider.GetRequiredService<IBookingQueries>();
-        AssertCode(await query.Reservation(reservation.Value.Id, stranger, default), "not_found");
-        Assert.True((await query.Reservation(reservation.Value.Id, owner, default)).IsSuccess);
+        var query = lookup.ServiceProvider.GetRequiredService<IReservationQueries>();
+        AssertCode(await query.GetReservation(new GetReservationRequest(reservation.Value.Id, stranger), default), "not_found");
+        Assert.True((await query.GetReservation(new GetReservationRequest(reservation.Value.Id, owner), default)).IsSuccess);
     }
 
     [Fact]
@@ -150,7 +157,7 @@ public sealed class BookingCheckoutTests
             new OfferRequest("EUR", 1, [new("flight/opaque", fixture.ProductId)])), default);
         AssertCode(missingPrice, "price_unavailable");
         var database = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
-        Assert.Equal(0, await database.Offers.CountAsync());
+        Assert.Equal(0, await database.CheckoutOffers.CountAsync());
         Assert.Equal(0, await database.Reservations.CountAsync());
     }
 
@@ -196,9 +203,16 @@ public sealed class BookingCheckoutTests
             builder.AddApplication();
             builder.Services.AddSingleton<TimeProvider>(clock);
             builder.Services.AddDbContext<BookingDbContext>(options => options.UseSqlite(connection));
-            builder.Services.AddScoped<BookingService>();
-            builder.Services.AddScoped<IBookingService>(p => p.GetRequiredService<BookingService>());
-            builder.Services.AddScoped<IBookingQueries>(p => p.GetRequiredService<BookingService>());
+            builder.Services.AddSharedUnitOfWork<BookingDbContext>();
+            builder.Services.AddSharedInfrastructure();
+            builder.Services.AddScoped<IGuestCheckoutRepository, GuestCheckoutRepository>();
+            builder.Services.AddScoped<ICheckoutOfferRepository, CheckoutOfferRepository>();
+            builder.Services.AddScoped<IFareProductRepository, FareProductRepository>();
+            builder.Services.AddScoped<IFlightPriceRepository, FlightPriceRepository>();
+            builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+            builder.Services.AddScoped<IReservationCheckoutRepository, ReservationCheckoutRepository>();
+            builder.Services.AddScoped<IOfferQueries, OfferQueries>();
+            builder.Services.AddScoped<IReservationQueries, ReservationQueries>();
             builder.Services.AddMassTransit(bus =>
             {
                 bus.AddSharedEntityFrameworkOutbox<BookingDbContext>(outbox =>
@@ -230,17 +244,27 @@ public sealed class BookingCheckoutTests
         public async Task<OfferResponse> Offer(string token, int passengerCount = 1)
         {
             await using var scope = Provider.CreateAsyncScope();
-            var result = await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new CreateOfferCommand(token,
+            var created = await scope.ServiceProvider.GetRequiredService<IMediator>().Send(new CreateOfferCommand(token,
                 new OfferRequest("PLN", passengerCount, [new("flight/opaque", ProductId)])), default);
-            Assert.True(result.IsSuccess);
-            return result.Value;
+            Assert.True(created.IsSuccess);
+            var offer = await scope.ServiceProvider.GetRequiredService<IOfferQueries>()
+                .GetOffer(new GetOfferRequest(created.Value, token), default);
+            Assert.True(offer.IsSuccess);
+            return offer.Value;
         }
 
         public async Task<FluentResults.Result<ReservationResponse>> Reserve(string token, ReservationRequest request)
         {
             await using var scope = Provider.CreateAsyncScope();
-            return await scope.ServiceProvider.GetRequiredService<IMediator>()
+            var created = await scope.ServiceProvider.GetRequiredService<IMediator>()
                 .Send(new CreateReservationCommand(token, request), default);
+            if (created.IsFailed)
+            {
+                return created.ToResult<ReservationResponse>();
+            }
+
+            return await scope.ServiceProvider.GetRequiredService<IReservationQueries>()
+                .GetReservation(new GetReservationRequest(created.Value, token), default);
         }
 
         public async ValueTask DisposeAsync()

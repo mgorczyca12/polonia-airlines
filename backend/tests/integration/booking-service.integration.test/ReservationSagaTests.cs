@@ -1,7 +1,7 @@
 using booking_service.Domain.Entities;
 using booking_service.Domain.ValueObjects;
 using booking_service.Infrastructure.Persistence;
-using booking_service.Infrastructure.Sagas;
+using booking_service.Infrastructure.Integrations.Sagas;
 using MassTransit;
 using MassTransit.Testing;
 using Microsoft.Data.Sqlite;
@@ -147,7 +147,7 @@ public sealed class ReservationSagaTests
                 PnrCode.From("ABC123"), null, "Guest", "guest@example.com", ["Flight-1"], "PLN", clock.GetUtcNow());
             reservation.AddPassenger(
                 "Guest", "Traveller", new DateOnly(1990, 1, 1),
-                [FareQuote.Create("Flight-1", "BASIC", "Cabin-1", 100m, "PLN", BaggageAllowance.None)]);
+                [FareQuote.Create("Flight-1", "BASIC", "Cabin-1", 100m, "PLN", BaggageAllowance.None, "Cabin-1", 1, "Basic")]);
             database.Reservations.Add(reservation);
             await database.SaveChangesAsync();
             fixture.ReservationId = reservation.Id;

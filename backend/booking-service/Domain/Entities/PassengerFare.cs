@@ -11,7 +11,7 @@ public class PassengerFare : Entity<int>
     public ReservationFlight ReservationFlight { get; private set; } = null!;
     public string ProductCode { get; private set; } = null!;
     public string CabinClass { get; private set; } = null!;
-    public string? CabinId { get; private set; }
+    public string CabinId { get; private set; } = null!;
     public int ProductVersion { get; private set; }
     public string Brand { get; private set; } = null!;
     public decimal Amount { get; private set; }

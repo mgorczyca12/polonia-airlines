@@ -3,72 +3,39 @@
 ## Running and provisioning
 
 Configure `ConnectionStrings:BookingDatabase` (PostgreSQL) and `RabbitMq:Host`,
-`RabbitMq:User`, `RabbitMq:Pass` (also optional `Port`, `VHost`, `UseSsl`).
-Never put deployed credentials in source control. The service does not automatically
-change production schemas. To generate a fresh-database PostgreSQL DDL script without
-starting messaging or touching the database:
+`RabbitMq:User`, `RabbitMq:Pass` (also optional `Port`, `VHost`, `UseSsl`), validated on
+start as in flight-service. Never put deployed credentials in source control.
 
-```powershell
-dotnet run --project backend\booking-service -- --schema-script
-```
+Like flight-service, the host neither creates nor migrates databases, and there are no
+bootstrap flags or startup seeding. No migrations are checked in: generate and review an
+initial migration (booking, saga, inbox and outbox tables) with EF Core tooling before
+deploying. The `Reservations.Code` PNR unique index (`UX_Reservation_Pnr`) and the
+request-idempotency indexes must be part of the deployed schema.
 
-Review/apply that output through your deployment process before starting the service.
-It includes booking, saga, inbox, and outbox tables; it is **not** an upgrade migration.
-Existing databases need a reviewed migration; do not run a fresh schema script against them.
-In Development only, explicitly enable `Booking:ProvisionDevelopmentDatabase=true`
-to run EF `EnsureCreated` on an empty development database. It never upgrades existing
-schemas, and enabling it outside Development fails startup.
-
-### Internal catalog administration
+### Catalog administration
 
 No authentication is configured, so there are deliberately **no HTTP catalog mutation
-or inventory administration endpoints**. Trusted deployment code can dispatch
-`PublishFareProductCommand`, `SetFlightPriceCommand`, and `RetireFareProductCommand`
-through DispatchR. Validators run for these internal commands. Published product terms
-are immutable: change cabin class, brand, or baggage by publishing a new `(Code, Version)`;
-retire old versions explicitly. Prices are keyed by exact flight ID, product version ID,
-and uppercase currency. There is no default/fallback price or client-supplied amount.
+or inventory administration endpoints**. Trusted code can dispatch `PublishFareProductCommand`,
+`SetFlightPriceCommand`, and `RetireFareProductCommand` through DispatchR; they are
+transactional commands with validators, and failures are typed `BookingError` results.
+Published product terms are immutable: change cabin class, brand, or baggage by
+publishing a new `(Code, Version)` and retire old versions explicitly. Prices are keyed
+by flight ID, product ID and uppercase currency, with no default price or
+client-supplied amount. Physical `CabinId` belongs to each flight price, not the global
+product: two flights can price the same Economy product into different layout cabins, and
+a physical ID is never inferred from a cabin-class name. Inventory capacity and cabin
+existence remain flight/seating-service responsibilities.
 
-For an operable first installation, explicitly enable `Booking:SeedCatalog=true` and
-provide `Booking:CatalogSeed` through deployment configuration, for example:
+## Code organization
 
-```json
-{
-  "Booking": {
-    "SeedCatalog": true,
-    "CatalogSeed": [{
-      "Code": "LIGHT",
-      "Version": 1,
-      "CabinClass": "Economy",
-      "Brand": "Light",
-      "Baggage": {
-        "IncludedPieces": 0,
-        "MaxWeightPerPieceKg": 23,
-        "MaxExtraPieces": 1,
-        "ExtraPiecePrice": 100
-      },
-      "Prices": [{
-        "FlightId": "canonical-flight-id",
-        "CabinId": "canonical-physical-cabin-id-from-flight-service",
-        "Currency": "PLN",
-        "Amount": 250
-      }]
-    }]
-  }
-}
-```
-
-Startup seeds through those validated commands after schema provisioning. Re-running
-the same configuration is safe: existing product versions are reused and exact price
-keys updated. Changing terms under an existing version fails startup rather than
-silently mutating booked terms. Seeding never automatically reactivates retired
-products. Disable the seed flag after provisioning if prices should not be reapplied
-on every restart. Inventory capacity and cabin existence remain flight/seating-service
-responsibilities; seed only their canonical opaque references. Physical `CabinId`
-belongs to each flight price mapping, not the global fare product: two flights can
-price the same Economy product into different physical layout cabins. This release's
-trusted provisioning must supply the flight/cabin mapping explicitly; it never
-infers a physical inventory ID from a cabin-class name.
+Follows flight-service: `Api` (controllers per resource, `BookingResultExtensions`),
+`Application` (`Features/<Name>Features/Commands|Queries`, repository abstractions,
+`Contracts/Requests|Responses`, typed `BookingError`), `Domain` (aggregates and value
+objects such as `PnrCode`, `GuestToken`, `OfferedFare`) and `Infrastructure`
+(`Persistence/Configuration|Queries`, `Repositories`, `Integrations/Sagas`).
+Commands go through the shared validation/transaction pipelines; reads use query
+services validated at the API boundary. `CreateReservationCommand` atomically consumes
+the offer, saves the reservation and publishes `ReservationRequested` via the outbox.
 
 ## Guest checkout API
 

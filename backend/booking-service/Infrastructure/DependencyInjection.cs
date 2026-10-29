@@ -1,7 +1,11 @@
 using booking_service.Application.Abstractions;
-using booking_service.Application.Features.Catalog;
+using booking_service.Application.Features.CatalogFeatures.Queries;
+using booking_service.Application.Features.CheckoutFeatures.Queries;
+using booking_service.Application.Features.ReservationFeatures.Queries;
+using booking_service.Infrastructure.Integrations.Sagas;
 using booking_service.Infrastructure.Persistence;
-using booking_service.Infrastructure.Sagas;
+using booking_service.Infrastructure.Persistence.Queries;
+using booking_service.Infrastructure.Repositories;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -13,7 +17,6 @@ public static class DependencyInjection
 {
     public static WebApplicationBuilder AddInfrastructure(this WebApplicationBuilder builder)
     {
-        builder.Services.AddSingleton(TimeProvider.System);
         builder.Services.AddDbContext<BookingDbContext>(options =>
         {
             var connectionString = builder.Configuration.GetConnectionString("BookingDatabase");
@@ -26,10 +29,15 @@ public static class DependencyInjection
         });
         builder.Services.AddSharedUnitOfWork<BookingDbContext>();
         builder.Services.AddSharedInfrastructure();
-        builder.Services.AddScoped<BookingService>();
-        builder.Services.AddScoped<ICatalogAdministration, CatalogAdministration>();
-        builder.Services.AddScoped<IBookingService>(provider => provider.GetRequiredService<BookingService>());
-        builder.Services.AddScoped<IBookingQueries>(provider => provider.GetRequiredService<BookingService>());
+        builder.Services.AddScoped<IGuestCheckoutRepository, GuestCheckoutRepository>();
+        builder.Services.AddScoped<ICheckoutOfferRepository, CheckoutOfferRepository>();
+        builder.Services.AddScoped<IFareProductRepository, FareProductRepository>();
+        builder.Services.AddScoped<IFlightPriceRepository, FlightPriceRepository>();
+        builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
+        builder.Services.AddScoped<IReservationCheckoutRepository, ReservationCheckoutRepository>();
+        builder.Services.AddScoped<ICatalogQueries, CatalogQueries>();
+        builder.Services.AddScoped<IOfferQueries, OfferQueries>();
+        builder.Services.AddScoped<IReservationQueries, ReservationQueries>();
         builder.Services.AddScoped<CompleteReservationActivity>();
         builder.Services.AddScoped<CancelReservationActivity>();
         builder.Services.AddOptions<RabbitMqTransportOptions>()

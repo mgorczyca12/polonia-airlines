@@ -9,7 +9,7 @@ public sealed record FareQuote
     public string FlightId { get; private set; } = null!;
     public string ProductCode { get; private set; } = null!;
     public string CabinClass { get; private set; } = null!;
-    public string? CabinId { get; private set; }
+    public string CabinId { get; private set; } = null!;
     public int ProductVersion { get; private set; }
     public string Brand { get; private set; } = null!;
     public decimal Amount { get; private set; }
@@ -27,20 +27,18 @@ public sealed record FareQuote
         decimal amount,
         string currency,
         BaggageAllowance baggageAllowance,
-        string? cabinId = null,
-        int productVersion = 1,
-        string? brand = null)
+        string cabinId,
+        int productVersion,
+        string brand)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(flightId);
         ArgumentException.ThrowIfNullOrWhiteSpace(productCode);
         ArgumentException.ThrowIfNullOrWhiteSpace(cabinClass);
         ArgumentOutOfRangeException.ThrowIfNegative(amount);
         ArgumentNullException.ThrowIfNull(baggageAllowance);
+        ArgumentException.ThrowIfNullOrWhiteSpace(cabinId);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(productVersion);
-        if (cabinId is not null)
-        {
-            ArgumentException.ThrowIfNullOrWhiteSpace(cabinId);
-        }
+        ArgumentException.ThrowIfNullOrWhiteSpace(brand);
 
         return new FareQuote
         {
@@ -49,7 +47,7 @@ public sealed record FareQuote
             CabinClass = cabinClass,
             CabinId = cabinId,
             ProductVersion = productVersion,
-            Brand = brand ?? productCode,
+            Brand = brand,
             Amount = amount,
             Currency = CurrencyCode.Normalize(currency),
             BaggageAllowance = baggageAllowance

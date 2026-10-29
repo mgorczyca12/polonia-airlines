@@ -30,7 +30,16 @@ public class ReservationTests
         string cabin = "Economy",
         BaggageAllowance? allowance = null)
     {
-        return FareQuote.Create(flightId, "ECO-BASIC", cabin, amount, currency, allowance ?? Allowance);
+        return FareQuote.Create(
+            flightId,
+            "ECO-BASIC",
+            cabin,
+            amount,
+            currency,
+            allowance ?? Allowance,
+            "cabin-1",
+            1,
+            "Basic");
     }
 
     private static Passenger AddPassenger(
@@ -137,7 +146,8 @@ public class ReservationTests
         Assert.Equal("ECO-BASIC", business.ProductCode);
         Assert.Equal(300m, business.Amount);
         Assert.Equal("PLN", business.Currency);
-        Assert.Same(Allowance, business.BaggageAllowance);
+        Assert.Equal(Allowance, business.BaggageAllowance);
+        Assert.NotSame(Allowance, business.BaggageAllowance);
         Assert.Same(passenger, business.Passenger);
         Assert.Equal(400m, passenger.TotalAmount);
         Assert.Equal(400m, reservation.TotalAmount);
@@ -352,14 +362,20 @@ public class ReservationTests
     [Fact]
     public void Create_FareQuoteInputs_RequiresIdentifiersAndAllowanceAndPreservesRepresentation()
     {
-        Assert.Throws<ArgumentException>(() => FareQuote.Create(" ", "P", "C", 1m, "PLN", Allowance));
-        Assert.Throws<ArgumentException>(() => FareQuote.Create("1", "", "C", 1m, "PLN", Allowance));
-        Assert.Throws<ArgumentException>(() => FareQuote.Create("1", "P", " ", 1m, "PLN", Allowance));
-        Assert.Throws<ArgumentNullException>(() => FareQuote.Create("1", "P", "C", 1m, "PLN", null!));
-        var quote = FareQuote.Create(" 1 ", " P ", " Premium ", 1m, "PLN", Allowance);
+        Assert.Throws<ArgumentException>(() => FareQuote.Create(" ", "P", "C", 1m, "PLN", Allowance, "cabin", 1, "Brand"));
+        Assert.Throws<ArgumentException>(() => FareQuote.Create("1", "", "C", 1m, "PLN", Allowance, "cabin", 1, "Brand"));
+        Assert.Throws<ArgumentException>(() => FareQuote.Create("1", "P", " ", 1m, "PLN", Allowance, "cabin", 1, "Brand"));
+        Assert.Throws<ArgumentNullException>(() => FareQuote.Create("1", "P", "C", 1m, "PLN", null!, "cabin", 1, "Brand"));
+        Assert.Throws<ArgumentException>(() => FareQuote.Create("1", "P", "C", 1m, "PLN", Allowance, " ", 1, "Brand"));
+        Assert.Throws<ArgumentOutOfRangeException>(() => FareQuote.Create("1", "P", "C", 1m, "PLN", Allowance, "cabin", 0, "Brand"));
+        Assert.Throws<ArgumentException>(() => FareQuote.Create("1", "P", "C", 1m, "PLN", Allowance, "cabin", 1, " "));
+        var quote = FareQuote.Create(" 1 ", " P ", " Premium ", 1m, "PLN", Allowance, " cabin ", 2, " Flex ");
         Assert.Equal(" 1 ", quote.FlightId);
         Assert.Equal(" P ", quote.ProductCode);
         Assert.Equal(" Premium ", quote.CabinClass);
+        Assert.Equal(" cabin ", quote.CabinId);
+        Assert.Equal(2, quote.ProductVersion);
+        Assert.Equal(" Flex ", quote.Brand);
     }
 
     [Fact]

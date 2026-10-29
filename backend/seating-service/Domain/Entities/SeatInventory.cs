@@ -1,3 +1,4 @@
+using seating_service.Domain.ValueObjects;
 using Shared.Domain.Entities;
 
 namespace seating_service.Domain.Entities;
@@ -94,6 +95,33 @@ public class SeatInventory : AggregateRoot<int>
 
         assignments.Remove(assignment);
         ReservedSeats--;
+    }
+
+    public bool CanConfirm(IEnumerable<HeldSelection> selections)
+    {
+        ArgumentNullException.ThrowIfNull(selections);
+
+        var requested = selections
+            .Where(selection => selection.FlightId == FlightId && selection.CabinId == CabinId)
+            .ToArray();
+
+        var requestedSeats = requested.Count(selection => selection.SeatId is not null);
+        var assignedSeats = assignments.Count(assignment => assignment.SeatId is not null);
+        var conflicts = requested.Any(selection => assignments.Any(assignment =>
+            assignment.PassengerId == selection.PassengerId ||
+            (selection.SeatId is not null && assignment.SeatId == selection.SeatId)));
+
+        return assignments.Count + requested.Length <= BookingLimit &&
+            assignedSeats + requestedSeats <= TotalSeats &&
+            !conflicts;
+    }
+
+    public void EnsureConsistent()
+    {
+        if (ReservedSeats != assignments.Count)
+        {
+            throw new InvalidOperationException("Confirmed inventory count is inconsistent.");
+        }
     }
 
     private void EnsureOwned(SeatAssignment assignment)

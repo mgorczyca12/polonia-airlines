@@ -5,6 +5,47 @@ and `ReleaseReservationInventory` and publishes their shared reservation-workflo
 outcomes. `/health` is liveness only; there are no public inventory administration
 or hold endpoints. All external IDs are opaque, ordinal, case-sensitive strings.
 
+## Structure
+
+The service follows the same layering as `flight-service`; `Program.cs` chains
+`AddApi().AddApplication().AddInfrastructure()`.
+
+```text
+Api/Extensions/DependencyInjection.cs   health checks
+Application/
+  DependencyInjection.cs                shared DispatchR pipelines + validators
+  Abstractions/                         IInventoryRepository, IInventoryOperationRepository,
+                                        IInventoryMutationLock, IInventoryHolds, IInventoryReleaseFence
+  Features/InventoryFeatures/
+    Commands/{HoldInventory,ConfirmInventory,ReleaseInventory,CleanupConfirmedInventory}/
+    Errors/                             InventoryRejectionCode + contract-string mapping
+    InventoryKeys.cs                    Redis key/token encoding
+Domain/
+  Entities/                             SeatInventory, SeatAssignment, InventoryOperation, InventorySeat
+  ValueObjects/                         InventoryOperationState, HeldSelection(s)
+Infrastructure/
+  DependencyInjection.cs                DbContext, options, Redis, MassTransit, repositories
+  Persistence/                          SeatingDbContext, Configuration/ (one class per entity),
+                                        Converters/, Redis/ (RedisInventoryHolds + options),
+                                        InventoryMutationLock (persistence-only guard row)
+  Repositories/                         repositories, SQL mutation lock, independent release fence
+  Integrations/Consumers/               one thin consumer per message; each only sends a command
+```
+
+Hold, confirm, release and cleanup are DispatchR command handlers returning
+`FluentResults.Result`. They are plain commands, not transactional/retryable
+ones, because the MassTransit consumer outbox owns the SQL transaction on the
+`DbContext`; handlers persist through the shared `IUnitOfWork` once per message
+path, after publishing outcomes through `IIntegrationEventPublisher`. The Hold
+request rule (`HoldInventoryRequestRule`) is invoked by the handler, not a
+FluentValidation validator, so an invalid hold still becomes a durable Rejected
+operation with `invalid_selection_or_deadline`. Confirm/Release/Cleanup commands
+have validators requiring a non-empty correlation ID; such messages fail
+validation and follow the retry/error-queue policy. `InventoryOperation` is an
+aggregate that enforces Held to Confirmed/Rejected/Released transitions and the
+release fence; its state is a smart enum stored as a string and its held
+selections are stored as JSON in `SelectionsJson`.
+
 ## Storage and protocol
 
 PostgreSQL stores cabin inventory, confirmed `SeatAssignment` rows, the workflow
@@ -116,22 +157,25 @@ RabbitMq__UseSsl=true
 
 `Inventory__RedisKey` optionally overrides the shared hash key; changing it
 invalidates outstanding holds and must be coordinated across all instances.
+`RabbitMq__Host`, `User`, `Pass` and `ConnectionStrings__InventoryRedis` are
+bound to validated options and checked when the host starts (`RabbitMq` uses
+MassTransit's `RabbitMqTransportOptions`, like flight-service).
 Use Redis persistence and normal secured network configuration, but safety does
 not depend on retaining temporary holds.
 
-For a **new, empty, dedicated** service database, run the internal one-shot schema
-initializer (not automatic startup behavior):
-
-```powershell
-dotnet run --project backend\seating-service -- --initialize-database
-```
-
-This uses EF `EnsureCreated`, including the mutation guard and outbox tables.
-It is a first-schema bootstrap, not an upgrade/migration mechanism; existing
-deployments require reviewed SQL/migrations before schema changes.
+For a **new, empty, dedicated** service database, the schema must be created
+before the service starts. The service has no `--initialize-database` flag and
+does not call `EnsureCreated` at startup; schema creation is deferred to
+migrations, and **no migrations are checked in yet**. Schema provisioning is a
+prerequisite and must include the `Operations`, `SeatInventories`, `Assignments`,
+`Seats` and `InventoryMutationLock` tables, the MassTransit inbox/outbox tables,
+the unique and filtered unique indexes, the `C` collations, and the seeded
+`InventoryMutationLock` row (`Id = 1`, defined with `HasData` in its entity
+configuration so a future migration will include it). The service fails closed
+if the guard row is missing.
 
 Provision flight/cabin capacity and aircraft seat membership through trusted
-internal deployment/import tooling only. For example, against the new schema:
+internal deployment/import tooling only. For example, against the provisioned schema:
 
 ```sql
 BEGIN;
@@ -173,10 +217,12 @@ dotnet test backend\tests\integration\seating-service.integration.test --filter 
 
 Missing external configuration fails with setup instructions; tests do not
 silently skip or substitute an in-memory Redis/PostgreSQL implementation.
-These direct participant tests do not validate broker delivery. MassTransit
+These direct command-handler tests do not validate broker delivery. MassTransit
 consumer/outbox wiring is configured in the host; full RabbitMQ delivery and
 crash-recovery verification remains an external end-to-end check.
 
 Test execution for this implementation session was explicitly deferred by the
 user. Build validation is not a claim that unit, Redis, PostgreSQL, or broker
-integration tests passed.
+integration tests passed. The SQLite unit tests were run after the handler
+restructure; the Redis/PostgreSQL integration project was only compiled, and
+the MassTransit/DispatchR host wiring has not been exercised against a broker.

@@ -75,5 +75,20 @@ Cabin-capacity reservation is separate from optional physical-seat assignment.
 Booking does not need to select a seat to secure a cabin allocation.
 Redis loss or unavailability must not silently fall back to granting holds.
 
-Test sources cover domain and participant behavior. Tests for this implementation,
-including live Redis/PostgreSQL checks, were deferred by the user.
+Test sources cover domain and handler behavior. Live Redis/PostgreSQL checks
+exist in the integration project but have not been run.
+
+## Code structure
+
+The service uses the same Api/Application/Domain/Infrastructure layering as the
+flight service. Hold, confirm, release and post-commit cleanup are DispatchR
+commands under `Application/Features/InventoryFeatures`; MassTransit consumers
+in `Infrastructure/Integrations/Consumers` only send those commands. Because the
+MassTransit consumer outbox owns the SQL transaction, the handlers are plain
+commands and save once through the shared unit of work. `InventoryOperation`
+(aggregate) owns the Held to Confirmed/Rejected/Released transitions and the
+release fence. Repositories, the SQL mutation lock and the independent release
+fence live in `Infrastructure/Repositories`; EF mappings are one configuration
+class per entity. The `--initialize-database` bootstrap was removed: no
+migrations are checked in, and schema plus inventory/seat provisioning are
+prerequisites (see the service README).

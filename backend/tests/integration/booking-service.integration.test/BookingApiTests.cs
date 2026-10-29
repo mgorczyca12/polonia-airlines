@@ -1,7 +1,8 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using booking_service.Application.Contracts;
+using booking_service.Application.Contracts.Requests;
+using booking_service.Application.Contracts.Responses;
 using booking_service.Domain.Entities;
 using booking_service.Domain.ValueObjects;
 using booking_service.Infrastructure.Persistence;

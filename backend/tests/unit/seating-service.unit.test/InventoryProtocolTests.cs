@@ -1,15 +1,21 @@
 using System.Data.Common;
-using System.Reflection;
 using System.Text.Json;
-using MassTransit;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using seating_service.Application.Abstractions;
-using seating_service.Application.Features.Inventory;
+using seating_service.Application.Features.InventoryFeatures;
+using seating_service.Application.Features.InventoryFeatures.Commands.CleanupConfirmedInventory;
+using seating_service.Application.Features.InventoryFeatures.Commands.ConfirmInventory;
+using seating_service.Application.Features.InventoryFeatures.Commands.HoldInventory;
+using seating_service.Application.Features.InventoryFeatures.Commands.ReleaseInventory;
 using seating_service.Domain.Entities;
-using seating_service.Infrastructure;
+using seating_service.Domain.ValueObjects;
 using seating_service.Infrastructure.Persistence;
+using seating_service.Infrastructure.Repositories;
+using Shared.Application.Events;
+using Shared.Infrastructure.Messaging;
+using Shared.Infrastructure.Persistence;
 using Shared.Integration.Contracts;
 
 namespace seating_service.unit.test;
@@ -291,28 +297,69 @@ public sealed class InventoryProtocolTests
     public void ValidationRejectsDuplicatePassengersSeatsAndExcessiveDeadline()
     {
         var now = DateTimeOffset.UtcNow;
-        var command = new HoldReservationInventory(
+        var command = new HoldInventoryCommand(
             Guid.NewGuid(), "reservation", now.AddMinutes(10), [new("P", "F", "C", null)]);
-        Assert.True(InventoryKeys.IsValid(command, now));
-        Assert.False(InventoryKeys.IsValid(command with { HoldUntil = now.AddMinutes(11) }, now));
-        Assert.False(InventoryKeys.IsValid(command with
+        Assert.True(HoldInventoryRequestRule.IsSatisfiedBy(command, now));
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with { HoldUntil = now.AddMinutes(11) }, now));
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with { HoldUntil = now }, now));
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with { CorrelationId = Guid.Empty }, now));
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with { ReservationId = " " }, now));
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with { Selections = [] }, now));
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with { Selections = [null!] }, now));
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with { Selections = [new("P", "F", "C", " ")] }, now));
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with
+        {
+            Selections = Enumerable.Range(0, 101).Select(index => new InventorySelection($"P{index}", "F", "C", null)).ToArray()
+        }, now));
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with
         {
             Selections = [new("P", "F", "C", null), new("P", "F", "C", null)]
         }, now));
-        Assert.False(InventoryKeys.IsValid(command with
+        Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with
         {
             Selections = [new("P", "F", "C", "1A"), new("Q", "F", "other", "1A")]
         }, now));
+    }
+
+    [Fact]
+    public async Task InvalidHoldProducesDurableRejectionInsteadOfThrowing()
+    {
+        await using var fixture = await Fixture.Create();
+        var hold = fixture.Command("passenger") with { Selections = [new(" ", "flight", "cabin", null)] };
+        await fixture.Run(participant => participant.Hold(hold, default));
+
+        Assert.Equal(InventoryOperationState.Rejected, await fixture.State(hold.CorrelationId));
+        Assert.Empty(fixture.Holds.Active);
+        var rejected = Assert.Single(fixture.Published.OfType<ReservationInventoryRejected>());
+        Assert.Equal("invalid_selection_or_deadline", rejected.Code);
+
+        var late = fixture.Command("late") with { HoldUntil = fixture.Clock.Now.AddSeconds(-1) };
+        await fixture.Run(participant => participant.Hold(late, default));
+        Assert.Equal(InventoryOperationState.Rejected, await fixture.State(late.CorrelationId));
+    }
+
+    [Fact]
+    public async Task HoldPersistsTypedSelectionsAndNormalizedExpiry()
+    {
+        await using var fixture = await Fixture.Create();
+        var hold = fixture.Command("passenger", "1A") with { HoldUntil = fixture.Clock.Now.AddMinutes(5).AddTicks(7) };
+        await fixture.Run(participant => participant.Hold(hold, default));
+
+        var operation = await fixture.Operation(hold.CorrelationId);
+        Assert.Equal(hold.ReservationId, operation.ReservationId);
+        Assert.Equal(new HeldSelection("passenger", "flight", "cabin", "1A"), Assert.Single(operation.Selections.Items));
+        Assert.Equal(hold.HoldUntil.ToUnixTimeMilliseconds(), operation.ExpiresAt.ToUnixTimeMilliseconds());
+        Assert.Equal(0, operation.ExpiresAt.Ticks % TimeSpan.TicksPerMillisecond);
     }
 
     private sealed class Fixture : IAsyncDisposable
     {
         private readonly SqliteConnection connection;
         private readonly DbContextOptions<SeatingDbContext> options;
-        private readonly IPublishEndpoint publisher;
+        private readonly FakePublisher publisher = new();
         public readonly Clock Clock = new();
         public readonly FakeHolds Holds;
-        public List<object> Published => ((PublishRecorder)publisher).Messages;
+        public List<object> Published => publisher.Messages;
 
         private Fixture(SqliteConnection connection)
         {
@@ -321,7 +368,6 @@ public sealed class InventoryProtocolTests
                 .UseSqlite(connection)
                 .AddInterceptors(new SqliteLockSyntax())
                 .Options;
-            publisher = DispatchProxy.Create<IPublishEndpoint, PublishRecorder>();
             Holds = new FakeHolds(Clock);
         }
 
@@ -336,7 +382,7 @@ public sealed class InventoryProtocolTests
             database.Inventories.AddRange(
                 SeatInventory.Create("flight", "cabin", capacity, overbookingAllowance),
                 SeatInventory.Create("other", "cabin", capacity, overbookingAllowance));
-            database.Seats.Add(new InventorySeat { FlightId = "flight", CabinId = "cabin", SeatId = "1A" });
+            database.Seats.Add(InventorySeat.Create("flight", "cabin", "1A"));
             await database.SaveChangesAsync();
             return fixture;
         }
@@ -347,11 +393,11 @@ public sealed class InventoryProtocolTests
                 [new(passenger, "flight", "cabin", seat)]);
         }
 
-        public async Task Run(Func<InventoryParticipant, Task> action, bool failBeforeCommit = false)
+        public async Task Run(Func<InventoryHandlers, Task> action, bool failBeforeCommit = false)
         {
             await using var database = new SeatingDbContext(options);
             await using var transaction = await database.Database.BeginTransactionAsync();
-            await action(new InventoryParticipant(database, Holds, new ExistingReleaseFence(), publisher, Clock));
+            await action(new InventoryHandlers(database, Holds, new ExistingReleaseFence(), publisher, Clock));
             if (failBeforeCommit)
             {
                 throw new InjectedFailure();
@@ -370,7 +416,11 @@ public sealed class InventoryProtocolTests
         {
             await using var database = new SeatingDbContext(options);
             await using var transaction = await database.Database.BeginTransactionAsync();
-            await new ConfirmedInventoryCleanup(database, Holds).Cleanup(correlationId, default);
+            var handler = new CleanupConfirmedInventoryCommandHandler(
+                new SqlInventoryMutationLock(database),
+                new InventoryOperationRepository(database),
+                Holds);
+            await handler.Handle(new CleanupConfirmedInventoryCommand(correlationId), default);
             await transaction.CommitAsync();
         }
 
@@ -380,15 +430,70 @@ public sealed class InventoryProtocolTests
             return await database.Assignments.CountAsync();
         }
 
-        public async Task<InventoryOperationState> State(Guid id)
+        public async Task<InventoryOperation> Operation(Guid id)
         {
             await using var database = new SeatingDbContext(options);
-            return (await database.Operations.FindAsync(id))!.State;
+            return (await database.Operations.FindAsync(id))!;
+        }
+
+        public async Task<InventoryOperationState> State(Guid id)
+        {
+            return (await Operation(id)).State;
         }
 
         public ValueTask DisposeAsync()
         {
             return connection.DisposeAsync();
+        }
+    }
+
+    private sealed class InventoryHandlers(
+        SeatingDbContext database,
+        IInventoryHolds holds,
+        IInventoryReleaseFence releaseFence,
+        IIntegrationEventPublisher publisher,
+        TimeProvider timeProvider)
+    {
+        private readonly SqlInventoryMutationLock mutationLock = new(database);
+        private readonly InventoryOperationRepository operations = new(database);
+        private readonly InventoryRepository inventories = new(database);
+        private readonly EfUnitOfWork<SeatingDbContext> unitOfWork = new(database, new DomainEventDispatcher([]));
+
+        public async Task Hold(HoldReservationInventory message, CancellationToken cancellationToken)
+        {
+            var handler = new HoldInventoryCommandHandler(
+                mutationLock, operations, inventories, holds, publisher, unitOfWork, timeProvider);
+            var command = new HoldInventoryCommand(
+                message.CorrelationId, message.ReservationId, message.HoldUntil, message.Selections);
+            Assert.True((await handler.Handle(command, cancellationToken)).IsSuccess);
+        }
+
+        public async Task Confirm(ConfirmReservationInventory message, CancellationToken cancellationToken)
+        {
+            var handler = new ConfirmInventoryCommandHandler(
+                mutationLock, operations, inventories, holds, publisher, unitOfWork);
+            var result = await handler.Handle(new ConfirmInventoryCommand(message.CorrelationId), cancellationToken);
+            Assert.True(result.IsSuccess);
+        }
+
+        public async Task Release(ReleaseReservationInventory message, CancellationToken cancellationToken)
+        {
+            var handler = new ReleaseInventoryCommandHandler(
+                releaseFence, mutationLock, operations, inventories, holds, publisher, unitOfWork);
+            var result = await handler.Handle(new ReleaseInventoryCommand(message.CorrelationId), cancellationToken);
+            Assert.True(result.IsSuccess);
+        }
+    }
+
+    private sealed class FakePublisher : IIntegrationEventPublisher
+    {
+        public List<object> Messages { get; } = new();
+
+        public Task PublishAsync<TEvent>(TEvent integrationEvent, CancellationToken cancellationToken)
+            where TEvent : class, IIntegrationEvent
+        {
+            Messages.Add(integrationEvent);
+            return Task.CompletedTask;
         }
     }
 
@@ -423,22 +528,6 @@ public sealed class InventoryProtocolTests
         {
             command.CommandText = command.CommandText.Replace(" FOR UPDATE", string.Empty, StringComparison.Ordinal);
             return ValueTask.FromResult(result);
-        }
-    }
-
-    public class PublishRecorder : DispatchProxy
-    {
-        public readonly List<object> Messages = new();
-
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            if (targetMethod?.Name != nameof(IPublishEndpoint.Publish))
-            {
-                throw new NotSupportedException(targetMethod?.Name);
-            }
-
-            Messages.Add(args![0]!);
-            return Task.CompletedTask;
         }
     }
 

@@ -74,7 +74,24 @@ Final verification:
 
 Operational limits: configure and provision PostgreSQL/Redis/RabbitMQ and trusted flight/cabin/seat data before use. Explicit empty-database bootstrap is documented; reviewed schema upgrades are still required for production evolution. Seating deliberately uses a global SQL mutation guard for correctness, so throughput optimization is deferred. The web application still uses local sample data.
 
-## Commit and push request
+## Reservation workflow refactor
+
+Follow-up to the commit above, after review against the architecture guidelines and flight-service layout:
+
+- Replaced booking's `BookingService`/`IBookingService`/`CatalogAdministration` god classes with feature command handlers (catalog, checkout/offers, reservations), repository abstractions, query services validated at the API boundary, and a typed `BookingError` with `BookingErrorKind`.
+- Split the catch-all controller into catalog/checkout/offer/reservation controllers with a `BookingResultExtensions` ProblemDetails mapping; `Program.cs` now chains `AddApi/AddApplication/AddInfrastructure`.
+- Domain: one entity per file on shared `AggregateRoot`/`Entity` bases; added `GuestToken` and `OfferedFare`; `FareQuote` now requires cabin ID, version and brand (no optional defaults).
+- Persistence: per-entity `IEntityTypeConfiguration` classes plus a typed JSON converter for offer fares; repositories in `Infrastructure/Repositories`; sagas moved to `Infrastructure/Integrations/Sagas`.
+- Seating was restructured in parallel by the same pattern (command handlers, `InventoryOperation` aggregate, repositories, thin consumers, Redis options); see its README. Its protocol was preserved; the operation state column is now a string and empty correlation IDs on confirm/release are validation failures.
+- Removed bootstrap paths per the owner's decision: booking `--schema-script`, `ProvisionDevelopmentDatabase`, catalog seeding, and seating `--initialize-database`. Schema creation awaits migrations, as in flight-service.
+- Split reservation contracts in shared into one file per message.
+
+Verification (runnable tests only, as agreed): booking unit 85, seating unit 52, flight unit 46, booking integration 12 (SQLite/in-memory), flight integration 43, shared integration 43 all passed. A stale `Assert.Same` on the copied baggage allowance, left by the prior commit, was corrected. Whitespace and IDE0011/IDE0021/IDE0022 checks and `git diff --check` pass. Live PostgreSQL/Redis/RabbitMQ seating tests were compiled but not run (no Docker engine). Not run against real infrastructure: DispatchR/MassTransit wiring in the production host.
+
+Behaviour notes: PNR allocation now pre-checks availability (bounded attempts) inside the command; a race is still stopped by the unique index but would surface as an error rather than a retry. Not committed.
+
+
+## Commit and push
 
 The user requested committing and pushing the accumulated local work, including
 the shared exception handler, guest reservations/PNR, catalog/offers, inventory

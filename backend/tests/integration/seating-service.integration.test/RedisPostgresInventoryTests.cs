@@ -1,13 +1,20 @@
 using System.Data;
-using System.Reflection;
-using MassTransit;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
 using Npgsql;
+using seating_service.Application.Abstractions;
+using seating_service.Application.Features.InventoryFeatures.Commands.CleanupConfirmedInventory;
+using seating_service.Application.Features.InventoryFeatures.Commands.ConfirmInventory;
+using seating_service.Application.Features.InventoryFeatures.Commands.HoldInventory;
+using seating_service.Application.Features.InventoryFeatures.Commands.ReleaseInventory;
 using seating_service.Domain.Entities;
-using seating_service.Infrastructure;
+using seating_service.Domain.ValueObjects;
 using seating_service.Infrastructure.Persistence;
-using seating_service.Infrastructure.Redis;
+using seating_service.Infrastructure.Persistence.Redis;
+using seating_service.Infrastructure.Repositories;
+using Microsoft.Extensions.Options;
+using Shared.Application.Events;
+using Shared.Infrastructure.Messaging;
+using Shared.Infrastructure.Persistence;
 using Shared.Integration.Contracts;
 using StackExchange.Redis;
 
@@ -129,7 +136,7 @@ public sealed class RedisPostgresInventoryTests
         private readonly DbContextOptions<SeatingDbContext> options;
         private readonly IConnectionMultiplexer redis;
         private readonly RedisInventoryHolds holds;
-        private readonly IPublishEndpoint publisher = DispatchProxy.Create<IPublishEndpoint, DiscardPublisher>();
+        private readonly DiscardPublisher publisher = new();
 
         private Fixture(string postgres, IConnectionMultiplexer redis)
         {
@@ -138,10 +145,9 @@ public sealed class RedisPostgresInventoryTests
             options = new DbContextOptionsBuilder<SeatingDbContext>()
                 .UseNpgsql(connectionString.ConnectionString)
                 .Options;
-            var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string?> { ["Inventory:RedisKey"] = redisKey })
-                .Build();
-            holds = new RedisInventoryHolds(redis, configuration);
+            holds = new RedisInventoryHolds(
+                redis,
+                Options.Create(new RedisInventoryOptions { RedisKey = redisKey }));
         }
 
         public static async Task<Fixture> Create()
@@ -170,7 +176,7 @@ public sealed class RedisPostgresInventoryTests
                 database.Inventories.AddRange(
                     SeatInventory.Create("flight", "cabin", 1),
                     SeatInventory.Create("other", "cabin", 1));
-                database.Seats.Add(new InventorySeat { FlightId = "flight", CabinId = "cabin", SeatId = "1A" });
+                database.Seats.Add(InventorySeat.Create("flight", "cabin", "1A"));
                 await database.SaveChangesAsync();
                 return fixture;
             }
@@ -187,11 +193,11 @@ public sealed class RedisPostgresInventoryTests
                 [new(passenger, "flight", "cabin", seat)]);
         }
 
-        public async Task Run(Func<InventoryParticipant, Task> action, bool commit = true)
+        public async Task Run(Func<InventoryHandlers, Task> action, bool commit = true)
         {
             await using var database = new SeatingDbContext(options);
             await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
-            await action(new InventoryParticipant(
+            await action(new InventoryHandlers(
                 database,
                 holds,
                 new InventoryReleaseFence(options),
@@ -208,7 +214,7 @@ public sealed class RedisPostgresInventoryTests
             await using var database = new SeatingDbContext(options);
             return await database.Operations
                 .Where(operation => operation.State == InventoryOperationState.Held)
-                .Select(operation => operation.CorrelationId)
+                .Select(operation => operation.Id)
                 .ToArrayAsync();
         }
 
@@ -233,7 +239,11 @@ public sealed class RedisPostgresInventoryTests
         {
             await using var database = new SeatingDbContext(options);
             await using var transaction = await database.Database.BeginTransactionAsync(IsolationLevel.ReadCommitted);
-            await new ConfirmedInventoryCleanup(database, holds).Cleanup(correlationId, default);
+            var handler = new CleanupConfirmedInventoryCommandHandler(
+                new SqlInventoryMutationLock(database),
+                new InventoryOperationRepository(database),
+                holds);
+            await handler.Handle(new CleanupConfirmedInventoryCommand(correlationId), default);
             await transaction.CommitAsync();
         }
 
@@ -259,15 +269,49 @@ public sealed class RedisPostgresInventoryTests
         }
     }
 
-    public class DiscardPublisher : DispatchProxy
+    private sealed class InventoryHandlers(
+        SeatingDbContext database,
+        IInventoryHolds holds,
+        IInventoryReleaseFence releaseFence,
+        IIntegrationEventPublisher publisher,
+        TimeProvider timeProvider)
     {
-        protected override object? Invoke(MethodInfo? targetMethod, object?[]? args)
-        {
-            if (targetMethod?.Name != nameof(IPublishEndpoint.Publish))
-            {
-                throw new NotSupportedException(targetMethod?.Name);
-            }
+        private readonly SqlInventoryMutationLock mutationLock = new(database);
+        private readonly InventoryOperationRepository operations = new(database);
+        private readonly InventoryRepository inventories = new(database);
+        private readonly EfUnitOfWork<SeatingDbContext> unitOfWork = new(database, new DomainEventDispatcher([]));
 
+        public async Task Hold(HoldReservationInventory message, CancellationToken cancellationToken)
+        {
+            var handler = new HoldInventoryCommandHandler(
+                mutationLock, operations, inventories, holds, publisher, unitOfWork, timeProvider);
+            var command = new HoldInventoryCommand(
+                message.CorrelationId, message.ReservationId, message.HoldUntil, message.Selections);
+            Assert.True((await handler.Handle(command, cancellationToken)).IsSuccess);
+        }
+
+        public async Task Confirm(ConfirmReservationInventory message, CancellationToken cancellationToken)
+        {
+            var handler = new ConfirmInventoryCommandHandler(
+                mutationLock, operations, inventories, holds, publisher, unitOfWork);
+            var result = await handler.Handle(new ConfirmInventoryCommand(message.CorrelationId), cancellationToken);
+            Assert.True(result.IsSuccess);
+        }
+
+        public async Task Release(ReleaseReservationInventory message, CancellationToken cancellationToken)
+        {
+            var handler = new ReleaseInventoryCommandHandler(
+                releaseFence, mutationLock, operations, inventories, holds, publisher, unitOfWork);
+            var result = await handler.Handle(new ReleaseInventoryCommand(message.CorrelationId), cancellationToken);
+            Assert.True(result.IsSuccess);
+        }
+    }
+
+    private sealed class DiscardPublisher : IIntegrationEventPublisher
+    {
+        public Task PublishAsync<TEvent>(TEvent integrationEvent, CancellationToken cancellationToken)
+            where TEvent : class, IIntegrationEvent
+        {
             return Task.CompletedTask;
         }
     }
