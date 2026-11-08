@@ -348,11 +348,17 @@ public sealed class ReservationBrokerWorkflowTests
                 using var response = await management.GetAsync($"api/queues/{vhost}");
                 response.EnsureSuccessStatusCode();
                 var queues = await response.Content.ReadFromJsonAsync<JsonElement>();
-                return new[] { "HoldInventory", "ConfirmInventory" }.All(name =>
-                    queues.EnumerateArray().Any(queue =>
-                        queue.GetProperty("name").GetString() == name
-                        && queue.GetProperty("consumers").GetInt32() > 0));
+                return HasSeatingConsumers(queues);
             }, () => "Seating receive endpoints did not become ready.");
+        }
+
+        internal static bool HasSeatingConsumers(JsonElement queues)
+        {
+            return new[] { "HoldInventory", "ConfirmInventory" }.All(name =>
+                queues.EnumerateArray().Any(queue =>
+                    queue.GetProperty("name").GetString() == name
+                    && queue.TryGetProperty("consumers", out var consumers)
+                    && consumers.GetInt32() > 0));
         }
 
         public async Task AssertRequeuedDelivery(string name)
@@ -385,7 +391,15 @@ public sealed class ReservationBrokerWorkflowTests
                     if (name.EndsWith("_error", StringComparison.Ordinal)
                         || name.EndsWith("_skipped", StringComparison.Ordinal))
                     {
-                        Assert.Equal(0, messages.GetInt32());
+                        if (messages.GetInt32() > 0)
+                        {
+                            using var failedResponse = await management.PostAsJsonAsync(
+                                $"api/queues/{vhost}/{Uri.EscapeDataString(name)}/get",
+                                new { count = 1, ackmode = "ack_requeue_true", encoding = "auto" });
+                            failedResponse.EnsureSuccessStatusCode();
+                            var failedMessages = await failedResponse.Content.ReadFromJsonAsync<JsonElement>();
+                            Assert.Fail($"Queue {name} contains failed messages: {failedMessages}");
+                        }
                     }
 
                     settled &= messages.GetInt32() == 0;

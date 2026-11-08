@@ -9,6 +9,7 @@ using booking_service.Infrastructure.Repositories;
 using MassTransit;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Npgsql;
 using Shared.Infrastructure.DependencyInjection;
 
 namespace booking_service.Infrastructure;
@@ -56,7 +57,17 @@ public static class DependencyInjection
             bus.AddSharedEntityFrameworkOutbox<BookingDbContext>(outbox => outbox.UsePostgres());
             bus.AddReservationWorkflow();
             bus.AddConfigureEndpointsCallback((context, _, endpoint) =>
-                endpoint.UseEntityFrameworkOutbox<BookingDbContext>(context));
+            {
+                endpoint.UseMessageRetry(retry =>
+                {
+                    retry.Handle<DbUpdateConcurrencyException>();
+                    retry.Handle<DbUpdateException>(exception =>
+                        exception.InnerException is PostgresException postgres && IsRetryableConsumerError(postgres));
+                    retry.Handle<PostgresException>(IsRetryableConsumerError);
+                    retry.Interval(5, TimeSpan.FromSeconds(2));
+                });
+                endpoint.UseEntityFrameworkOutbox<BookingDbContext>(context);
+            });
             bus.UsingRabbitMq((context, rabbit) =>
             {
                 var options = context.GetRequiredService<IOptions<RabbitMqTransportOptions>>().Value;
@@ -74,5 +85,12 @@ public static class DependencyInjection
         });
         builder.Services.AddHostedService<ReservationDeadlineService>();
         return builder;
+    }
+
+    private static bool IsRetryableConsumerError(PostgresException exception)
+    {
+        return exception.SqlState is PostgresErrorCodes.SerializationFailure or PostgresErrorCodes.DeadlockDetected
+            || (exception.SqlState == PostgresErrorCodes.UniqueViolation
+                && exception.ConstraintName == "AK_InboxState_MessageId_ConsumerId");
     }
 }

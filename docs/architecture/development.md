@@ -116,6 +116,14 @@ failure boundaries, not full PostgreSQL/Redis/RabbitMQ outages, broker restarts,
 every crash window, or production failover. CI includes them through the existing
 `ExternalWorkflow` category; hosted execution remains unverified.
 
+The first hosted recovery run exposed delayed RabbitMQ management metrics:
+queues may appear before `consumers` is reported. Readiness now waits for both
+metrics rather than throwing on a missing field, with six deterministic regression
+cases. Live reruns also exposed a concurrent duplicate-outcome inbox collision;
+booking now retries that specific constraint plus transaction-concurrency errors,
+not arbitrary uniqueness failures. All 23 booking integration tests passed
+locally after these fixes; a hosted run of the fixes is still pending.
+
 Backend CI provisions disposable PostgreSQL 18, Redis 8, and RabbitMQ 4 management
 service containers and supplies all external-test settings. For local runs, use
 **dedicated test infrastructure**, never deployed/shared databases or broker accounts:

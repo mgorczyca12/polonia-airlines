@@ -267,3 +267,31 @@
 - User subsequently authorized committing and pushing step 3 changes and step 4
   design notes to main. Pre-commit fetch confirmed main matched origin/main;
   `git diff --check` passed. Step 4 implementation remains deferred.
+
+## CI failure investigation and fixes
+
+- Inspected [CI run 42525404175](https://github.com/mgorczyca12/polonia-airlines/actions/runs/42525404175)
+  for `2d09282`: frontend, restore, formatting and build passed; backend tests
+  failed in the Redis-loss recovery case. The preceding `26b450a` CI run passed.
+  GitHub CLI was unauthenticated; retrieved runs/jobs/logs through GitHub MCP.
+- Root cause: newly visible RabbitMQ queues can lack the asynchronously reported
+  `consumers` metric. Readiness used GetProperty and threw KeyNotFoundException
+  instead of continuing its bounded wait. Fixed it with TryGetProperty and added
+  six non-external regression cases for missing queues/metrics, inactive consumers
+  and fully ready endpoints.
+- Live validation revealed another intermittent failure: concurrent duplicate
+  confirmation outcomes collided on booking's inbox unique constraint
+  `AK_InboxState_MessageId_ConsumerId` and faulted because booking had no consumer
+  retry policy. Added five two-second retries for that specific constraint,
+  EF concurrency conflicts and PostgreSQL serialization/deadlock errors outside
+  the consumer outbox. Other unique constraints are not retried.
+- Enhanced recovery failure-queue diagnostics to identify faulted queue/message
+  errors instead of reporting only a nonzero count. No schema/dependency changes.
+- Six readiness cases passed; targeted duplicate-confirmation/retry plus readiness
+  run passed all seven cases. Final Release booking integration run: 23 passed,
+  0 failed, 0 skipped. Required whitespace/style verification passed.
+- Verified fixture cleanup: no workflow databases/non-default vhosts or Redis
+  keys. Removed validation containers and anonymous volumes. Updated booking
+  README and development docs. User subsequently authorized committing and
+  pushing these fixes to main. Pre-commit fetch confirmed main matched origin/main;
+  `git diff --check` passed. Hosted validation of these fixes remains pending.

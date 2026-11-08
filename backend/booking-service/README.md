@@ -90,6 +90,13 @@ rows are retained. The API does not process payments. Broker/infrastructure deli
 is eventually consistent: poll secure reservation lookup rather than treating 201 as
 an allocated seat or confirmed booking.
 
+Booking receive endpoints retry EF concurrency conflicts, PostgreSQL
+serialization failures/deadlocks and collisions on the inbox's
+`AK_InboxState_MessageId_ConsumerId` constraint five times at two-second intervals,
+outside the EF consumer outbox. This lets concurrent duplicate deliveries reload
+the committed inbox record; unrelated unique-key violations are not retried.
+Exhausted failures still follow the normal broker error-queue path.
+
 ## Domain
 
 `Reservation` owns its passengers, their fares, baggage, and recorded payment references.
@@ -224,7 +231,8 @@ confirmation rollback and production retry after a one-shot SQL serialization
 failure, queued confirmation while booking is offline, and duplicate confirmation
 message IDs without duplicate allocations. Losing the fixture's Redis hold during
 seating restart cancels safely rather than reconstructing the hold from SQL.
-All 17 booking integration tests passed locally on 2026-11-08.
+After the CI readiness/inbox-race fixes, all 23 booking integration tests passed
+locally on 2026-11-08, including six queue-readiness regression cases.
 Backend CI supplies PostgreSQL, Redis and RabbitMQ management containers;
 hosted execution is not yet verified. Full infrastructure outages, broker restart
 and other interruption windows remain additional recovery coverage, not proven
