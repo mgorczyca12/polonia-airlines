@@ -86,6 +86,8 @@ segment sequence per flight, and position column per row.
 
 SQLite integration tests validate model creation, graph persistence, generated-key
 fixup, value conversions, deletion behavior, and segment-sequence uniqueness.
-SQLite is a test-only provider. Production provider/connection registration and
-migrations are not configured here. Seat-map rows currently have no explicit order
+SQLite is a test-only provider. Normal startup uses PostgreSQL, and the checked-in
+`InitialCreate` migration initializes an empty database through the
+[EF migration workflow](../../docs/architecture/database-deployments.md#current-local-migration-commands).
+Existing databases need a reviewed baseline/upgrade plan. Seat-map rows currently have no explicit order
 property; loading their collection does not guarantee cabin/row display order.

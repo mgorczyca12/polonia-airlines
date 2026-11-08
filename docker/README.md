@@ -14,11 +14,11 @@ only. This is local development configuration, not a production deployment.
   the PostgreSQL password is interpolated into an Npgsql connection string.
 - Backends use Apache-2.0 licensed MassTransit 8.5.12; no MassTransit license
   key is required. Compose disables anonymous MassTransit usage telemetry.
-- Provision application schemas before using backend workflows. There are no
-  checked-in EF migrations, and the hosts deliberately do not create or migrate
-  schemas. This container setup does not add migrations or bootstrap flags.
-  Review and deploy each service's schema, including saga/inbox/outbox tables,
-  uniqueness constraints, and seating's inventory mutation guard.
+- Apply the checked-in initial EF migrations before using backend workflows.
+  The hosts deliberately do not create or migrate schemas, and Compose has no
+  migration jobs yet. Follow the [migration commands](../docs/architecture/database-deployments.md#current-local-migration-commands)
+  with local connections to each database. Migrations include saga/inbox/outbox
+  tables, uniqueness constraints, and seating's inventory mutation guard.
   See the [booking](../backend/booking-service/README.md) and
   [seating](../backend/seating-service/README.md) provisioning requirements.
 

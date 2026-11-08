@@ -167,8 +167,8 @@ cascades through its map, rows, and positions; referenced configurations still
 cannot be deleted while aircraft use them.
 
 This changes the schema: add `SeatMaps` with `AircraftConfigurationId`, and move
-the row foreign key from `AircraftConfigurationId` to `SeatMapId`. No migrations
-are currently supplied in the repository. Existing databases need a reviewed
+the row foreign key from `AircraftConfigurationId` to `SeatMapId`. The initial
+migration now includes the current layout for empty databases. Existing databases need a reviewed
 migration that creates one map per configuration and backfills row references
 before dropping the old foreign key/column; `EnsureCreated` does not upgrade them.
 Assignment/layout management additionally requires nullable `Flights.AircraftId`
@@ -208,7 +208,8 @@ loads mappings from its persistence configuration namespace and maps MassTransit
 inbox/outbox tables. Normal startup selects PostgreSQL using
 `ConnectionStrings:FlightDatabase` and registers RabbitMQ with an EF bus outbox.
 See [development setup](../development.md#prerequisites-and-local-startup) for
-required settings and schema prerequisites. No migrations or seed data are supplied.
+required settings and schema prerequisites. An initial EF migration is supplied;
+business seed data is not.
 An unconfigured database read produces a safe server error, not sample data.
 
 ## Commands, events and verification

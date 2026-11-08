@@ -96,3 +96,80 @@
   and related documentation to main.
 - Before committing, fetched origin and confirmed main matched origin/main;
   `git diff --check` passed. Earlier validation results remain as recorded above.
+
+## Current Dependabot PR auto-merge diagnosis
+
+- Inspected live open PRs #33 (gh-aw setup 0.91.9 to 1.0.1) and #36
+  (srvx 0.11.22 to 1.0.8). Both backend and frontend CI checks passed.
+- #33's automerge job was skipped: GitHub Actions dependency updates are
+  intentionally excluded by the workflow's job condition.
+- #36's automerge job ran successfully, but its merge step was skipped:
+  only semver minor/patch updates are eligible; srvx is a major update.
+  Successful workflow status does not mean auto-merge was requested.
+- No workflow settings or PRs were changed. GitHub CLI remains unauthenticated;
+  live evidence came from GitHub MCP check-run and job-step reads.
+- User manually merged #33 and #36. Fetched origin and fast-forwarded local
+  main to a2e961a, preserving this uncommitted summary update. No post-merge
+  builds or tests were run; earlier Docker validation predates the srvx upgrade.
+
+## EF Core database deployment planning
+
+- User wants EF Core-based database updates automated across services through CI/CD.
+- Confirmed current CI builds/tests only; no migrations, design-time context
+  factories, or database deployment workflow are present.
+- Recommended proposal, not implemented or approved: service-owned migrations
+  under Infrastructure/Persistence/Migrations, design-time factories, pinned
+  EF tooling, PostgreSQL migration checks in PR CI, and per-service migration
+  bundles built with each release and executed by protected deployment jobs.
+- Generate/review migrations during development, not automatically against
+  production. Deployment applies the reviewed migrations using dedicated DDL
+  credentials; application replicas do not migrate on startup.
+- Serialize deployment per environment, use backward-compatible expand/contract
+  changes across applications and consumers, fail deployment on migration errors,
+  and avoid automatic Down-based rollback. Local Compose can use one-shot
+  migration containers with the same artifacts.
+- Production target/network access, environment approval policy, and handling
+  any existing databases without migration history remain undecided.
+- No implementation, schema changes, or validation commands for this proposal.
+
+## Migration documentation and skill
+
+- User approved the proposed EF Core deployment approach and requested recording
+  it in authoritative docs plus a repository-shared migration skill.
+- Added docs/architecture/database-deployments.md and linked it from the
+  documentation index and development guide. Distinguishes the agreed target
+  design from still-missing tooling, migrations, CI and deployment implementation.
+- Added .github/skills/ef-core-migrations/SKILL.md for service-specific generation,
+  SQL review, disposable PostgreSQL validation and optional bundle creation.
+  The skill explicitly does not authorize deployed database updates.
+- No schemas, tooling dependencies, application code, or workflows were changed.
+- Skill frontmatter and new-document local links verified; `git diff --check`
+  passed. No build/tests needed for these documentation-only changes. Not committed.
+
+## Initial migrations completed
+
+- User authorized creating all initial migrations using the skill and committing/
+  pushing after successful validation. The live skill registry did not discover
+  the newly created skill, so its SKILL.md was read directly and followed.
+- Added root dotnet-tools.json pinning dotnet-ef 10.0.14, matching central
+  Microsoft.EntityFrameworkCore.Design development references, and a design-time
+  factory for each service. Factories require the service's connection-string
+  environment variable and do not start HTTP/messaging hosts.
+- Generated InitialCreate, designer metadata, and model snapshots for flight,
+  booking, and seating using EF tooling. No business model changes were made.
+- All three migrations applied to fresh isolated PostgreSQL 18 databases.
+  Reapplication was a no-op, each history contained exactly one migration,
+  inbox/outbox tables existed, and seating's mutation guard Id=1 was seeded.
+- Model-drift checks passed for all three contexts. Reviewed additive SQL,
+  booking PNR/request uniqueness, saga persistence, seating allocation uniqueness/
+  filtered seat index and ordinal collations; domain event collections are not mapped.
+- Release solution build passed with the existing unread mediator warning.
+  45 targeted persistence/outbox/saga/inventory regression tests passed.
+  Required whitespace/style verification and git diff checks passed.
+- Early validation commands had PowerShell syntax/native quoting and EF flag
+  mistakes; corrected commands passed. No application migration failure occurred.
+- Updated service/Docker/architecture setup docs to reference the supplied initial
+  migrations. Bundles, migration CI/CD, and Compose migration jobs remain deferred.
+- Disposable PostgreSQL containers/volumes were removed. Initial migrations are
+  for empty databases; no deployed/shared database was modified or baselined.
+- Fetched origin and confirmed main matched origin/main before the requested commit.

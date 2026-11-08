@@ -12,7 +12,7 @@ differs by service.
 | Area | Implemented | Not wired or not implemented |
 | --- | --- | --- |
 | Web | Search, fare selection, booking preview from local JSON | Backend API client, persistent reservations, payment processing |
-| Flight | Validated flight/layout queries, configuration/assignment commands, PostgreSQL registration, RabbitMQ EF bus outbox | Schema migrations, deployed infrastructure, general aircraft queries and management authorization |
+| Flight | Validated flight/layout queries, configuration/assignment commands, PostgreSQL registration, initial EF migration, RabbitMQ EF bus outbox | Automated schema deployment, deployed infrastructure, general aircraft queries and management authorization |
 | Booking | Fare catalog, priced offers, guest reservation API/persistence, MassTransit completion saga | Payment processing, authenticated catalog-management API, frontend integration |
 | Seating | Redis temporary holds, SQL confirmed allocations, idempotent messaging participant | Public inventory-management API, live infrastructure verification |
 | Shared | Entity/aggregate bases, repositories, command pipelines, domain-event dispatch, EF outbox helpers and reservation workflow contracts | A generic business-saga framework (not needed) |
@@ -256,8 +256,9 @@ test source must not be interpreted as verified live Redis/PostgreSQL/RabbitMQ d
 
 The flight service has EF configurations and relational integration tests, but
 normal startup now selects PostgreSQL and requires external database and RabbitMQ
-configuration. No migrations are checked in; schema creation and deployment
-remain prerequisites. Booking and seating have configured contexts; follow their
+configuration. Initial migrations are checked in for all three services; schema
+application and deployment remain prerequisites. Follow the
+[EF migration workflow](database-deployments.md) and their
 service READMEs for schema initialization and inventory/catalog provisioning.
 Do not describe a production database, gateway, or distributed deployment as implemented.
 

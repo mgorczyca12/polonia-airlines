@@ -9,9 +9,9 @@
 - Restore dependencies before using `--no-restore` commands.
 - For flight startup: provision PostgreSQL and RabbitMQ, and create the database
   schema including `InboxState`, `OutboxMessage`, and `OutboxState`.
-  No migrations are checked in yet. Generate and review an initial migration
-  with EF Core 10 tooling and the matching `Microsoft.EntityFrameworkCore.Design`
-  development package before deploying; do not treat the table mappings as a
+  Initial migrations are checked in for all three services; apply them using the
+  [local EF migration commands](database-deployments.md#current-local-migration-commands)
+  before starting the hosts. Do not treat the table mappings as a
   deployed schema. The host does not automatically migrate or create databases.
 - Existing flight databases also need the configuration-owned seat-map schema,
   optional flight aircraft FK, and backfilled unique row numbers described in the
@@ -61,6 +61,11 @@ The dev script uses port 3000. The UI currently reads local JSON and does not ne
 the backend hosts for its sample search and booking-preview flow.
 
 ## Verification
+
+For the agreed schema-update workflow, see [EF Core database deployments](database-deployments.md)
+and the [migration authoring skill](../../.github/skills/ef-core-migrations/SKILL.md).
+Initial migrations and design-time tooling are implemented. Migration CI, bundles,
+and deployment jobs are planned, not yet implemented.
 
 The [CI workflow](../../.github/workflows/ci.yml) has `backend` and `frontend` jobs.
 Backend checks run formatting, Release build and tests:

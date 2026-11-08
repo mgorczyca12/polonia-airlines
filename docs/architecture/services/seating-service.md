@@ -89,6 +89,7 @@ commands and save once through the shared unit of work. `InventoryOperation`
 (aggregate) owns the Held to Confirmed/Rejected/Released transitions and the
 release fence. Repositories, the SQL mutation lock and the independent release
 fence live in `Infrastructure/Repositories`; EF mappings are one configuration
-class per entity. The `--initialize-database` bootstrap was removed: no
-migrations are checked in, and schema plus inventory/seat provisioning are
+class per entity. The `--initialize-database` bootstrap was removed. A checked-in
+initial migration creates the schema and mutation-guard seed; applying the migration
+plus inventory/seat provisioning remain
 prerequisites (see the service README).

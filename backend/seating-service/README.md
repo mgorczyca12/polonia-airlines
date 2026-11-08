@@ -165,8 +165,9 @@ not depend on retaining temporary holds.
 
 For a **new, empty, dedicated** service database, the schema must be created
 before the service starts. The service has no `--initialize-database` flag and
-does not call `EnsureCreated` at startup; schema creation is deferred to
-migrations, and **no migrations are checked in yet**. Schema provisioning is a
+does not call `EnsureCreated` at startup. Apply the checked-in `InitialCreate`
+migration using the [EF migration workflow](../../docs/architecture/database-deployments.md#current-local-migration-commands).
+Schema provisioning is a
 prerequisite and must include the `Operations`, `SeatInventories`, `Assignments`,
 `Seats` and `InventoryMutationLock` tables, the MassTransit inbox/outbox tables,
 the unique and filtered unique indexes, the `C` collations, and the seeded

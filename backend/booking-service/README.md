@@ -7,9 +7,11 @@ Configure `ConnectionStrings:BookingDatabase` (PostgreSQL) and `RabbitMq:Host`,
 start as in flight-service. Never put deployed credentials in source control.
 
 Like flight-service, the host neither creates nor migrates databases, and there are no
-bootstrap flags or startup seeding. No migrations are checked in: generate and review an
-initial migration (booking, saga, inbox and outbox tables) with EF Core tooling before
-deploying. The `Reservations.Code` PNR unique index (`UX_Reservation_Pnr`) and the
+bootstrap flags or startup seeding. The checked-in `InitialCreate` migration includes
+booking, saga, inbox and outbox tables. Apply it to a new empty database using the
+[EF migration workflow](../../docs/architecture/database-deployments.md#current-local-migration-commands).
+Existing databases require a reviewed baseline/upgrade plan. The `Reservations.Code`
+PNR unique index (`UX_Reservation_Pnr`) and the
 request-idempotency indexes must be part of the deployed schema.
 
 ### Catalog administration
