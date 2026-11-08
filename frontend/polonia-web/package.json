@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
+    "start": "srvx --prod -s ../client dist/server/server.js",
     "preview": "vite preview",
     "test": "vitest run",
     "lint": "eslint",
@@ -33,6 +34,7 @@
     "lucide-react": "^1.61.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "srvx": "^0.11.0",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {

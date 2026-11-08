@@ -14,6 +14,8 @@ See the [booking](backend/booking-service/README.md) and
 
 ## Documentation
 
+- [Local Docker and Compose setup](docker/README.md)
+
 - [System documentation index](docs/architecture/README.md)
 - [Architecture and C4 diagrams](docs/architecture/architecture.md)
 - [Flight](docs/architecture/services/flight-service.md), [booking](docs/architecture/services/booking-service.md) and [seating](docs/architecture/services/seating-service.md) services

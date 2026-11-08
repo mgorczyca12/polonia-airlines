@@ -8,6 +8,12 @@ updates:
       day: monday
     cooldown:
       default-days: 7
+    # Keep MassTransit on the Apache-2.0 v8 line rather than commercial v9+.
+    ignore:
+      - dependency-name: "MassTransit"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "MassTransit.*"
+        update-types: ["version-update:semver-major"]
     groups:
       nuget-minor-patch:
         patterns: ["*"]

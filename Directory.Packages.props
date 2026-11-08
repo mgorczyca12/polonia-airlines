@@ -13,9 +13,9 @@
     <PackageVersion Include="DispatchR.Mediator" Version="2.3.1" />
     <PackageVersion Include="FluentResults" Version="4.0.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="12.2.0" />
-    <PackageVersion Include="MassTransit" Version="9.2.4" />
-    <PackageVersion Include="MassTransit.EntityFrameworkCore" Version="9.2.4" />
-    <PackageVersion Include="MassTransit.RabbitMQ" Version="9.2.4" />
+    <PackageVersion Include="MassTransit" Version="8.5.12" />
+    <PackageVersion Include="MassTransit.EntityFrameworkCore" Version="8.5.12" />
+    <PackageVersion Include="MassTransit.RabbitMQ" Version="8.5.12" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
     <PackageVersion Include="StackExchange.Redis" Version="3.4.20" />
     <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.20.1" />

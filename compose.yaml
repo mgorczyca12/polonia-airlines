@@ -1,0 +1,149 @@
+name: polonia-airlines
+
+x-backend-environment: &backend-environment
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_HTTP_PORTS: "8080"
+  RabbitMq__Host: rabbitmq
+  RabbitMq__User: ${RABBITMQ_USER:-polonia}
+  RabbitMq__Pass: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+  RabbitMq__VHost: /
+  RabbitMq__UseSsl: "false"
+  MASSTRANSIT_USAGE_TELEMETRY: "false"
+
+# Listener liveness only: this does not verify database schemas or workflows.
+x-backend-healthcheck: &backend-healthcheck
+  test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/8080"]
+  interval: 10s
+  timeout: 5s
+  retries: 6
+  start_period: 20s
+
+x-backend-dependencies: &backend-dependencies
+  postgres:
+    condition: service_healthy
+  rabbitmq:
+    condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-polonia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-polonia}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?Set RABBITMQ_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      start_period: 20s
+
+  flight-service:
+    healthcheck: *backend-healthcheck
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: flight-service
+    environment:
+      <<: *backend-environment
+      ConnectionStrings__FlightDatabase: Host=postgres;Database=polonia_flight;Username=${POSTGRES_USER:-polonia};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    depends_on: *backend-dependencies
+    ports:
+      - "127.0.0.1:${FLIGHT_PORT:-5101}:8080"
+
+  booking-service:
+    healthcheck: *backend-healthcheck
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: booking-service
+    environment:
+      <<: *backend-environment
+      ConnectionStrings__BookingDatabase: Host=postgres;Database=polonia_booking;Username=${POSTGRES_USER:-polonia};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    depends_on: *backend-dependencies
+    ports:
+      - "127.0.0.1:${BOOKING_PORT:-5102}:8080"
+
+  seating-service:
+    healthcheck: *backend-healthcheck
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: seating-service
+    environment:
+      <<: *backend-environment
+      ConnectionStrings__SeatingDatabase: Host=postgres;Database=polonia_seating;Username=${POSTGRES_USER:-polonia};Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      ConnectionStrings__InventoryRedis: redis:6379
+    depends_on:
+      <<: *backend-dependencies
+      redis:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${SEATING_PORT:-5103}:8080"
+
+  polonia-web:
+    build:
+      context: .
+      dockerfile: frontend/polonia-web/Dockerfile
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  nginx:
+    build:
+      context: .
+      dockerfile: docker/nginx/Dockerfile
+    depends_on:
+      polonia-web:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8080}:8080"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:

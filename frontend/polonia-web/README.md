@@ -11,6 +11,11 @@ npm run dev
 
 # Building For Production
 
+The application preserves TanStack Start server-side rendering. Run `pnpm build`
+and then `pnpm start` to serve the generated server entry and client assets using
+srvx. The [Docker setup](../../docker/README.md) runs this Node server behind
+Nginx; it is not a static-only deployment.
+
 To build this application for production:
 
 ```bash
