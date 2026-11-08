@@ -295,3 +295,128 @@
   README and development docs. User subsequently authorized committing and
   pushing these fixes to main. Pre-commit fetch confirmed main matched origin/main;
   `git diff --check` passed. Hosted validation of these fixes remains pending.
+
+## OpenTelemetry collection planning (paused)
+
+- User requested OpenTelemetry collection with Honeycomb as the destination.
+  Inspected Compose, shared infrastructure registration and package references:
+  OTel versions are centrally listed, but shared code does not reference/register
+  instrumentation or exporters, and Compose has no collector yet.
+- Selected one shared collector container rather than per-service sidecars for
+  the current Compose stack; backend traces, metrics and structured logs; an
+  opt-in telemetry Compose overlay so normal startup needs no Honeycomb key.
+- Consulted Honeycomb's official Collector documentation: OTLP export supports
+  all three signals, metrics require a dataset, and US/EU endpoints differ.
+  Honeycomb region/dataset and safe telemetry-field selection remain unresolved.
+- User requested using Honeycomb MCP. Tool discovery found no Honeycomb tools
+  in the session; user chose to pause while connecting the server in VS Code.
+- No telemetry code/configuration was implemented and no telemetry was exported.
+  Only this summary was updated. Resume after Honeycomb tools become available;
+  keep API keys out of chat/source and validate with non-sensitive synthetic data.
+
+- User then authorized adding Honeycomb MCP in personal Copilot global scope,
+  selecting US. Created the personal `mcp-config.json` with the official HTTP
+  endpoint `https://mcp.honeycomb.io/mcp`; JSON/type/URL validation passed.
+  No credentials were stored and no repository MCP configuration was added.
+  User must complete OAuth sign-in and refresh the session before tool access
+  can be verified. Collector implementation remains paused.
+
+## OpenTelemetry collector implemented
+
+- Honeycomb MCP became available and authenticated successfully; its workspace
+  reports no application telemetry yet. User authorized wiring the ingest-key
+  environment variable, not supplying a key in chat or source.
+- Added `SharedObservabilityExtensions` and called it from all three backend
+  infrastructure registrations. Added versionless references to the four
+  centrally managed OTel packages in shared. No central versions changed.
+  Registration is disabled by default and explicitly rejects enabled telemetry
+  without an HTTP(S) collector endpoint.
+- Enabled ASP.NET Core/HttpClient/MassTransit/Npgsql tracing, HTTP/Kestrel/MassTransit
+  metrics, and an additional Warning+ OTel logging provider. Console behavior
+  remains unchanged; health traces are excluded and incoming context is preserved.
+- Added opt-in `compose.telemetry.yaml` and `docker/otel/collector.yaml`, pinning
+  contrib collector 0.165.0. Backends use private-network OTLP/gRPC; only the
+  collector receives `HONEYCOMB_API_KEY`. Normal Compose needs no key and no OTLP
+  receiver ports are exposed. Collector liveness binds to localhost.
+- Collector exports HTTPS OTLP traces/logs to Honeycomb by service identity, and
+  metrics to the explicitly named dataset. Includes memory limiting, bounded
+  batching/queues and retry/backoff. Queue data is not durable across restarts.
+- Added fail-closed privacy allowlists for all three signals; remove sensitive
+  attributes, raw URLs, SQL text, exception details and status descriptions.
+  Normalize HTTP/database/message names. Exported log bodies are fixed summaries,
+  retaining severity/category/event metadata and correlation; message details
+  stay local. This conservative policy is documented, not full-text log export.
+- Added five registration/correlation tests. Release solution build passed with
+  the pre-existing unread mediator warning. All 48 shared, 18 non-external booking
+  and 43 flight integration tests passed. Whitespace/style and diff checks passed.
+- Pinned collector config validated. A synthetic local OTLP sink verified actual
+  traces/metrics/logs, key and dataset headers, correlation, and removal of injected
+  private-data sentinels. No requests were sent to Honeycomb during validation.
+- Both real booking/seating broker tests passed with telemetry enabled. Local sink
+  observed cross-service trace IDs, ASP.NET Core/MassTransit/Npgsql scopes, HTTP
+  and messaging metrics and backend logs. Validation containers/volumes removed.
+- Compose validation verified default key-free startup, dependency preservation
+  and key isolation. Added `.env.example` placeholders, observability docs and
+  links from Docker/development/documentation index.
+- User still needs to supply an ingest key locally and start the overlay to verify
+  Honeycomb ingestion. Browser/SSR instrumentation, host/infrastructure telemetry,
+  durable queues, alerts and production hardening remain out of scope.
+  No commit/push was requested; changes remain local.
+
+- User supplied the ingest key in the tracked example file, then authorized
+  relocating only that setting into ignored `.env`. Moved it without displaying
+  the value, preserved other settings, and restored the empty example placeholder.
+  No telemetry was sent as part of this move; Honeycomb ingestion remains unverified.
+
+## Honeycomb ingestion verified
+
+- User authorized testing ingestion with the ignored local key. Started only a
+  temporary collector with localhost receiver ports, using the repository
+  collector configuration. No application stack/customer data was sent, and no
+  key value was displayed or copied into repository files.
+- Sent one synthetic trace, gauge and warning log. The collector accepted all
+  three and reported no export/authentication errors. Honeycomb MCP confirmed
+  the trace and correlated redacted log in `test/polonia-ingestion-check`, and
+  `MAX(polonia.ingestion.check) = 1` in `test/metrics`.
+- This environment routes metrics to built-in `metrics` despite the configured
+  `polonia-metrics` header. Updated observability docs to reflect actual routing.
+  The initial combined metric count/MAX query failed; a simplified MAX query
+  succeeded and returned the datapoint.
+- Removed the temporary collector and validation script. Delivery is verified
+  for synthetic data; actual application traffic in Honeycomb and hosted CI
+  remain unverified. Changes remain uncommitted.
+
+## Optional collector tail sampling
+
+- User authorized a separate opt-in policy: all error traces, 5% normal traces,
+  unsampled metrics, and all privacy-filtered Warning+ logs. No slow-trace policy
+  or full-text logging was added.
+- Added `docker/otel/collector.sampled.yaml` as a partial configuration merged
+  after the unchanged base file. ORed OTel ERROR, HTTP 500-599, and probabilistic
+  5% policies. Uses a 30-second wait, 4,096 pending traces and bounded decision
+  caches. Logs independently filter below Warning; metrics pipeline is unchanged.
+- Added `compose.telemetry.sampled.yaml` to mount/select both collector configs
+  and set `OTEL_TRACES_SAMPLER=always_on` on all three services. Updated Docker
+  and observability docs with enable/disable commands, error semantics, late
+  span/capacity limitations, privacy and biased sampled-query caveats.
+- Pinned collector validation passed. Initial placeholder-only Compose validation
+  lacked required database/broker passwords; reran with explicit dummy values.
+  Sampled merge, original dependency preservation, key isolation and unchanged
+  default overlay checks passed without reading the real `.env`.
+- Local synthetic collector test passed: all 40 error traces retained with both
+  spans (delayed second batch); 104/2,000 normal traces (5.2%); 11/200 HTTP 400
+  traces (baseline only); all 20 metric datapoints; only Warning/Error/Fatal logs;
+  injected sensitive-data sentinels removed. Used actual 30-second wait.
+- No data was sent to Honeycomb, no application stack started, and the temporary
+  collector and helper were removed. No backend code changed or build needed.
+  Live sampled application/Honeycomb behavior and hosted CI remain unverified.
+  No commit/push requested; changes remain local.
+
+## Observability commit and push
+
+- User authorized committing and pushing the complete observability setup and
+  optional sampling overlay together. Pre-commit fetch confirmed local main
+  matched origin/main; diff whitespace checks passed. Verified the example ingest
+  key is empty and the real `.env` is ignored/untracked. Prior build, integration,
+  ingestion and collector validation results are recorded above; hosted CI for
+  the observability changes remains pending.

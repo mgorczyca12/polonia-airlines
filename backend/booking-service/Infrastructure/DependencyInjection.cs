@@ -18,6 +18,7 @@ public static class DependencyInjection
 {
     public static WebApplicationBuilder AddInfrastructure(this WebApplicationBuilder builder)
     {
+        builder.AddSharedObservability("booking-service");
         builder.Services.AddDbContext<BookingDbContext>(options =>
         {
             var connectionString = builder.Configuration.GetConnectionString("BookingDatabase");

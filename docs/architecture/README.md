@@ -11,6 +11,7 @@ It describes checked-in implementation, not a deployed production environment.
 | [Seating service](services/seating-service.md) | Cabin capacity, overbooking, seat allocation, HTTP scaffolding |
 | [Frontend](frontend.md) | Routes, local data, search and booking-preview flow |
 | [Development](development.md) | Local commands, verification, readability rules, documentation maintenance |
+| [Observability](observability.md) | Opt-in backend OpenTelemetry, shared Collector, Honeycomb ingestion, privacy and verification |
 | [Database deployments](database-deployments.md) | Agreed EF Core migration authoring, CI checks, release bundles and deployment design; implementation pending |
 
 ## Read this first

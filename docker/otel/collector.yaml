@@ -1,0 +1,94 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 192
+    spike_limit_mib: 48
+  transform/privacy:
+    error_mode: propagate
+    trace_statements:
+      - context: resource
+        statements:
+          - keep_keys(attributes, ["service.name", "service.version", "service.instance.id", "deployment.environment.name"])
+      - context: span
+        statements:
+          - keep_keys(attributes, ["http.request.method", "http.response.status_code", "http.route", "network.protocol.version", "db.system", "db.system.name", "messaging.system", "messaging.operation", "messaging.operation.type", "messaging.destination.name", "messaging.message.id"])
+          - set(status.message, "")
+          - set(name, "HTTP request") where attributes["http.request.method"] != nil
+          - set(name, "Database operation") where attributes["db.system"] != nil or attributes["db.system.name"] != nil
+          - set(name, "Message operation") where attributes["messaging.system"] != nil
+      - context: spanevent
+        statements:
+          - keep_keys(attributes, ["exception.type"])
+          - set(name, "diagnostic event") where name != "exception"
+    metric_statements:
+      - context: resource
+        statements:
+          - keep_keys(attributes, ["service.name", "service.version", "service.instance.id", "deployment.environment.name"])
+      - context: datapoint
+        statements:
+          - keep_keys(attributes, ["http.request.method", "http.response.status_code", "http.route", "network.protocol.version", "error.type", "messaging.system", "messaging.operation", "messaging.operation.type", "messaging.destination.name"])
+    log_statements:
+      - context: resource
+        statements:
+          - keep_keys(attributes, ["service.name", "service.version", "service.instance.id", "deployment.environment.name"])
+      - context: log
+        statements:
+          - keep_keys(attributes, ["CategoryName", "EventId", "EventName", "exception.type"])
+          - set(body, "Backend diagnostic log; message details retained locally")
+  batch:
+    timeout: 5s
+    send_batch_size: 512
+    send_batch_max_size: 1024
+
+exporters:
+  otlp_http/honeycomb:
+    endpoint: ${env:HONEYCOMB_ENDPOINT}
+    headers:
+      x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+    sending_queue:
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+  otlp_http/honeycomb_metrics:
+    endpoint: ${env:HONEYCOMB_ENDPOINT}
+    headers:
+      x-honeycomb-team: ${env:HONEYCOMB_API_KEY}
+      x-honeycomb-dataset: ${env:HONEYCOMB_METRICS_DATASET}
+    sending_queue:
+      queue_size: 1000
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 30s
+      max_elapsed_time: 300s
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, transform/privacy, batch]
+      exporters: [otlp_http/honeycomb]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, transform/privacy, batch]
+      exporters: [otlp_http/honeycomb_metrics]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, transform/privacy, batch]
+      exporters: [otlp_http/honeycomb]

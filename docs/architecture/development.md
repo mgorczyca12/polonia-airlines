@@ -63,6 +63,11 @@ the backend hosts for its sample search and booking-preview flow.
 
 ## Verification
 
+Backend telemetry is opt-in and disabled during normal tests. See
+[observability](observability.md) for the shared Collector overlay, local ingest-key
+configuration and privacy limits. Honeycomb MCP authentication does not replace
+the ingest key; never embed it in code or application/frontend settings.
+
 For the agreed schema-update workflow, see [EF Core database deployments](database-deployments.md)
 and the [migration authoring skill](../../.github/skills/ef-core-migrations/SKILL.md).
 Initial migrations and design-time tooling are implemented. Dedicated migration-matrix CI, bundles,

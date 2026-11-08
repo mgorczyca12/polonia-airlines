@@ -1,0 +1,19 @@
+services:
+  otel-collector:
+    command:
+      - --config=/etc/otelcol-contrib/config.yaml
+      - --config=/etc/otelcol-contrib/sampled.yaml
+    volumes:
+      - ./docker/otel/collector.sampled.yaml:/etc/otelcol-contrib/sampled.yaml:ro
+
+  flight-service:
+    environment:
+      OTEL_TRACES_SAMPLER: always_on
+
+  booking-service:
+    environment:
+      OTEL_TRACES_SAMPLER: always_on
+
+  seating-service:
+    environment:
+      OTEL_TRACES_SAMPLER: always_on

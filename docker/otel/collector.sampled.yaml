@@ -1,0 +1,34 @@
+processors:
+  tail_sampling:
+    decision_wait: 30s
+    num_traces: 4096
+    expected_new_traces_per_sec: 128
+    decision_cache:
+      sampled_cache_size: 16384
+      non_sampled_cache_size: 65536
+    policies:
+      - name: error-status
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+      - name: http-server-error
+        type: numeric_attribute
+        numeric_attribute:
+          key: http.response.status_code
+          min_value: 500
+          max_value: 599
+      - name: normal-baseline
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 5
+  filter/warning:
+    error_mode: propagate
+    log_conditions:
+      - log.severity_number < SEVERITY_NUMBER_WARN
+
+service:
+  pipelines:
+    traces:
+      processors: [memory_limiter, transform/privacy, tail_sampling, batch]
+    logs:
+      processors: [memory_limiter, transform/privacy, filter/warning, batch]

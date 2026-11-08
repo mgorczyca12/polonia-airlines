@@ -57,6 +57,30 @@ the root central NuGet package policy. All application runtime images run as
 non-root users. Frontend production startup uses srvx to serve client assets and
 forward dynamic requests to the built TanStack Start fetch handler.
 
+## Optional Honeycomb telemetry
+
+To enable backend traces, metrics and redacted structured logs, supply
+`HONEYCOMB_API_KEY` in the ignored root `.env` and include the opt-in overlay:
+
+```powershell
+docker compose -f compose.yaml -f compose.telemetry.yaml config --quiet
+docker compose -f compose.yaml -f compose.telemetry.yaml up -d --build --wait
+```
+
+Only the shared collector receives the ingest key. Application services send
+OTLP on the private Docker network; collector OTLP ports are not published.
+Collector liveness is available at `http://localhost:13133/`, but does not prove
+Honeycomb ingestion. Use both files for `logs`, `ps` and `down`.
+Normal Compose does not require a Honeycomb key.
+See [observability setup](../docs/architecture/observability.md) for dataset
+routing, safe log redaction, local verification and production limitations.
+
+For error traces plus a 5% normal baseline, append
+`-f compose.telemetry.sampled.yaml` to the commands above and to `logs`, `ps`,
+and `down`. This opt-in overlay merges a separate sampling configuration after
+the default collector file. Metrics remain unsampled and Warning+ logs remain
+privacy-filtered. See the [sampling policy and buffering limits](../docs/architecture/observability.md#optional-error-focused-sampling).
+
 ## Endpoints
 
 | Component | Default local endpoint |

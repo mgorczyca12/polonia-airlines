@@ -17,6 +17,7 @@ public static class DependencyInjection
 {
     public static WebApplicationBuilder AddInfrastructure(this WebApplicationBuilder builder)
     {
+        builder.AddSharedObservability("seating-service");
         builder.Services.AddDbContext<SeatingDbContext>(options =>
         {
             var connectionString = builder.Configuration.GetConnectionString("SeatingDatabase");

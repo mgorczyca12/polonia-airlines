@@ -1,0 +1,37 @@
+x-telemetry-environment: &telemetry-environment
+  Telemetry__Enabled: "true"
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4317
+  OTEL_METRIC_EXPORT_INTERVAL: "15000"
+
+services:
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.165.0
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    environment:
+      HONEYCOMB_API_KEY: ${HONEYCOMB_API_KEY:?Set HONEYCOMB_API_KEY in your ignored .env}
+      HONEYCOMB_ENDPOINT: ${HONEYCOMB_ENDPOINT:-https://api.honeycomb.io}
+      HONEYCOMB_METRICS_DATASET: ${HONEYCOMB_METRICS_DATASET:-polonia-metrics}
+    volumes:
+      - ./docker/otel/collector.yaml:/etc/otelcol-contrib/config.yaml:ro
+    ports:
+      - "127.0.0.1:${OTEL_HEALTH_PORT:-13133}:13133"
+    mem_limit: 256m
+    restart: unless-stopped
+
+  flight-service:
+    environment: *telemetry-environment
+    depends_on:
+      otel-collector:
+        condition: service_started
+
+  booking-service:
+    environment: *telemetry-environment
+    depends_on:
+      otel-collector:
+        condition: service_started
+
+  seating-service:
+    environment: *telemetry-environment
+    depends_on:
+      otel-collector:
+        condition: service_started
