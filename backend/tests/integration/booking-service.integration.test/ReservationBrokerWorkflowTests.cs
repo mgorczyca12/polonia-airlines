@@ -6,6 +6,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
+using System.Text.Json;
 using booking_service.Application.Contracts.Requests;
 using booking_service.Application.Contracts.Responses;
 using booking_service.Domain.Entities;
@@ -140,7 +141,7 @@ public sealed class ReservationBrokerWorkflowTests
         Assert.Equal(1, await seatingDatabase.Operations.CountAsync());
     }
 
-    private static async Task WaitUntil(Func<Task<bool>> condition, Func<string> failure)
+    internal static async Task WaitUntil(Func<Task<bool>> condition, Func<string> failure)
     {
         var timer = Stopwatch.StartNew();
         while (timer.Elapsed < TimeSpan.FromSeconds(60))
@@ -156,7 +157,7 @@ public sealed class ReservationBrokerWorkflowTests
         Assert.Fail(failure());
     }
 
-    private sealed class Factory<TEntryPoint>(Dictionary<string, string?> settings)
+    internal sealed class Factory<TEntryPoint>(Dictionary<string, string?> settings)
         : WebApplicationFactory<TEntryPoint> where TEntryPoint : class
     {
         protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -173,7 +174,7 @@ public sealed class ReservationBrokerWorkflowTests
         }
     }
 
-    private sealed class Fixture : IAsyncDisposable
+    internal sealed class Fixture : IAsyncDisposable
     {
         private readonly string postgres;
         private readonly HttpClient management;
@@ -182,6 +183,8 @@ public sealed class ReservationBrokerWorkflowTests
         private readonly string vhost = "workflow_" + Guid.NewGuid().ToString("N");
         private readonly List<string> databases = [];
         private bool vhostCreated;
+        private readonly Dictionary<string, string?> settings;
+        private readonly List<WorkflowServiceProcess> processes = [];
 
         public Factory<Program> Booking { get; }
         public Factory<seating::Program> Seating { get; }
@@ -207,7 +210,7 @@ public sealed class ReservationBrokerWorkflowTests
             var seatingConnection = new NpgsqlConnectionStringBuilder(postgres) { Database = seatingName }.ConnectionString;
             BookingOptions = new DbContextOptionsBuilder<BookingDbContext>().UseNpgsql(bookingConnection).Options;
             SeatingOptions = new DbContextOptionsBuilder<SeatingDbContext>().UseNpgsql(seatingConnection).Options;
-            var settings = new Dictionary<string, string?>
+            settings = new Dictionary<string, string?>
             {
                 ["RabbitMq:Host"] = host,
                 ["RabbitMq:Port"] = port,
@@ -224,7 +227,7 @@ public sealed class ReservationBrokerWorkflowTests
             Seating = new Factory<seating::Program>(settings);
         }
 
-        public static async Task<Fixture> Create(bool capacityAvailable)
+        public static async Task<Fixture> Create(bool capacityAvailable, bool startInProcess = true)
         {
             var postgres = Required("SEATING_TEST_POSTGRES");
             var redisConnection = Required("SEATING_TEST_REDIS");
@@ -240,7 +243,7 @@ public sealed class ReservationBrokerWorkflowTests
             var fixture = new Fixture(postgres, redis, management, host, port, user, password);
             try
             {
-                await fixture.Initialize(capacityAvailable, user);
+                await fixture.Initialize(capacityAvailable, user, startInProcess);
                 return fixture;
             }
             catch
@@ -262,7 +265,7 @@ public sealed class ReservationBrokerWorkflowTests
             return value;
         }
 
-        private async Task Initialize(bool capacityAvailable, string user)
+        private async Task Initialize(bool capacityAvailable, string user, bool startInProcess)
         {
             await Redis.GetDatabase().PingAsync();
             await using var admin = new NpgsqlConnection(postgres);
@@ -304,16 +307,114 @@ public sealed class ReservationBrokerWorkflowTests
                 await seating.SaveChangesAsync();
             }
 
-            using var seatingClient = Seating.CreateClient();
-            using var health = await seatingClient.GetAsync("/health");
-            health.EnsureSuccessStatusCode();
-            using var bookingClient = Booking.CreateClient();
+            if (startInProcess)
+            {
+                using var seatingClient = Seating.CreateClient();
+                using var health = await seatingClient.GetAsync("/health");
+                health.EnsureSuccessStatusCode();
+                using var bookingClient = Booking.CreateClient();
+            }
+        }
+
+        public async Task<WorkflowServiceProcess> StartBooking()
+        {
+            return await StartProcess(typeof(Program).Assembly.Location, "/api/booking/catalog");
+        }
+
+        public async Task<WorkflowServiceProcess> StartSeating()
+        {
+            return await StartProcess(typeof(seating::Program).Assembly.Location, "/health");
+        }
+
+        private async Task<WorkflowServiceProcess> StartProcess(string assembly, string readinessPath)
+        {
+            var process = new WorkflowServiceProcess(assembly, settings);
+            processes.Add(process);
+            await process.Start(readinessPath);
+            return process;
+        }
+
+        public async Task<JsonElement> Queue(string name)
+        {
+            using var response = await management.GetAsync($"api/queues/{vhost}/{name}");
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadFromJsonAsync<JsonElement>();
+        }
+
+        public async Task WaitForSeatingConsumers()
+        {
+            await WaitUntil(async () =>
+            {
+                using var response = await management.GetAsync($"api/queues/{vhost}");
+                response.EnsureSuccessStatusCode();
+                var queues = await response.Content.ReadFromJsonAsync<JsonElement>();
+                return new[] { "HoldInventory", "ConfirmInventory" }.All(name =>
+                    queues.EnumerateArray().Any(queue =>
+                        queue.GetProperty("name").GetString() == name
+                        && queue.GetProperty("consumers").GetInt32() > 0));
+            }, () => "Seating receive endpoints did not become ready.");
+        }
+
+        public async Task AssertRequeuedDelivery(string name)
+        {
+            using var response = await management.PostAsJsonAsync($"api/queues/{vhost}/{name}/get",
+                new { count = 1, ackmode = "ack_requeue_true", encoding = "auto" });
+            response.EnsureSuccessStatusCode();
+            var messages = await response.Content.ReadFromJsonAsync<JsonElement>();
+            Assert.Equal(1, messages.GetArrayLength());
+            Assert.True(messages[0].GetProperty("redelivered").GetBoolean());
+        }
+
+        public async Task AssertQueuesSettled()
+        {
+            await WaitUntil(async () =>
+            {
+                using var response = await management.GetAsync($"api/queues/{vhost}");
+                response.EnsureSuccessStatusCode();
+                var queues = await response.Content.ReadFromJsonAsync<JsonElement>();
+                var settled = true;
+                foreach (var queue in queues.EnumerateArray())
+                {
+                    var name = queue.GetProperty("name").GetString()!;
+                    if (!queue.TryGetProperty("messages", out var messages))
+                    {
+                        settled = false;
+                        continue;
+                    }
+
+                    if (name.EndsWith("_error", StringComparison.Ordinal)
+                        || name.EndsWith("_skipped", StringComparison.Ordinal))
+                    {
+                        Assert.Equal(0, messages.GetInt32());
+                    }
+
+                    settled &= messages.GetInt32() == 0;
+                }
+
+                return settled;
+            }, () => "Workflow broker queues did not drain after recovery.");
+        }
+
+        public IBusControl CreatePublisher()
+        {
+            return Bus.Factory.CreateUsingRabbitMq(bus =>
+                bus.Host(settings["RabbitMq:Host"]!, ushort.Parse(settings["RabbitMq:Port"]!, CultureInfo.InvariantCulture),
+                    vhost, host =>
+                    {
+                        host.Username(settings["RabbitMq:User"]!);
+                        host.Password(settings["RabbitMq:Pass"]!);
+                    }));
         }
 
         public async ValueTask DisposeAsync()
         {
             try
             {
+                foreach (var process in processes)
+                {
+                    await process.DisposeAsync();
+                }
+
                 try
                 {
                     await Booking.DisposeAsync();

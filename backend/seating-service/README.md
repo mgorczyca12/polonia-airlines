@@ -240,6 +240,49 @@ insufficient capacity on one leg cancels the entire itinerary without allocation
 or leftover holds. Both cases passed locally on 2026-11-08; fixtures isolate and
 remove their databases, broker virtual host and Redis key. These hosts run
 in-process through ASP.NET Core TestServer, not application containers.
-Crash/restart, redelivery fault injection and infrastructure-outage recovery
-remain a separate milestone; CI wiring is implemented but hosted execution is
+
+[ReservationRecoveryTests](../tests/integration/booking-service.integration.test/ReservationRecoveryTests.cs)
+launches actual booking/seating processes with the same isolated infrastructure.
+It force-kills seating with an unacknowledged Hold, observes a requeued redelivered
+message, then verifies seating and booking restart to a completed reservation.
+A fixture-only SQL trigger fails the first confirmation with a serialization
+error; production retry preserves the Redis token and rolls back all allocations
+until confirmation commits. Booking can restart and consume that queued outcome;
+same-ID and distinct-ID duplicate confirmations cannot allocate twice.
+Deleting only the fixture's Redis key during seating restart leads to
+`hold_expired_or_lost` compensation with zero allocations, never SQL reconstruction
+of a hold. All three recovery cases passed locally, and all 17 booking integration
+tests passed on 2026-11-08. Recovery queues drained without error/skipped messages.
+Full infrastructure outages, broker restart and all other crash windows remain
+additional coverage. Existing CI includes these tests, but hosted execution is
 not yet verified.
+
+## Selected provisioning direction (not implemented)
+
+Step 4 will use an event-driven initial snapshot
+from flight-service: flight owns aircraft assignment and physical
+layout; seating owns operational capacity, allocations and any overbooking policy.
+Publish a complete, versioned flight/cabin/seat snapshot through flight's SQL
+outbox and consume it through seating's inbox and a DispatchR provisioning command.
+The command would take the existing SQL mutation lock, create initial inventories
+atomically, replay identical snapshots idempotently and reject conflicting changes
+instead of overwriting live inventory. Define the canonical seat reference with
+flight-service before implementing it; row/column display labels are not yet an
+agreed cross-service seat identifier.
+
+Only actual `IsSeat` positions contribute physical capacity. Flight, cabin and
+seat references must use flight's canonical representation without normalization;
+commercial cabin classes must not replace layout cabin IDs. Initial overbooking
+could default explicitly to zero until a trusted policy owner is introduced.
+Source revisions must prevent delayed/out-of-order snapshots from replacing newer
+state. Assignment/configuration mutation APIs currently lack authorization; they
+must be restricted to trusted callers, and broker permissions must restrict
+provisioning publication to the owning service. Broker delivery alone does not
+make an unauthenticated assignment trustworthy.
+
+A trusted backfill/republication path for existing flights still needs to be
+defined; it should reuse the same provisioning rules. Provisioning should not run
+inside schema migrations or silently reset confirmed counts. Dynamic aircraft
+reassignment, seat-map mutation, capacity reductions and outstanding-hold migration
+are outside the selected initial scope and need a separate design; initial provisioning must fail explicitly for these
+conflicts rather than pretending seating follows every current layout change.

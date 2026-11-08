@@ -215,7 +215,17 @@ the secured lookup for completion or compensation:
 Use dedicated infrastructure with the
 [external test configuration](../../docs/architecture/development.md#verification);
 fixtures create/delete only their isolated databases, virtual host and Redis key.
-Both broker cases and all 14 booking integration tests passed locally on
-2026-11-08. Backend CI supplies PostgreSQL, Redis and RabbitMQ management containers;
-hosted execution is not yet verified. Process crash/restart and outage recovery
-tests remain deferred.
+
+[ReservationRecoveryTests](../tests/integration/booking-service.integration.test/ReservationRecoveryTests.cs)
+also uses `ExternalWorkflow`, but launches actual service child processes and
+forcibly terminates them at deterministic database/broker boundaries. It covers
+unacknowledged Hold redelivery after seating termination, booking saga restart,
+confirmation rollback and production retry after a one-shot SQL serialization
+failure, queued confirmation while booking is offline, and duplicate confirmation
+message IDs without duplicate allocations. Losing the fixture's Redis hold during
+seating restart cancels safely rather than reconstructing the hold from SQL.
+All 17 booking integration tests passed locally on 2026-11-08.
+Backend CI supplies PostgreSQL, Redis and RabbitMQ management containers;
+hosted execution is not yet verified. Full infrastructure outages, broker restart
+and other interruption windows remain additional recovery coverage, not proven
+by these targeted cases.

@@ -228,3 +228,42 @@
 - User subsequently authorized committing and pushing steps 1 and 2 to main.
   Pre-commit fetch confirmed local main matched origin/main; `git diff --check`
   passed. The commit includes the verified tests, CI infrastructure and related docs.
+
+## Process crash/retry recovery and provisioning design
+
+- Steps 1 and 2 were committed/pushed as `26b450a`; main matched origin/main
+  and the worktree was clean before this follow-up.
+- User selected implementing step 3 first, then designing step 4.
+- Added `ReservationRecoveryTests` and `WorkflowServiceProcess`, and extended
+  the existing broker fixture for shared isolated resources, child-process
+  startup/termination, queue inspection and duplicate-message publishing.
+  Production code, dependencies, schema migrations and CI configuration did
+  not change; CI already runs the `ExternalWorkflow` category.
+- Actual service processes are force-killed without graceful shutdown. Tests
+  verify requeued/redelivered unacknowledged Hold processing after seating dies,
+  restoration of booking's persisted saga after booking also restarts, and
+  eventual completion with exactly four allocations.
+- A fixture-only PostgreSQL trigger causes one serialization failure during
+  confirmation. Production retry preserves Held state/Redis validity while
+  SQL allocations roll back. Booking is killed before confirmation commits,
+  then restarts to consume the persisted broker outcome. Duplicate confirmations
+  with reused/distinct message IDs do not allocate twice.
+- Losing only the fixture's Redis hold key during seating restart causes
+  `hold_expired_or_lost` cancellation with no remaining allocations/holds.
+  No hold validity is reconstructed from SQL.
+- Final Release booking integration run: 17 passed, 0 failed, 0 skipped.
+  Required whitespace/style verification and `git diff --check` passed.
+  Recovery queues drained without error/skipped messages. Verified no fixture
+  databases, no non-default broker virtual hosts, zero Redis keys and no child
+  services left running; removed validation containers/anonymous volumes.
+- Updated booking/seating READMEs and development coverage/setup documentation.
+  Full infrastructure outages, broker restart, all other crash windows and
+  hosted GitHub CI execution remain unverified.
+- User selected step 4's design: event-driven initial snapshot from flight-service,
+  supporting initial creation and identical replay only, with layout/capacity
+  changes rejected. Recorded this selected but unimplemented direction in the
+  seating README. Trusted API callers/broker permissions, canonical seat IDs,
+  snapshot revisions and existing-flight backfill need resolution during implementation.
+- User subsequently authorized committing and pushing step 3 changes and step 4
+  design notes to main. Pre-commit fetch confirmed main matched origin/main;
+  `git diff --check` passed. Step 4 implementation remains deferred.

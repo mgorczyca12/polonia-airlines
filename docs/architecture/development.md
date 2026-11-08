@@ -95,6 +95,27 @@ fail capacity acquisition and compensate to Cancelled with no allocations/holds.
 Both scenarios verify saga/inbox persistence, exact opaque references, and
 idempotent reservation replay. They do not simulate process crashes or broker outages.
 
+The [recovery tests](../../backend/tests/integration/booking-service.integration.test/ReservationRecoveryTests.cs)
+use the same isolated infrastructure but launch actual booking/seating `dotnet`
+child processes from the built service assemblies. They forcibly terminate
+specific processes without graceful shutdown and verify:
+
+- An unacknowledged Hold is requeued/redelivered after seating dies, and the
+  persisted booking saga resumes after booking also restarts.
+- A one-shot PostgreSQL serialization failure rolls back confirmation, production
+  retries succeed, and booking recovers a queued outcome after dying before
+  confirmation commits. Duplicate confirmations with reused and distinct message
+  IDs leave exactly four allocations.
+- Losing only the fixture's Redis hold key while seating restarts invalidates the
+  hold and cancels the itinerary without reconstructing validity from SQL.
+
+SQL locks and fixture-only triggers make interruption boundaries deterministic.
+Recovery checks include drained queues with no error/skipped messages. All 17
+booking integration tests passed locally on 2026-11-08. These cases cover specific
+failure boundaries, not full PostgreSQL/Redis/RabbitMQ outages, broker restarts,
+every crash window, or production failover. CI includes them through the existing
+`ExternalWorkflow` category; hosted execution remains unverified.
+
 Backend CI provisions disposable PostgreSQL 18, Redis 8, and RabbitMQ 4 management
 service containers and supplies all external-test settings. For local runs, use
 **dedicated test infrastructure**, never deployed/shared databases or broker accounts:
@@ -112,6 +133,8 @@ service containers and supplies all external-test settings. For local runs, use
 
 Workflow fixtures isolate each case in two randomly named databases, one broker
 virtual host and one Redis key, then stop both hosts and delete those resources.
+Recovery fixtures also terminate/dispose their exact child processes; they never
+kill unrelated services or clear shared Redis keys.
 Missing settings fail rather than skip or replace production transport/storage.
 
 ```powershell
