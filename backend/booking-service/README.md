@@ -59,8 +59,9 @@ sent only over HTTPS, and never put in URLs/logs. Responses disable caching.
 5. `POST /reservations`, with the same header, accepts `offerId`, durable `requestId`,
    `contactName`, `contactEmail`, and ordered `passengers` (`firstName`, `lastName`,
    `dateOfBirth`). It accepts no authoritative account ID, price, timestamp, or status.
-   The passenger order matches the offer indexes. Returns **201** with `status: Created`
-   and `workflowStatus: Pending`, not a promise of inventory confirmation.
+   The passenger order matches the offer indexes. Returns **201**, initially
+   `status: Created` and `workflowStatus: Pending`. A fast broker may advance
+   the workflow before the response read; 201 itself is not a promise of inventory confirmation.
 6. `GET /reservations/{id}` requires the same secret guest token, even with a known
    PNR or reservation ID. It returns reservation status plus `workflowId`,
    `workflowStatus`, and safe `failureCode` from the persisted workflow, or `Pending`
@@ -196,6 +197,25 @@ or baggage mutation APIs remains required before enabling those operations.
 handlers, booking services, EF mappings, and a real MassTransit bus outbox with an
 in-memory transport registration. It checks pricing/version snapshots, UTC expiry,
 guest isolation, idempotency, and generated passenger IDs in persisted messages.
-Test execution is deferred at the user's request; PostgreSQL/RabbitMQ/Redis live
-integration validation is also deferred. Source/build validation is distinct from
-runtime behavior verification.
+
+[ReservationBrokerWorkflowTests](../tests/integration/booking-service.integration.test/ReservationBrokerWorkflowTests.cs)
+uses the `ExternalWorkflow` category and starts booking and seating production
+hosts in-process, keeping their actual RabbitMQ, PostgreSQL, Redis, saga,
+inbox/outbox and DispatchR registrations. It applies checked-in migrations and
+seeds trusted test catalog/inventory rows before host startup. Through HTTP it
+creates a checkout, a two-passenger/two-flight offer and a reservation, then polls
+the secured lookup for completion or compensation:
+
+- Available capacity: Completed/Reserved, four confirmed allocations with the
+  generated passenger IDs and unmodified flight references, and eventual hold cleanup.
+- Insufficient capacity on one leg: Cancelled with `inventory_unavailable`, no
+  allocations, zero confirmed counts and no leftover Redis hold.
+- Both cases: durable saga/inbox records and idempotent reservation replay.
+
+Use dedicated infrastructure with the
+[external test configuration](../../docs/architecture/development.md#verification);
+fixtures create/delete only their isolated databases, virtual host and Redis key.
+Both broker cases and all 14 booking integration tests passed locally on
+2026-11-08. Backend CI supplies PostgreSQL, Redis and RabbitMQ management containers;
+hosted execution is not yet verified. Process crash/restart and outage recovery
+tests remain deferred.

@@ -173,3 +173,58 @@
 - Disposable PostgreSQL containers/volumes were removed. Initial migrations are
   for empty databases; no deployed/shared database was modified or baselined.
 - Fetched origin and confirmed main matched origin/main before the requested commit.
+
+## Seating external inventory tests
+
+- User requested enabling and running the existing Redis/PostgreSQL inventory
+  tests, not the full booking/broker workflow milestone.
+- Removed all five permanent Fact skips. Missing configuration still fails with
+  setup instructions rather than silently skipping.
+- Backend CI now provisions PostgreSQL 18 and Redis 8 service containers and
+  supplies the test environment variables; existing unfiltered tests include them.
+- All five ExternalInventory tests passed against isolated local containers:
+  zero failures and zero skips. Coverage includes concurrent last-capacity
+  acquisition, SQL allocation survival after Redis hold loss, itinerary atomicity,
+  owner-safe cleanup, expiry/release fencing, and acquire retry after SQL rollback.
+- Updated seating/development docs with configuration and explicit local exclusion.
+  Tests still use generated schema SQL and direct handlers; this is not broker
+  delivery or migration testing. No production code was changed.
+- Removed the validation containers and their anonymous volumes. Hosted GitHub
+  Actions execution and full broker workflow validation remain pending.
+- All 52 seating unit tests passed. Required whitespace/style verification and
+  `git diff --check` passed. Changes are local; no commit or push was requested.
+
+## Booking/seating real broker workflow tests
+
+- User requested step 2: exercise booking API -> RabbitMQ -> seating -> booking
+  saga with real infrastructure. Added `ReservationBrokerWorkflowTests` under
+  the booking integration project, with an aliased seating project reference to
+  keep the services' global Program types separate.
+- Both actual ASP.NET Core hosts run in-process through TestServer. Production
+  DispatchR, PostgreSQL repositories, Redis, RabbitMQ, EF saga persistence and
+  inbox/outbox registrations remain intact. Tests override connection settings,
+  logging and bounded bus startup/shutdown waits, not transports or hosted services.
+- Each case creates two isolated databases, applies the checked-in migrations,
+  seeds trusted catalog/inventory before host startup, and creates a private
+  broker virtual host plus a unique Redis key.
+- Two passengers on two flights complete as Reserved/Completed with four durable
+  allocations, generated passenger references and eventual Redis cleanup.
+  Insufficient capacity on one leg compensates to Cancelled with
+  `inventory_unavailable`, zero allocations/counts and no leftover hold.
+  Both cases assert durable saga/inbox state, opaque flight references and
+  idempotent HTTP reservation replay.
+- Backend CI now adds RabbitMQ 4 management and supplies all workflow-test
+  settings alongside PostgreSQL 18 and Redis 8. Updated booking/seating READMEs,
+  development setup/exclusion instructions and migration-coverage status.
+- Both new broker cases passed repeatedly locally. Final Release booking
+  integration run: 14 passed, 0 failed, 0 skipped. Required whitespace/style
+  verification and `git diff --check` passed. No production code change needed.
+- Verified fixture teardown: no workflow databases, only RabbitMQ's default
+  virtual host, and zero Redis keys. Removed all three validation containers
+  and anonymous volumes.
+- Hosted GitHub CI execution, process crash/restart and outage/redelivery fault
+  injection remain unverified/deferred. Migration deployment jobs and the
+  dedicated three-service schema matrix remain separate work.
+- User subsequently authorized committing and pushing steps 1 and 2 to main.
+  Pre-commit fetch confirmed local main matched origin/main; `git diff --check`
+  passed. The commit includes the verified tests, CI infrastructure and related docs.

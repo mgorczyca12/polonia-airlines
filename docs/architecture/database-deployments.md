@@ -15,6 +15,13 @@ The [CI workflow](../../.github/workflows/ci.yml) builds and tests applications;
 it does not deploy databases. [Compose](../../compose.yaml) initializes separate
 empty databases, not application tables.
 
+The [booking/seating broker tests](../../backend/tests/integration/booking-service.integration.test/ReservationBrokerWorkflowTests.cs)
+apply checked-in migrations to fresh isolated PostgreSQL databases before starting
+the production hosts. CI now supplies their infrastructure; both scenarios passed
+locally. This provides fresh-schema coverage for booking/seating, not the full
+three-service migration matrix, model-drift checks, upgrade tests or deployment
+jobs described below.
+
 ## Ownership and migration authoring
 
 | Service | DbContext | Connection setting |

@@ -218,12 +218,28 @@ dotnet test backend\tests\integration\seating-service.integration.test --filter 
 
 Missing external configuration fails with setup instructions; tests do not
 silently skip or substitute an in-memory Redis/PostgreSQL implementation.
-These direct command-handler tests do not validate broker delivery. MassTransit
-consumer/outbox wiring is configured in the host; full RabbitMQ delivery and
-crash-recovery verification remains an external end-to-end check.
+The five external tests are enabled. Backend CI provisions disposable PostgreSQL
+18, Redis 8 and RabbitMQ 4 management service containers and supplies the required environment variables.
+For a local solution test run without external infrastructure, explicitly exclude
+both external categories with
+`--filter "Category!=ExternalInventory&Category!=ExternalWorkflow"`.
+The normal unfiltered run requires the
+[external test settings](../../docs/architecture/development.md#verification).
+These direct command-handler tests do not validate broker delivery.
 
-Test execution for this implementation session was explicitly deferred by the
-user. Build validation is not a claim that unit, Redis, PostgreSQL, or broker
-integration tests passed. The SQLite unit tests were run after the handler
-restructure; the Redis/PostgreSQL integration project was only compiled, and
-the MassTransit/DispatchR host wiring has not been exercised against a broker.
+All five Redis/PostgreSQL tests passed against isolated PostgreSQL 18 and Redis 8
+containers on 2026-11-08, with no skips. The test fixtures use generated schema SQL
+and direct command handlers, not migration application or broker consumers.
+
+The booking integration project's
+[ExternalWorkflow tests](../tests/integration/booking-service.integration.test/ReservationBrokerWorkflowTests.cs)
+add live RabbitMQ delivery with both services' production registrations and
+checked-in PostgreSQL migrations. They verify a two-passenger/two-flight booking
+completes with four confirmed allocations and eventual Redis cleanup, and that
+insufficient capacity on one leg cancels the entire itinerary without allocations
+or leftover holds. Both cases passed locally on 2026-11-08; fixtures isolate and
+remove their databases, broker virtual host and Redis key. These hosts run
+in-process through ASP.NET Core TestServer, not application containers.
+Crash/restart, redelivery fault injection and infrastructure-outage recovery
+remain a separate milestone; CI wiring is implemented but hosted execution is
+not yet verified.

@@ -16,6 +16,45 @@ jobs:
   backend:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: seating_test
+          POSTGRES_PASSWORD: seating_test
+          POSTGRES_DB: seating_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U seating_test -d seating_test"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      rabbitmq:
+        image: rabbitmq:4-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: workflow_test
+          RABBITMQ_DEFAULT_PASS: workflow_test
+        ports:
+          - 5672:5672
+          - 15672:15672
+        options: >-
+          --health-cmd "rabbitmq-diagnostics -q ping"
+          --health-interval 5s --health-timeout 10s --health-retries 24
+    env:
+      SEATING_TEST_POSTGRES: Host=localhost;Database=seating_test;Username=seating_test;Password=seating_test
+      SEATING_TEST_REDIS: localhost:6379
+      MASSTRANSIT_USAGE_TELEMETRY: "false"
+      WORKFLOW_TEST_RABBITMQ_HOST: localhost
+      WORKFLOW_TEST_RABBITMQ_PORT: "5672"
+      WORKFLOW_TEST_RABBITMQ_USER: workflow_test
+      WORKFLOW_TEST_RABBITMQ_PASSWORD: workflow_test
+      WORKFLOW_TEST_RABBITMQ_MANAGEMENT: http://localhost:15672/
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0

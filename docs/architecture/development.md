@@ -47,7 +47,8 @@ dotnet run --project backend\flight-service\flight-service.csproj
 Other hosts can be run with their respective booking/seating project paths.
 Use launch-profile/console URLs; no unified gateway is configured.
 Flight data reads use the configured PostgreSQL database.
-Booking/seating startup exposes weather scaffolding only.
+Booking exposes the guest checkout API; seating consumes inventory workflow
+messages and exposes a liveness-only `/health` endpoint.
 
 For the web application:
 
@@ -64,7 +65,7 @@ the backend hosts for its sample search and booking-preview flow.
 
 For the agreed schema-update workflow, see [EF Core database deployments](database-deployments.md)
 and the [migration authoring skill](../../.github/skills/ef-core-migrations/SKILL.md).
-Initial migrations and design-time tooling are implemented. Migration CI, bundles,
+Initial migrations and design-time tooling are implemented. Dedicated migration-matrix CI, bundles,
 and deployment jobs are planned, not yet implemented.
 
 The [CI workflow](../../.github/workflows/ci.yml) has `backend` and `frontend` jobs.
@@ -81,8 +82,46 @@ The tests use xUnit/VSTest. Flight API integration tests configure in-memory SQL
 and disable only MassTransit hosted services to avoid external dependencies.
 Shared outbox tests persist actual EF outbox records using an unstarted in-memory
 bus and verify commit/rollback behavior; neither suite verifies live
-PostgreSQL-to-RabbitMQ delivery. Booking and seating
-integration projects currently contain no test source files.
+PostgreSQL-to-RabbitMQ delivery. Booking also has checkout and in-memory saga tests.
+Seating's enabled `ExternalInventory` tests use real PostgreSQL/Redis.
+Booking's [ExternalWorkflow tests](../../backend/tests/integration/booking-service.integration.test/ReservationBrokerWorkflowTests.cs)
+start both production hosts in-process with real PostgreSQL, Redis, and RabbitMQ;
+only connection settings, logging, and bounded bus startup/shutdown waits are overridden.
+They apply the checked-in migrations to two fresh databases, provision a catalog
+and itinerary capacity before starting hosts, and exercise checkout, offer,
+reservation creation and authenticated polling through HTTP. Two passengers on
+two flights either complete with four durable allocations and Redis cleanup, or
+fail capacity acquisition and compensate to Cancelled with no allocations/holds.
+Both scenarios verify saga/inbox persistence, exact opaque references, and
+idempotent reservation replay. They do not simulate process crashes or broker outages.
+
+Backend CI provisions disposable PostgreSQL 18, Redis 8, and RabbitMQ 4 management
+service containers and supplies all external-test settings. For local runs, use
+**dedicated test infrastructure**, never deployed/shared databases or broker accounts:
+
+| Environment variable | Value/requirement |
+| --- | --- |
+| `SEATING_TEST_POSTGRES` | PostgreSQL connection string; user needs `CREATE SCHEMA` for inventory tests and `CREATEDB` for workflow tests |
+| `SEATING_TEST_REDIS` | Redis connection string, e.g. `localhost:6379` |
+| `WORKFLOW_TEST_RABBITMQ_HOST` | AMQP hostname, e.g. `localhost` |
+| `WORKFLOW_TEST_RABBITMQ_PORT` | AMQP port, e.g. `5672` |
+| `WORKFLOW_TEST_RABBITMQ_USER` | Dedicated broker user able to create/delete virtual hosts and grant permissions |
+| `WORKFLOW_TEST_RABBITMQ_PASSWORD` | Test broker password |
+| `WORKFLOW_TEST_RABBITMQ_MANAGEMENT` | Management API base URL with trailing slash, e.g. `http://localhost:15672/` |
+| `MASSTRANSIT_USAGE_TELEMETRY` | Set to `false` for test execution |
+
+Workflow fixtures isolate each case in two randomly named databases, one broker
+virtual host and one Redis key, then stop both hosts and delete those resources.
+Missing settings fail rather than skip or replace production transport/storage.
+
+```powershell
+dotnet test backend\tests\integration\booking-service.integration.test --filter Category=ExternalWorkflow
+dotnet test backend\tests\integration\seating-service.integration.test --filter Category=ExternalInventory
+```
+
+Local unfiltered solution runs require all external settings above. To run without
+external infrastructure, explicitly use
+`--filter "Category!=ExternalInventory&Category!=ExternalWorkflow"`.
 
 Backend test methods use `MethodName_StateUnderTest_ExpectedBehavior`, for example
 `GetFlight_MissingFlight_ReturnsNotFoundWithIdentifiableProblemDetails`.

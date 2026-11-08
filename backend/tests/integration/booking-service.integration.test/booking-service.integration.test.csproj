@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\booking-service\booking-service.csproj" />
+    <ProjectReference Include="..\..\..\seating-service\seating-service.csproj" Aliases="seating" />
   </ItemGroup>
 
 </Project>
