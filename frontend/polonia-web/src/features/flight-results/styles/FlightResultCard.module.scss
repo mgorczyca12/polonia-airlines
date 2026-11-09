@@ -37,7 +37,23 @@
 }
 
 .body {
+  position: relative;
   padding: 1.375rem;
+}
+
+.cardToggle {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  background: transparent;
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: -2px;
+  }
 }
 
 .expanded .body {
@@ -48,6 +64,7 @@
   display: flex;
   align-items: center;
   gap: 1.375rem;
+  pointer-events: none;
 }
 
 .schedule {
@@ -82,18 +99,6 @@
   color: var(--color-text-muted);
   font-size: 0.75rem;
   font-weight: 400;
-}
-
-.viewFares {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  color: var(--color-primary-text);
-  font-size: 0.6875rem;
-
-  &:hover {
-    text-decoration: underline;
-  }
 }
 
 .fares {

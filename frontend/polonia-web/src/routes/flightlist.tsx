@@ -87,6 +87,14 @@ function FlightListingRoute() {
           fares: passengerFares.flatMap(({ fare }) =>
             fare ? [fare.fareId] : [],
           ),
+          from: search.from,
+          to: search.to,
+          departure: search.departure,
+          return: search.return,
+          tripType,
+          adults: travellers.adult,
+          children: travellers.child,
+          infants: travellers.infant,
         },
       })
     }

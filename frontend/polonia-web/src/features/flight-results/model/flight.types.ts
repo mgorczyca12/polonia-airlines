@@ -28,6 +28,16 @@ export interface BrandedFare {
   isMixedCabin: boolean
   segmentCabinOverlays: Record<string, string>
   perks: string[]
+  benefits: FareBenefits
+}
+
+export interface FareBenefits {
+  checkedBaggage: string
+  cabinBaggage: string
+  mealsAndEntertainment: string
+  seatAndLoungeBenefits: string
+  changeFee: string
+  refundPolicy: string
 }
 
 export interface FlightCabin {

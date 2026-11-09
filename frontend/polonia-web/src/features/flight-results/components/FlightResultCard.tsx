@@ -1,6 +1,5 @@
 import { Checkbox, Collapse, UnstyledButton } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import { ChevronDown } from 'lucide-react'
 import { useId, useState } from 'react'
 import type { SeatedPassenger } from '#/features/flight-search'
 import { formatTime, formatUsd } from '#/shared/lib/formatting'
@@ -19,6 +18,7 @@ import { CabinSelector } from './CabinSelector'
 import { FareOptions } from './FareOptions'
 import { FlightDetails } from './FlightDetails'
 import { FlightTimeline } from './FlightTimeline'
+import { FareBenefitsComparison } from './FareBenefitsComparison'
 import { PassengerFareSelector } from './PassengerFareSelector'
 
 interface FlightResultCardProps {
@@ -90,6 +90,11 @@ export function FlightResultCard({
   )
   const startingFare = getLowestFare(flight, preferredCabin)
   const times = getFlightTimes(flight)
+  const selectedFareIds = new Set(
+    Object.values(fareIds).filter(
+      (fareId): fareId is number => fareId !== undefined,
+    ),
+  )
   const departureCity = getCityName(flight.departureAirport.airportCode)
   const arrivalCity = getCityName(flight.arrivalAirport.airportCode)
   const choosePerPassenger = hasMultiplePassengers && !sameFareForAll
@@ -186,6 +191,15 @@ export function FlightResultCard({
       )}
 
       <div className={styles.body}>
+        {!expanded && (
+          <UnstyledButton
+            className={styles.cardToggle}
+            aria-label={`Show fares for ${departureCity} to ${arrivalCity}`}
+            aria-expanded={false}
+            aria-controls={faresId}
+            onClick={onExpand}
+          />
+        )}
         <div className={styles.summary}>
           <div className={styles.schedule}>
             <FlightTimeline
@@ -207,15 +221,6 @@ export function FlightResultCard({
                   {formatUsd(startingFare)}
                 </p>
               )}
-              <UnstyledButton
-                className={styles.viewFares}
-                aria-expanded={false}
-                aria-controls={faresId}
-                onClick={onExpand}
-              >
-                View fares
-                <ChevronDown size={13} aria-hidden="true" />
-              </UnstyledButton>
             </div>
           )}
         </div>
@@ -260,6 +265,10 @@ export function FlightResultCard({
                 assignedLabels={assignedLabels}
                 reserveAssignmentRow={choosePerPassenger}
                 onSelect={handleSelectFare}
+              />
+              <FareBenefitsComparison
+                cabins={flight.brandedFares}
+                selectedFareIds={selectedFareIds}
               />
               <p className={styles.footnote}>
                 Prices are per adult in US dollars for this flight. Times are

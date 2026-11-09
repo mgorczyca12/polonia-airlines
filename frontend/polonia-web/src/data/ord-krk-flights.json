@@ -42,7 +42,15 @@
               "Cabin Location: Standard Economy Cabin (middle/rear rows)",
               "Seat Assignment: Automatically assigned at check-in",
               "Baggage & Perks: 1 Personal item only. Non-refundable"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "Not included",
+              "cabinBaggage": "1 personal item",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Seat assigned at check-in",
+              "changeFee": "Not specified",
+              "refundPolicy": "Non-refundable"
+            }
           },
           {
             "fareId" : 2,
@@ -54,7 +62,15 @@
               "Cabin Location: Standard Economy Cabin",
               "Seat Assignment: Free selection of any standard window or aisle seat",
               "Baggage & Perks: 1 Carry-on bag included. Changes allowed for a fee"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "Not specified",
+              "cabinBaggage": "1 carry-on bag",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Free standard window or aisle seat",
+              "changeFee": "Changes for a fee",
+              "refundPolicy": "Not specified"
+            }
           },
           {
             "fareId" : 3,
@@ -66,7 +82,15 @@
               "Cabin Location: Economy Extra-Legroom Rows (front rows or exit rows)",
               "Seat Assignment: Free choice of dedicated extra-legroom seats (+3 to 5 inches of pitch)",
               "Baggage & Perks: 1 Carry-on + 1 Checked bag included. Priority boarding (Zone 3)"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "1 checked bag",
+              "cabinBaggage": "1 carry-on bag",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Free extra-legroom seat; priority boarding",
+              "changeFee": "Not specified",
+              "refundPolicy": "Not specified"
+            }
           }
         ]
       },
@@ -84,7 +108,15 @@
               "Cabin Location: Premium Economy Cabin (wider 2-3-2 seating layout)",
               "Seat Assignment: Standard seat selection within the Premium cabin.",
               "Baggage & Perks: 1 Carry-on + 1 Checked bag. Premium meal service"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "1 checked bag",
+              "cabinBaggage": "1 carry-on bag",
+              "mealsAndEntertainment": "Premium meal service",
+              "seatAndLoungeBenefits": "Standard Premium Economy seat selection",
+              "changeFee": "Not specified",
+              "refundPolicy": "Not specified"
+            }
           },
           {
             "fareId" : 5,
@@ -96,7 +128,15 @@
               "Cabin Location: Premium Economy Cabin",
               "Seat Assignment: Free choice of bulkhead or front-row seats within Premium cabin",
               "Baggage & Perks: 1 Carry-on + 2 Checked bags. Priority airport security & boarding (Zone 2). Fully refundable"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "2 checked bags",
+              "cabinBaggage": "1 carry-on bag",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Bulkhead or front-row seat; priority security and boarding",
+              "changeFee": "Not specified",
+              "refundPolicy": "Fully refundable"
+            }
           }
         ]
       },
@@ -114,7 +154,15 @@
               "Cabin Location: Main Business Class Cabin (lie-flat suites)",
               "Seat Assignment: Standard aisle-access suite selection",
               "Baggage & Perks: 2 Checked bags. Onboard lounge access. (Lounge entry at airport requires a fee)"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "2 checked bags",
+              "cabinBaggage": "Not specified",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Aisle-access suite; onboard lounge (airport lounge requires a fee)",
+              "changeFee": "Not specified",
+              "refundPolicy": "Not specified"
+            }
           },
           {
             "fareId" : 7,
@@ -126,7 +174,15 @@
               "Cabin Location: Business Class Mini-Cabin (quieter, exclusive forward section)",
               "Seat Assignment: Premium bulkhead suites or twin-luxury center suites",
               "Baggage & Perks: 3 Checked bags. Flagship Airport Lounge access. Priority boarding (Zone 1)"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "3 checked bags",
+              "cabinBaggage": "Not specified",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Premium suite selection; Flagship Airport Lounge; priority boarding",
+              "changeFee": "Not specified",
+              "refundPolicy": "Not specified"
+            }
           }
         ]
       },
@@ -144,7 +200,15 @@
               "Cabin Location: Flagship First Class Cabin (Nose of aircraft, fully enclosed private suites)",
               "Seat Assignment: Complete freedom of any available private suite",
               "Baggage & Perks: Unlimited baggage. Private terminal access, personal concierge, and premium dining. Fully flexible"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "Unlimited baggage (type not specified)",
+              "cabinBaggage": "Not specified",
+              "mealsAndEntertainment": "Premium dining",
+              "seatAndLoungeBenefits": "Any available private suite; private terminal and personal concierge",
+              "changeFee": "Fully flexible",
+              "refundPolicy": "Not specified"
+            }
           }
         ]
       }
@@ -209,7 +273,15 @@
               "Cabin Location: Standard Economy Cabin on both planes",
               "Seat Assignment: Automatically assigned at check-in",
               "Baggage & Perks: 1 Personal item only. Non-refundable"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "Not included",
+              "cabinBaggage": "1 personal item",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Seat assigned at check-in",
+              "changeFee": "Not specified",
+              "refundPolicy": "Non-refundable"
+            }
           },
           {
             "fareId" : 10,
@@ -221,7 +293,15 @@
               "Cabin Location: Standard Economy Cabin on both planes",
               "Seat Assignment: Free window/aisle selection",
               "Baggage & Perks: 1 Carry-on bag included. Changes for a fee"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "Not specified",
+              "cabinBaggage": "1 carry-on bag",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Free standard window or aisle seat",
+              "changeFee": "Changes for a fee",
+              "refundPolicy": "Not specified"
+            }
           }
         ]
       },
@@ -239,7 +319,15 @@
               "Cabin Location: Premium Economy on long-haul leg; Economy on short flight",
               "Seat Assignment: Standard premium seats assigned on Leg 1",
               "Baggage & Perks: 1 Carry-on + 1 Checked bag. Premium lounge & check-in perks carry over"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "1 checked bag",
+              "cabinBaggage": "1 carry-on bag",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Standard Premium Economy seat on long-haul leg; lounge and check-in perks",
+              "changeFee": "Not specified",
+              "refundPolicy": "Not specified"
+            }
           }
         ]
       },
@@ -257,7 +345,15 @@
               "Cabin Location: Lie-flat suites on long-haul leg; Regional Business class on connecting leg",
               "Seat Assignment: Complete aisle-access suite selection",
               "Baggage & Perks: 2 Checked bags. Full airport lounge access during layover"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "2 checked bags",
+              "cabinBaggage": "Not specified",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Aisle-access suite; full airport lounge access during layover",
+              "changeFee": "Not specified",
+              "refundPolicy": "Not specified"
+            }
           }
         ]
       },
@@ -275,7 +371,15 @@
               "Cabin Location: Private Suite on long-haul leg; Downgraded to Business Class on connecting leg",
               "Seat Assignment: Absolute private choice on Leg 1",
               "Baggage & Perks: Private airport terminal access in ORD, elite baggage handler routes, 100% fully flexible changes"
-            ]
+            ],
+            "benefits": {
+              "checkedBaggage": "Not specified (elite baggage handling)",
+              "cabinBaggage": "Not specified",
+              "mealsAndEntertainment": "Not specified",
+              "seatAndLoungeBenefits": "Private suite on long-haul leg; Business Class on connection; private ORD terminal",
+              "changeFee": "100% fully flexible changes",
+              "refundPolicy": "Not specified"
+            }
           }
         ]
       }

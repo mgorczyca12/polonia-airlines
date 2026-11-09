@@ -121,6 +121,9 @@
 }
 
 .detailsButton {
+  position: relative;
+  z-index: 2;
+  pointer-events: auto;
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
