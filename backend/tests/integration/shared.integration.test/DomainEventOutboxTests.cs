@@ -58,14 +58,17 @@ public sealed class DomainEventOutboxTests
         var aggregate = new EventAggregate("created");
         context.Aggregates.Add(aggregate);
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
         await unitOfWork.BeginTransactionAsync(CancellationToken.None);
 
         Assert.Equal(0, await context.Set<OutboxMessage>().CountAsync());
+
         await unitOfWork.SaveChangesAsync(CancellationToken.None);
         await unitOfWork.SaveChangesAsync(CancellationToken.None);
         await unitOfWork.CommitTransactionAsync(CancellationToken.None);
 
         context.ChangeTracker.Clear();
+
         Assert.Equal("handled", (await context.Aggregates.SingleAsync()).Name);
         var message = await context.Set<OutboxMessage>().SingleAsync();
         Assert.Contains(aggregate.Id.ToString(), message.Body);
@@ -87,9 +90,11 @@ public sealed class DomainEventOutboxTests
         await context.Database.EnsureCreatedAsync();
         context.Aggregates.Add(new EventAggregate("created"));
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
         await unitOfWork.BeginTransactionAsync(CancellationToken.None);
 
         await unitOfWork.SaveChangesAsync(CancellationToken.None);
+
         Assert.Equal(1, await context.Aggregates.CountAsync());
         Assert.Equal(1, await context.Set<OutboxMessage>().CountAsync());
         await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
@@ -119,6 +124,7 @@ public sealed class DomainEventOutboxTests
         using var cancellation = new CancellationTokenSource();
         state.Cancellation = cancellation;
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
         await unitOfWork.BeginTransactionAsync(cancellation.Token);
 
         if (outcome == "cancellation")
@@ -133,6 +139,7 @@ public sealed class DomainEventOutboxTests
         }
 
         await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
+
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             unitOfWork.SaveChangesAsync(CancellationToken.None));
         await using var readScope = provider.CreateAsyncScope();
@@ -147,6 +154,7 @@ public sealed class DomainEventOutboxTests
         services.AddLogging();
         services.AddDbContext<EventDbContext>(options => options.UseSqlite(connection));
         services.AddSharedUnitOfWork<EventDbContext>();
+
         services.AddSharedInfrastructure();
         services.AddScoped<HandlerState>();
         services.AddDomainEventHandler<Created, CreatedHandler>();

@@ -110,16 +110,19 @@ public sealed class CommandTransactionTests
         await using var scope = provider.CreateAsyncScope();
         var context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
         var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+
         Assert.IsType<EfUnitOfWork<TestDbContext>>(unitOfWork);
         Assert.Same(unitOfWork, scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
         await context.Database.EnsureCreatedAsync();
 
         await unitOfWork.BeginTransactionAsync(CancellationToken.None);
         Assert.NotNull(context.Database.CurrentTransaction);
+
         await Assert.ThrowsAsync<InvalidOperationException>(() =>
             unitOfWork.BeginTransactionAsync(CancellationToken.None));
 
         context.Records.Add(new TestRecord { Name = "committed" });
+
         Assert.Equal(1, await unitOfWork.SaveChangesAsync(CancellationToken.None));
         await unitOfWork.CommitTransactionAsync(CancellationToken.None);
         Assert.Null(context.Database.CurrentTransaction);
@@ -129,6 +132,7 @@ public sealed class CommandTransactionTests
         await unitOfWork.SaveChangesAsync(CancellationToken.None);
         await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
         Assert.Null(context.Database.CurrentTransaction);
+
         await unitOfWork.RollbackTransactionAsync(CancellationToken.None);
 
         context.ChangeTracker.Clear();

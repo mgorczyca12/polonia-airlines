@@ -8,6 +8,7 @@ public class SeatAssignmentTests
     public void ConfirmAllocation_OverbookingEnabled_AllowsUnassignedAllocationsButNotExtraPhysicalSeats()
     {
         var inventory = SeatInventory.Create("flight", "economy", 1, 1);
+
         var first = inventory.ConfirmAllocation("reservation-1", "passenger-1", "seat-A");
         var second = inventory.ConfirmAllocation("reservation-2", "passenger-2");
 
@@ -17,6 +18,7 @@ public class SeatAssignmentTests
         Assert.Equal(2, inventory.ReservedSeats);
         Assert.Equal(1, inventory.OverbookedSeats);
         Assert.Equal(0, inventory.RemainingBookingCapacity);
+
         Assert.Throws<InvalidOperationException>(() => inventory.AssignSeat(second, "seat-B"));
         Assert.Throws<InvalidOperationException>(() => inventory.ConfirmAllocation("reservation-3", "passenger-3"));
         Assert.Throws<NotSupportedException>(() => ((ICollection<SeatAssignment>)inventory.Assignments).Clear());
@@ -26,13 +28,16 @@ public class SeatAssignmentTests
     public void AssignSeat_ExistingAllocations_PreservesBookingCapacityAndEnforcesSeatUniqueness()
     {
         var inventory = SeatInventory.Create("flight", "economy", 2);
+
         var first = inventory.ConfirmAllocation("reservation", "passenger-1", "seat-A");
         var second = inventory.ConfirmAllocation("reservation", "passenger-2", "seat-B");
 
         Assert.Throws<InvalidOperationException>(() => inventory.AssignSeat(second, "seat-A"));
+
         inventory.AssignSeat(first, "seat-A");
         inventory.ClearSeat(first);
         inventory.AssignSeat(second, "seat-A");
+
         Assert.Null(first.SeatId);
         Assert.Equal("seat-A", second.SeatId);
         Assert.Equal(2, inventory.ReservedSeats);
@@ -51,6 +56,7 @@ public class SeatAssignmentTests
 
         Assert.Equal(" Reservation ", assignment.ReservationId);
         Assert.Equal(" Seat ", assignment.SeatId);
+
         Assert.Throws<InvalidOperationException>(() => inventory.ConfirmAllocation("different", "Passenger"));
         Assert.Throws<InvalidOperationException>(() => inventory.ConfirmAllocation("different", "different", " Seat "));
         Assert.Throws<InvalidOperationException>(() => inventory.AssignSeat(foreign, "seat"));
@@ -60,6 +66,7 @@ public class SeatAssignmentTests
         Assert.Throws<ArgumentException>(() => inventory.ConfirmAllocation("new", " "));
         Assert.Throws<ArgumentException>(() => inventory.ConfirmAllocation("new", "new", ""));
         Assert.Throws<ArgumentException>(() => inventory.AssignSeat(assignment, " "));
+
         Assert.Single(inventory.Assignments);
         Assert.Equal(1, inventory.ReservedSeats);
     }

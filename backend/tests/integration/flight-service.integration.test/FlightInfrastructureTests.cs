@@ -64,6 +64,7 @@ public sealed class FlightInfrastructureTests
         Assert.Contains("\"Number\" integer NOT NULL", schema);
         Assert.Contains("\"AircraftId\" integer", schema);
         Assert.Contains("FOREIGN KEY (\"AircraftId\") REFERENCES \"Aircrafts\" (\"Id\") ON DELETE RESTRICT", schema);
+
         Assert.NotNull(scope.ServiceProvider.GetRequiredService<IUnitOfWork>());
         Assert.IsType<MassTransitIntegrationEventPublisher>(
             scope.ServiceProvider.GetRequiredService<IIntegrationEventPublisher>());

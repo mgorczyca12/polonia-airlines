@@ -26,6 +26,7 @@ public sealed class RepositoryBaseTests
 
         Assert.Equal(EntityState.Added, context.Entry(first).State);
         Assert.All(others, aggregate => Assert.Equal(EntityState.Added, context.Entry(aggregate).State));
+
         await using var verificationContext = new TestDbContext(options);
         Assert.Equal(0, await verificationContext.Aggregates.CountAsync());
 
@@ -57,6 +58,7 @@ public sealed class RepositoryBaseTests
         Assert.Same(loaded, await repository.GetByIdAsync(aggregate.Id, CancellationToken.None));
 
         loaded.Rename("changed");
+
         await using var verificationContext = new TestDbContext(options);
         Assert.Equal("original", (await verificationContext.Aggregates.AsNoTracking().SingleAsync()).Name);
 
@@ -123,6 +125,7 @@ public sealed class RepositoryBaseTests
 
         Assert.Equal(EntityState.Deleted, context.Entry(first).State);
         Assert.All(others, aggregate => Assert.Equal(EntityState.Deleted, context.Entry(aggregate).State));
+
         await using var verificationContext = new TestDbContext(options);
         Assert.Equal(3, await verificationContext.Aggregates.CountAsync());
 

@@ -29,6 +29,7 @@ public class InventoryOperationTests
         var expiry = DateTimeOffset.UtcNow.AddMinutes(5);
 
         Assert.ThrowsAny<ArgumentException>(() => operation.RecordHold(" ", expiry, Selections));
+
         operation.RecordHold("reservation", expiry, Selections);
 
         Assert.Equal("reservation", operation.ReservationId);
@@ -55,6 +56,7 @@ public class InventoryOperationTests
         var operation = InventoryOperation.Open(Guid.NewGuid());
 
         Assert.ThrowsAny<ArgumentException>(() => operation.Reject(" "));
+
         operation.Reject("inventory_unavailable");
 
         Assert.Equal(InventoryOperationState.Rejected, operation.State);
@@ -67,6 +69,7 @@ public class InventoryOperationTests
     public void Fence_FromConfirmedMarksAllocationsPendingAndIsIdempotent()
     {
         var operation = InventoryOperation.Open(Guid.NewGuid());
+
         operation.Confirm();
 
         operation.Fence("cancelled");
@@ -84,6 +87,7 @@ public class InventoryOperationTests
     public void Fence_FromOtherStatesLeavesNoPendingAllocations(bool rejected)
     {
         var operation = InventoryOperation.Open(Guid.NewGuid());
+
         if (rejected)
         {
             operation.Reject("inventory_unavailable");
@@ -99,9 +103,11 @@ public class InventoryOperationTests
     public void CompleteRelease_ClearsPendingFlagOnlyAfterFence()
     {
         var operation = InventoryOperation.Open(Guid.NewGuid());
+
         operation.Confirm();
 
         Assert.Throws<InvalidOperationException>(() => operation.CompleteRelease("cancelled"));
+
         operation.Fence("cancelled");
         operation.CompleteRelease("cancelled");
 
@@ -127,6 +133,7 @@ public class InventoryOperationTests
         Assert.Equal(" F ", seat.FlightId);
         Assert.Equal("C", seat.CabinId);
         Assert.Equal("1A", seat.SeatId);
+
         Assert.ThrowsAny<ArgumentException>(() => InventorySeat.Create("F", " ", "1A"));
     }
 }

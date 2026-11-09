@@ -27,6 +27,7 @@ public sealed class ConfigurationApiTests
     {
         using var factory = new ConfigurationFactory();
         using var client = factory.CreateSeededClient();
+
         var created = await client.PostAsJsonAsync("/api/configurations",
             new { aircraftTypeId = factory.TypeId, code = "NEW", name = "New layout", version = 2 });
 
@@ -34,6 +35,7 @@ public sealed class ConfigurationApiTests
         Assert.NotNull(created.Headers.Location);
         var configuration = await client.GetFromJsonAsync<ConfigurationResponse>(created.Headers.Location);
         Assert.NotNull(configuration);
+
         Assert.True(configuration.Id > 0);
         Assert.Equal(factory.TypeId, configuration.AircraftTypeId);
         Assert.Equal("NEW", configuration.Code);
@@ -47,6 +49,7 @@ public sealed class ConfigurationApiTests
         var missingType = await client.PostAsJsonAsync("/api/configurations",
             new { aircraftTypeId = int.MaxValue, code = "NEW", name = "New layout", version = 2 });
         await AssertProblem(missingType, HttpStatusCode.NotFound, "aircraft_type_not_found");
+
         var invalid = await client.PostAsJsonAsync("/api/configurations",
             new { aircraftTypeId = factory.TypeId, code = "", name = "New layout", version = 0 });
         Assert.Equal(HttpStatusCode.BadRequest, invalid.StatusCode);
@@ -73,9 +76,11 @@ public sealed class ConfigurationApiTests
                 new { column = "A", aisleGroup = 0, isSeat = false }
             }
         });
+
         Assert.Equal(HttpStatusCode.NoContent, earlier.StatusCode);
         var before = await client.GetFromJsonAsync<ConfigurationResponse>($"/api/configurations/{factory.ConfigurationId}");
         Assert.NotNull(before);
+
         Assert.Equal(new[] { 2, 12 }, before.SeatMap.Rows.Select(row => row.Number));
         var row = before.SeatMap.Rows[0];
         Assert.Equal("Seats, ExitRow", row.Type);
@@ -86,9 +91,11 @@ public sealed class ConfigurationApiTests
         var existingId = row.Positions[0].Id;
 
         var edited = await client.PutAsJsonAsync($"{route}/2", Row(factory.CabinId, "Seats", "A", "C"));
+
         Assert.Equal(HttpStatusCode.NoContent, edited.StatusCode);
         var after = await client.GetFromJsonAsync<ConfigurationResponse>($"/api/configurations/{factory.ConfigurationId}");
         Assert.NotNull(after);
+
         Assert.Equal(row.Id, after.SeatMap.Rows[0].Id);
         Assert.Equal(existingId, after.SeatMap.Rows[0].Positions[0].Id);
         Assert.True(after.SeatMap.Rows[0].Positions[0].IsSeat);
@@ -96,6 +103,7 @@ public sealed class ConfigurationApiTests
 
         Assert.Equal(HttpStatusCode.NoContent, (await client.DeleteAsync($"{route}/2")).StatusCode);
         await AssertProblem(await client.DeleteAsync($"{route}/2"), HttpStatusCode.NotFound, "seat_map_row_not_found");
+
         using var scope = factory.Services.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<FlightServiceDbContext>();
         Assert.Equal(1, await context.SeatMapRows.CountAsync());
@@ -116,11 +124,13 @@ public sealed class ConfigurationApiTests
 
         Assert.Equal(HttpStatusCode.NoContent,
             (await client.PutAsJsonAsync($"{flightRoute}/aircraft", new { aircraftId = factory.AircraftId })).StatusCode);
+
         var rowResult = await client.PutAsJsonAsync(
             $"/api/configurations/{factory.ConfigurationId}/seat-map/rows/4", Row(factory.CabinId, "Seats", "A"));
         Assert.Equal(HttpStatusCode.NoContent, rowResult.StatusCode);
         var first = await client.GetFromJsonAsync<FlightSeatMapResponse>($"{flightRoute}/seat-map");
         Assert.NotNull(first);
+
         Assert.Equal(factory.FlightId, first.FlightId);
         Assert.Equal(factory.AircraftId, first.AircraftId);
         Assert.Equal(factory.ConfigurationId, first.ConfigurationId);
@@ -133,6 +143,7 @@ public sealed class ConfigurationApiTests
 
         Assert.Equal(HttpStatusCode.NoContent,
             (await client.PutAsJsonAsync($"{flightRoute}/aircraft", new { aircraftId = factory.OtherAircraftId })).StatusCode);
+
         var second = await client.GetFromJsonAsync<FlightSeatMapResponse>($"{flightRoute}/seat-map");
         Assert.NotNull(second);
         Assert.Equal(factory.OtherAircraftId, second.AircraftId);
@@ -189,6 +200,7 @@ public sealed class ConfigurationApiTests
 
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
         using var scope = factory.Services.CreateScope();
         Assert.Equal(0, await scope.ServiceProvider.GetRequiredService<FlightServiceDbContext>().SeatMapRows.CountAsync());
     }
@@ -261,6 +273,7 @@ public sealed class ConfigurationApiTests
 
         Assert.True((await queries.GetFlightSeatMap(factory.FlightId, CancellationToken.None)).IsSuccess);
         Assert.Empty(context.ChangeTracker.Entries());
+
         await Assert.ThrowsAsync<ValidationException>(() => queries.GetFlightSeatMap(0, CancellationToken.None));
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
@@ -273,6 +286,7 @@ public sealed class ConfigurationApiTests
         using var factory = new ConfigurationFactory();
         using var client = factory.CreateSeededClient();
         using var document = JsonDocument.Parse(await client.GetStringAsync("/openapi/v1.json"));
+
         var paths = document.RootElement.GetProperty("paths");
         var query = paths.GetProperty("/api/Flight/flight/{flightId}/seat-map").GetProperty("get").GetProperty("responses");
         foreach (var status in new[] { "200", "400", "404", "409", "500" })

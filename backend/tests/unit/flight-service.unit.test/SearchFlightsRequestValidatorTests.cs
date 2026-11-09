@@ -19,6 +19,7 @@ public class SearchFlightsRequestValidatorTests
         Assert.True(validator.Validate(ValidRequest).IsValid);
         Assert.Equal(1, ValidRequest.Page);
         Assert.Equal(20, ValidRequest.PageSize);
+
         Assert.True(validator.Validate(ValidRequest with
         {
             PageSize = 100
@@ -40,6 +41,7 @@ public class SearchFlightsRequestValidatorTests
             DepartureAirport = code
         }).Errors,
             error => error.PropertyName == nameof(SearchFlightsRequest.DepartureAirport));
+
         Assert.Contains(validator.Validate(ValidRequest with
         {
             ArrivalAirport = code
@@ -80,6 +82,7 @@ public class SearchFlightsRequestValidatorTests
         {
             DepartureDate = default
         }).IsValid);
+
         Assert.False(validator.Validate(ValidRequest with
         {
             DepartureDate = DateOnly.MaxValue

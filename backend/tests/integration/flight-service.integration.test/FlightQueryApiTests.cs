@@ -34,6 +34,7 @@ public class FlightQueryApiTests
         var response = await client.GetAsync($"/api/Flight/flight/{factory.FirstFlightId}");
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+
         var flight = await response.Content.ReadFromJsonAsync<FlightResponse>();
         Assert.NotNull(flight);
         Assert.Equal(factory.FirstFlightId, flight.Id);
@@ -41,6 +42,7 @@ public class FlightQueryApiTests
         Assert.Equal("KRK", flight.ArrivalAirport);
         Assert.Equal(TimeSpan.Zero, flight.DepartureTime.Offset);
         Assert.Equal(new DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero), flight.DepartureTime);
+
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal(6, json.RootElement.EnumerateObject().Count());
         Assert.False(json.RootElement.TryGetProperty("isSuccess", out _));
@@ -56,6 +58,7 @@ public class FlightQueryApiTests
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         Assert.Equal(404, json.RootElement.GetProperty("status").GetInt32());
         Assert.Equal("flight_not_found", json.RootElement.GetProperty("code").GetString());
@@ -67,12 +70,15 @@ public class FlightQueryApiTests
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
+
         var all = await client.GetFromJsonAsync<FlightResponse[]>(Search);
         Assert.NotNull(all);
+
         Assert.Equal(new[] { "PA101", "PA102", "PA103", "PA104" },
             all.Select(flight => flight.FlightNumber));
         var secondPage = await client.GetFromJsonAsync<FlightResponse[]>(Search + "&Page=2&PageSize=2");
         Assert.NotNull(secondPage);
+
         Assert.Equal(new[] { "PA103", "PA104" }, secondPage.Select(flight => flight.FlightNumber));
         var repeatedPage = await client.GetFromJsonAsync<FlightResponse[]>(Search + "&Page=2&PageSize=2");
         Assert.Equal(secondPage, repeatedPage);
@@ -83,7 +89,9 @@ public class FlightQueryApiTests
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
+
         var response = await client.GetAsync(Search + "&Page=10");
+
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Empty((await response.Content.ReadFromJsonAsync<FlightResponse[]>())!);
     }
@@ -93,6 +101,7 @@ public class FlightQueryApiTests
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
+
         using (var scope = factory.Services.CreateScope())
         {
             var context = scope.ServiceProvider.GetRequiredService<FlightServiceDbContext>();
@@ -106,12 +115,14 @@ public class FlightQueryApiTests
         }
 
         const string search = "/api/Flight/flights?DepartureAirport=WAW&ArrivalAirport=KRK&DepartureDate=2026-10-15";
+
         var defaultPage = await client.GetFromJsonAsync<FlightResponse[]>(search);
         Assert.NotNull(defaultPage);
         Assert.Equal(20, defaultPage.Length);
         Assert.Equal("PA201", defaultPage[0].FlightNumber);
         Assert.Equal("PA220", defaultPage[^1].FlightNumber);
         var maximumPage = await client.GetFromJsonAsync<FlightResponse[]>(search + "&PageSize=100");
+
         Assert.NotNull(maximumPage);
         Assert.Equal(100, maximumPage.Length);
         var finalPage = await client.GetFromJsonAsync<FlightResponse[]>(search + "&PageSize=100&Page=2");
@@ -132,6 +143,7 @@ public class FlightQueryApiTests
     {
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
+
         using (var scope = factory.Services.CreateScope())
         {
             await scope.ServiceProvider.GetRequiredService<FlightServiceDbContext>()
@@ -139,6 +151,7 @@ public class FlightQueryApiTests
         }
 
         var response = await client.GetAsync(path);
+
         Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
         Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
@@ -154,6 +167,7 @@ public class FlightQueryApiTests
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
         client.DefaultRequestHeaders.Accept.ParseAdd(accept);
+
         using (var scope = factory.Services.CreateScope())
         {
             await scope.ServiceProvider.GetRequiredService<FlightServiceDbContext>()
@@ -184,6 +198,7 @@ public class FlightQueryApiTests
         var context = scope.ServiceProvider.GetRequiredService<FlightServiceDbContext>();
         var queries = new FlightQueries(context);
         var result = await queries.GetFlight(factory.FirstFlightId, CancellationToken.None);
+
         Assert.True(result.IsSuccess);
         var search = new SearchFlightsRequest
         {
@@ -193,6 +208,7 @@ public class FlightQueryApiTests
         };
         Assert.True((await queries.GetFlights(search, CancellationToken.None)).IsSuccess);
         Assert.Empty(context.ChangeTracker.Entries());
+
         using var cancellation = new CancellationTokenSource();
         cancellation.Cancel();
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
@@ -248,6 +264,7 @@ public class FlightQueryApiTests
         using var factory = new FlightApiFactory();
         using var client = factory.CreateSeededClient();
         var response = await client.GetAsync("/openapi/v1.json");
+
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
         var paths = json.RootElement.GetProperty("paths");
@@ -306,6 +323,7 @@ public class FlightQueryApiTests
             var other = Airport.Create("Gdansk", "EPGD", "GDN", Address.Create("Gdansk", "Pomerania", "PL"));
             var day = new DateTime(2026, 10, 13, 0, 0, 0, DateTimeKind.Utc);
             var first = Flight.Create("PA101", day, day.AddHours(1), departure, arrival);
+
             context.Flights.AddRange(
                 first,
                 Flight.Create("PA102", day.AddHours(10), day.AddHours(11), departure, arrival),
@@ -316,6 +334,7 @@ public class FlightQueryApiTests
                 Flight.Create("PA107", day.AddTicks(-1), day.AddHours(1), departure, arrival));
 
             context.SaveChanges();
+
             FirstFlightId = first.Id;
 
             return CreateClient(new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });

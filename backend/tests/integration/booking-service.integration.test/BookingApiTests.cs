@@ -25,20 +25,26 @@ public sealed class BookingApiTests
     {
         using var factory = new Factory();
         using var client = factory.CreateSeededClient();
+
         var checkout = await (await client.PostAsync("/api/booking/checkouts", null))
             .Content.ReadFromJsonAsync<CheckoutResponse>();
         Assert.NotNull(checkout);
         client.DefaultRequestHeaders.Add("X-Guest-Token", checkout.GuestToken);
+
         var offered = await client.PostAsJsonAsync("/api/booking/offers",
             new OfferRequest("PLN", 1, [new(" flight ", factory.ProductId)]));
         Assert.Equal(HttpStatusCode.Created, offered.StatusCode);
+
         var offer = await offered.Content.ReadFromJsonAsync<OfferResponse>();
         Assert.NotNull(offer);
+
         var request = new ReservationRequest(offer.Id, "browser-request", "Guest", "guest@example.test",
             [new("First", "Last", new DateOnly(1990, 1, 1))]);
+
         var response = await client.PostAsJsonAsync("/api/booking/reservations", request);
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         Assert.NotNull(response.Headers.Location);
+
         var reservation = await response.Content.ReadFromJsonAsync<ReservationResponse>();
         Assert.NotNull(reservation);
         Assert.Equal("Created", reservation.Status);
@@ -47,14 +53,19 @@ public sealed class BookingApiTests
         Assert.Equal(" cabin ", Assert.Single(reservation.Fares).CabinId);
 
         var replay = await client.PostAsJsonAsync("/api/booking/reservations", request);
+
         Assert.Equal(HttpStatusCode.Created, replay.StatusCode);
         Assert.Equal(reservation.Id, (await replay.Content.ReadFromJsonAsync<ReservationResponse>())!.Id);
+
         var changed = await client.PostAsJsonAsync("/api/booking/reservations", request with { ContactName = "Other" });
         Assert.Equal(HttpStatusCode.Conflict, changed.StatusCode);
+
         client.DefaultRequestHeaders.Remove("X-Guest-Token");
         client.DefaultRequestHeaders.Add("X-Guest-Token", new string('A', 64));
+
         var unauthorized = await client.GetAsync(response.Headers.Location);
         Assert.Equal(HttpStatusCode.NotFound, unauthorized.StatusCode);
+
         using var json = JsonDocument.Parse(await unauthorized.Content.ReadAsStringAsync());
         Assert.Equal("not_found", json.RootElement.GetProperty("code").GetString());
     }
@@ -64,12 +75,18 @@ public sealed class BookingApiTests
     {
         using var factory = new Factory();
         using var client = factory.CreateSeededClient();
+
         client.DefaultRequestHeaders.Add("X-Guest-Token", new string('A', 64));
+
         var invalidId = await client.GetAsync("/api/booking/reservations/0");
+
         Assert.Equal(HttpStatusCode.BadRequest, invalidId.StatusCode);
+
         var invalidOffer = await client.PostAsJsonAsync("/api/booking/offers",
             new OfferRequest("pln", 10, [new(" flight ", factory.ProductId)]));
+
         Assert.Equal(HttpStatusCode.BadRequest, invalidOffer.StatusCode);
+
         var mutation = await client.PostAsJsonAsync("/api/booking/catalog", new { code = "UNTRUSTED" });
         Assert.Equal(HttpStatusCode.MethodNotAllowed, mutation.StatusCode);
     }
@@ -79,10 +96,14 @@ public sealed class BookingApiTests
     {
         using var factory = new Factory();
         using var client = factory.CreateSeededClient();
+
         var catalog = await client.GetFromJsonAsync<ProductResponse[]>("/api/booking/catalog");
         var product = Assert.Single(catalog!);
+
         Assert.Equal("Economy", product.CabinClass);
+
         using var json = JsonDocument.Parse(await client.GetStringAsync("/api/booking/catalog"));
+
         Assert.False(json.RootElement[0].TryGetProperty("cabinId", out _));
         Assert.False(json.RootElement[0].TryGetProperty("isSuccess", out _));
     }

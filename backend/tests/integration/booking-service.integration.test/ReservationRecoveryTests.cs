@@ -40,13 +40,16 @@ public sealed class ReservationRecoveryTests
 
         var seating = await fixture.StartSeating();
         var booking = await fixture.StartBooking();
+
         await WaitForConsumers(fixture);
         var reservation = await CreateReservation(booking.Client, fixture.ProductId);
+
         await WaitForSaga(fixture, "ConfirmingAllocations");
         await WaitForUnacknowledged(fixture, "ConfirmInventory");
         Assert.True(await fixture.Redis.GetDatabase().KeyExistsAsync(fixture.RedisKey));
 
         await seating.Kill();
+
         Assert.Equal("Held", (await database.Operations.AsNoTracking().SingleAsync()).State.Code);
         Assert.Equal(0, await database.Assignments.CountAsync());
         Assert.True(await fixture.Redis.GetDatabase().KeyDeleteAsync(fixture.RedisKey));
@@ -60,6 +63,7 @@ public sealed class ReservationRecoveryTests
                 $"/api/booking/reservations/{reservation.Id}");
             return latest?.WorkflowStatus == "Cancelled";
         }, "Restarted seating did not compensate the lost Redis hold.");
+
         Assert.NotNull(latest);
         Assert.Equal("Cancelled", latest.Status);
         Assert.Equal("hold_expired_or_lost", latest.FailureCode);
@@ -86,6 +90,7 @@ public sealed class ReservationRecoveryTests
             """SELECT * FROM "InventoryMutationLock" WHERE "Id" = 1 FOR UPDATE""");
 
         var reservation = await CreateReservation(booking.Client, fixture.ProductId);
+
         await WaitForSaga(fixture, "AwaitingCapacity");
         await WaitForUnacknowledged(fixture, "HoldInventory");
         Assert.Equal(0, await database.Operations.CountAsync());
@@ -102,6 +107,7 @@ public sealed class ReservationRecoveryTests
         await transaction.RollbackAsync();
 
         await fixture.StartSeating();
+
         await WaitUntil(async () =>
         {
             await using var context = new SeatingDbContext(fixture.SeatingOptions);
@@ -141,6 +147,7 @@ public sealed class ReservationRecoveryTests
 
         await fixture.StartSeating();
         var booking = await fixture.StartBooking();
+
         await WaitForConsumers(fixture);
         var reservation = await CreateReservation(booking.Client, fixture.ProductId);
         await WaitForSaga(fixture, "ConfirmingAllocations");
@@ -151,6 +158,7 @@ public sealed class ReservationRecoveryTests
                 """SELECT last_value AS "Value" FROM workflow_confirmation_attempts""").SingleAsync();
             return attempts >= 2;
         }, "Production consumer retry did not retry the injected SQL failure.");
+
         Assert.Equal("Held", (await database.Operations.AsNoTracking().SingleAsync()).State.Code);
         Assert.Equal(0, await database.Assignments.CountAsync());
         Assert.True(await fixture.Redis.GetDatabase().KeyExistsAsync(fixture.RedisKey));
@@ -163,6 +171,7 @@ public sealed class ReservationRecoveryTests
             return (await context.Operations.AsNoTracking().SingleAsync()).State.Code == "Confirmed"
                 && !await fixture.Redis.GetDatabase().KeyExistsAsync(fixture.RedisKey);
         }, "Confirmation did not commit and clean its hold while booking was offline.");
+
         await WaitForSaga(fixture, "ConfirmingAllocations");
         await using (var context = new BookingDbContext(fixture.BookingOptions))
         {
@@ -171,6 +180,7 @@ public sealed class ReservationRecoveryTests
 
         var restartedBooking = await fixture.StartBooking();
         restartedBooking.Client.DefaultRequestHeaders.Add("X-Guest-Token", reservation.GuestAccessToken);
+
         await AssertCompleted(fixture, restartedBooking.Client, reservation);
 
         var publisher = fixture.CreatePublisher();
@@ -208,12 +218,14 @@ public sealed class ReservationRecoveryTests
         client.DefaultRequestHeaders.Add("X-Guest-Token", checkout.GuestToken);
         using var offerResponse = await client.PostAsJsonAsync("/api/booking/offers",
             new OfferRequest("PLN", 2, [new(" flight/one ", productId), new(" flight/two ", productId)]));
+
         Assert.Equal(HttpStatusCode.Created, offerResponse.StatusCode);
         var offer = await offerResponse.Content.ReadFromJsonAsync<OfferResponse>();
         Assert.NotNull(offer);
         using var response = await client.PostAsJsonAsync("/api/booking/reservations",
             new ReservationRequest(offer.Id, "recovery", "Guest", "guest@example.test",
                 [new("First", "One", new DateOnly(1990, 1, 1)), new("Second", "Two", new DateOnly(1992, 2, 2))]));
+
         Assert.Equal(HttpStatusCode.Created, response.StatusCode);
         var reservation = await response.Content.ReadFromJsonAsync<ReservationResponse>();
         Assert.NotNull(reservation);
@@ -251,6 +263,7 @@ public sealed class ReservationRecoveryTests
             latest = await client.GetFromJsonAsync<ReservationResponse>($"/api/booking/reservations/{created.Id}");
             return latest?.WorkflowStatus == "Completed";
         }, "Recovered reservation did not complete.");
+
         Assert.NotNull(latest);
         Assert.Equal("Reserved", latest.Status);
         Assert.Null(latest.FailureCode);
@@ -258,6 +271,7 @@ public sealed class ReservationRecoveryTests
         await WaitUntil(async () => !await fixture.Redis.GetDatabase().KeyExistsAsync(fixture.RedisKey),
             "Recovered confirmation did not clean its Redis hold.");
         await using var seating = new SeatingDbContext(fixture.SeatingOptions);
+
         Assert.Equal("Confirmed", (await seating.Operations.SingleAsync()).State.Code);
         Assert.Equal(1, await seating.Operations.CountAsync());
         Assert.Equal(4, await seating.Assignments.CountAsync());

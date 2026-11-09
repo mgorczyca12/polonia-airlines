@@ -74,6 +74,7 @@ public class ReservationTests
     public void Create_ValidItinerary_InitializesReservationAndCopiesFlightIds(string[] flights)
     {
         var reservation = Create(flights);
+
         flights[0] = "99";
 
         Assert.Equal(PnrCode.From("ABC123"), reservation.Code);
@@ -118,6 +119,7 @@ public class ReservationTests
     {
         var reservation = Create("1");
         var passenger = reservation.AddPassenger(" Jan ", " Kowalski ", Adult, [Quote("1")]);
+
         var baggage = reservation.AddBaggage(passenger, "1", " Checked bag ", 20m);
 
         Assert.Equal("Jan", passenger.FirstName);
@@ -141,7 +143,9 @@ public class ReservationTests
             [Quote("2", 300m, cabin: "Business"), Quote("1", 100m)]);
 
         Assert.Equal(new[] { "1", "2" }, passenger.Fares.Select(fare => fare.ReservationFlight.FlightId));
+
         var business = passenger.Fares.Single(fare => fare.ReservationFlight.FlightId == "2");
+
         Assert.Equal("Business", business.CabinClass);
         Assert.Equal("ECO-BASIC", business.ProductCode);
         Assert.Equal(300m, business.Amount);
@@ -255,7 +259,9 @@ public class ReservationTests
     public void Reserve_CreatedReservation_RequiresPassengerAndFreezesBookingDetails()
     {
         var reservation = Create("1");
+
         Assert.Throws<InvalidOperationException>(reservation.Reserve);
+
         var passenger = AddPassenger(reservation);
         reservation.Reserve();
 
@@ -294,15 +300,20 @@ public class ReservationTests
     {
         var reservation = Create("1");
         AddPassenger(reservation);
+
         var payment = reservation.RecordPayment(" payment-1 ", 50m, "pln", BookingDate);
+
         Assert.Equal("payment-1", payment.Reference);
         Assert.Equal("PLN", payment.Currency);
         Assert.Equal(BookingDate, payment.RecordedAt);
+
         Assert.Throws<InvalidOperationException>(() => reservation.RecordPayment("payment-1", 50m, "PLN", BookingDate));
         Assert.Throws<InvalidOperationException>(() => reservation.RecordPayment("payment-2", 50m, "EUR", BookingDate));
         Assert.Throws<InvalidOperationException>(() =>
             reservation.RecordPayment("payment-2", 151m, "PLN", BookingDate));
+
         reservation.RecordPayment("payment-2", 150m, "PLN", BookingDate);
+
         Assert.Equal(200m, reservation.Payments.Sum(item => item.Amount));
         Assert.Throws<NotSupportedException>(() => ((ICollection<Payment>)reservation.Payments).Clear());
     }
@@ -325,15 +336,19 @@ public class ReservationTests
     public void AddPassengerAndAddBaggageAndRecordPayment_InvalidInputs_ThrowsWithoutMutation()
     {
         var reservation = Create("1");
+
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("", "Name", Adult, [Quote("1")]));
         Assert.Throws<ArgumentException>(() => reservation.AddPassenger("Name", "Name", default, [Quote("1")]));
         Assert.Throws<ArgumentException>(() =>
             reservation.AddPassenger("Name", "Name", new DateOnly(2027, 1, 1), [Quote("1")]));
         Assert.Empty(reservation.Passengers);
+
         var passenger = AddPassenger(reservation);
+
         Assert.Throws<ArgumentOutOfRangeException>(() => reservation.AddBaggage(passenger, "1", "Bag", 0));
         Assert.Throws<ArgumentException>(() => reservation.AddBaggage(passenger, "1", "", 10));
         Assert.Empty(passenger.Baggage);
+
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             reservation.RecordPayment("reference", 0m, "PLN", BookingDate));
         Assert.Throws<ArgumentException>(() => reservation.RecordPayment("reference", 10m, "PLN", default));
@@ -369,7 +384,9 @@ public class ReservationTests
         Assert.Throws<ArgumentException>(() => FareQuote.Create("1", "P", "C", 1m, "PLN", Allowance, " ", 1, "Brand"));
         Assert.Throws<ArgumentOutOfRangeException>(() => FareQuote.Create("1", "P", "C", 1m, "PLN", Allowance, "cabin", 0, "Brand"));
         Assert.Throws<ArgumentException>(() => FareQuote.Create("1", "P", "C", 1m, "PLN", Allowance, "cabin", 1, " "));
+
         var quote = FareQuote.Create(" 1 ", " P ", " Premium ", 1m, "PLN", Allowance, " cabin ", 2, " Flex ");
+
         Assert.Equal(" 1 ", quote.FlightId);
         Assert.Equal(" P ", quote.ProductCode);
         Assert.Equal(" Premium ", quote.CabinClass);
@@ -392,12 +409,17 @@ public class ReservationTests
     public void UpdateContactDetails_InvalidThenValidInputs_ValidatesBeforeChangingState()
     {
         var user = User.Create(1, " Jan ", " jan@example.com ");
+
         Assert.Equal(1, user.Id);
         Assert.Equal("Jan", user.DisplayName);
         Assert.Equal("jan@example.com", user.Email);
+
         Assert.Throws<ArgumentException>(() => user.UpdateContactDetails("New name", "invalid"));
+
         Assert.Equal("Jan", user.DisplayName);
+
         user.UpdateContactDetails("Anna", "anna@example.com");
+
         Assert.Equal("Anna", user.DisplayName);
         Assert.Throws<ArgumentOutOfRangeException>(() => User.Create(0, "Name", "name@example.com"));
     }
@@ -424,6 +446,7 @@ public class ReservationTests
     {
         var reservation = Create("3", "1", "2");
         var passenger = AddPassenger(reservation);
+
         var baggage = reservation.AddBaggage(passenger, "1", "Bag", 10m);
         var payment = reservation.RecordPayment("reference", 50m, "PLN", BookingDate);
 

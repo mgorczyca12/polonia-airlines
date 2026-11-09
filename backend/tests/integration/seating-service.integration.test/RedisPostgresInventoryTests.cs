@@ -31,7 +31,9 @@ public sealed class RedisPostgresInventoryTests
         var first = fixture.Command("first");
         await fixture.Run(participant => participant.Hold(first, default));
         await fixture.Cleanup(first.CorrelationId);
+
         Assert.Equal(1, await fixture.RedisHoldCount());
+
         await fixture.Run(participant => participant.Confirm(new(first.CorrelationId), default));
         await fixture.Cleanup(first.CorrelationId);
         await fixture.Cleanup(first.CorrelationId);
@@ -39,9 +41,11 @@ public sealed class RedisPostgresInventoryTests
         Assert.Equal(0, await fixture.RedisHoldCount());
         Assert.Equal(1, await fixture.Allocations());
         Assert.Equal(InventoryOperationState.Confirmed, await fixture.State(first.CorrelationId));
+
         var second = fixture.Command("other") with { Selections = [new("other", "other", "cabin", null)] };
         await fixture.Run(participant => participant.Hold(second, default));
         await fixture.Cleanup(first.CorrelationId);
+
         Assert.Equal(1, await fixture.RedisHoldCount());
         await fixture.Run(participant => participant.Confirm(new(second.CorrelationId), default));
         Assert.Equal(2, await fixture.Allocations());
@@ -52,19 +56,23 @@ public sealed class RedisPostgresInventoryTests
     {
         await using var fixture = await Fixture.Create();
         var commands = Enumerable.Range(0, 12).Select(index => fixture.Command($"P{index}")).ToArray();
+
         await Task.WhenAll(commands.Select(command =>
             fixture.Run(participant => participant.Hold(command, default))));
 
         var winner = await fixture.FindHeld();
+
         Assert.Single(winner);
         var correlationId = winner[0];
         await fixture.Run(participant => participant.Confirm(new(correlationId), default));
         await fixture.Run(participant => participant.Confirm(new(correlationId), default));
+
         Assert.Equal(1, await fixture.Allocations());
 
         await fixture.LoseRedisHolds();
         var another = fixture.Command("after-restart");
         await fixture.Run(participant => participant.Hold(another, default));
+
         Assert.Equal(InventoryOperationState.Rejected, await fixture.State(another.CorrelationId));
         Assert.Equal(1, await fixture.Allocations());
         await fixture.Run(participant => participant.Release(new(correlationId), default));
@@ -83,11 +91,13 @@ public sealed class RedisPostgresInventoryTests
             Selections = [new("second", "other", "cabin", null), new("second", "flight", "cabin", "1A")]
         };
         await fixture.Run(participant => participant.Hold(itinerary, default));
+
         Assert.Equal(InventoryOperationState.Rejected, await fixture.State(itinerary.CorrelationId));
         await fixture.Run(participant => participant.Release(new(itinerary.CorrelationId), default));
 
         var otherOnly = fixture.Command("third") with { Selections = [new("third", "other", "cabin", null)] };
         await fixture.Run(participant => participant.Hold(otherOnly, default));
+
         Assert.Equal(InventoryOperationState.Held, await fixture.State(otherOnly.CorrelationId));
         await fixture.Run(participant => participant.Confirm(new(first.CorrelationId), default));
         Assert.Equal(1, await fixture.Allocations());
@@ -102,18 +112,21 @@ public sealed class RedisPostgresInventoryTests
         await fixture.LoseRedisHolds();
         await fixture.Run(participant => participant.Confirm(new(lost.CorrelationId), default));
         await fixture.Run(participant => participant.Hold(lost, default));
+
         Assert.Equal(InventoryOperationState.Rejected, await fixture.State(lost.CorrelationId));
 
         var expiring = fixture.Command("expiring") with { HoldUntil = DateTimeOffset.UtcNow.AddSeconds(2) };
         await fixture.Run(participant => participant.Hold(expiring, default));
         await Task.Delay(TimeSpan.FromSeconds(3));
         await fixture.Run(participant => participant.Confirm(new(expiring.CorrelationId), default));
+
         Assert.Equal(InventoryOperationState.Rejected, await fixture.State(expiring.CorrelationId));
 
         var compensated = fixture.Command("compensated");
         await fixture.Run(participant => participant.Release(new(compensated.CorrelationId), default));
         await fixture.Run(participant => participant.Hold(compensated, default));
         await fixture.Run(participant => participant.Confirm(new(compensated.CorrelationId), default));
+
         Assert.Equal(InventoryOperationState.Released, await fixture.State(compensated.CorrelationId));
         Assert.Equal(0, await fixture.Allocations());
     }
@@ -124,8 +137,10 @@ public sealed class RedisPostgresInventoryTests
         await using var fixture = await Fixture.Create();
         var command = fixture.Command("passenger");
         await fixture.Run(participant => participant.Hold(command, default), commit: false);
+
         await fixture.Run(participant => participant.Hold(command, default));
         await fixture.Run(participant => participant.Confirm(new(command.CorrelationId), default));
+
         Assert.Equal(1, await fixture.Allocations());
     }
 

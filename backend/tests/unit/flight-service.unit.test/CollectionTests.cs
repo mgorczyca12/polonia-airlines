@@ -34,6 +34,7 @@ public class CollectionTests
     {
         var flight = Flight();
         var segment = FlightSegment.Create(1, Airport(), Airport());
+
         flight.AddSegment(segment);
 
         Assert.Same(flight, segment.Flight);
@@ -41,7 +42,9 @@ public class CollectionTests
         Assert.Same(segment, Assert.Single(flight.FlightSegments));
         Assert.Throws<NotSupportedException>(() => ((ICollection<FlightSegment>)flight.FlightSegments).Clear());
         Assert.Throws<InvalidOperationException>(() => flight.AddSegment(segment));
+
         var other = Flight();
+
         Assert.Throws<InvalidOperationException>(() => other.AddSegment(segment));
         Assert.Empty(other.FlightSegments);
         Assert.Throws<ArgumentNullException>(() => flight.AddSegment(null!));
@@ -52,6 +55,7 @@ public class CollectionTests
     {
         var airport = Airport();
         var gate = AirportGate.Create(airport, "A", "1");
+
         airport.AddGate(gate);
 
         Assert.Same(gate, Assert.Single(airport.Gates));
@@ -78,6 +82,7 @@ public class CollectionTests
     {
         var seatMap = Configuration().SeatMap;
         var row = SeatMapRow.Create(seatMap, SeatMapCabin.Create("Economy", "Y"), SeatMapRowType.Seats);
+
         seatMap.AddRow(row);
 
         Assert.Same(seatMap, row.SeatMap);
@@ -85,7 +90,9 @@ public class CollectionTests
         Assert.Same(row, Assert.Single(seatMap.SeatMapRows));
         Assert.Throws<NotSupportedException>(() => ((ICollection<SeatMapRow>)seatMap.SeatMapRows).Clear());
         Assert.Throws<InvalidOperationException>(() => seatMap.AddRow(row));
+
         var other = Configuration().SeatMap;
+
         Assert.Throws<InvalidOperationException>(() => other.AddRow(row));
         Assert.Empty(other.SeatMapRows);
         Assert.Throws<ArgumentNullException>(() => seatMap.AddRow(null!));
@@ -100,6 +107,7 @@ public class CollectionTests
         var cabin = SeatMapCabin.Create("Economy", "Y");
         var row = SeatMapRow.Create(configuration.SeatMap, cabin, SeatMapRowType.Seats);
         var position = SeatMapPosition.Create("A", 0, true);
+
         row.AddPosition(position);
 
         Assert.Same(row, position.SeatMapRow);
@@ -107,7 +115,9 @@ public class CollectionTests
         Assert.Same(position, Assert.Single(row.SeatMapPositions));
         Assert.Throws<NotSupportedException>(() => ((ICollection<SeatMapPosition>)row.SeatMapPositions).Clear());
         Assert.Throws<InvalidOperationException>(() => row.AddPosition(position));
+
         var other = SeatMapRow.Create(configuration.SeatMap, cabin, SeatMapRowType.Seats);
+
         Assert.Throws<InvalidOperationException>(() => other.AddPosition(position));
         Assert.Empty(other.SeatMapPositions);
         Assert.Throws<ArgumentNullException>(() => row.AddPosition(null!));

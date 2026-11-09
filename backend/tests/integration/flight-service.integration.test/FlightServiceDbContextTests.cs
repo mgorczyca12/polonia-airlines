@@ -66,6 +66,7 @@ public class FlightServiceDbContextTests
             .Include(value => value.Flight).ThenInclude(value => value.FlightSegments)
             .Include(value => value.DepartureAirport).ThenInclude(value => value.Gates)
             .Include(value => value.ArrivalAirport).SingleAsync();
+
         Assert.Equal("PA123", loaded.Flight.FlightNumber);
         Assert.Equal(new TimeOnly(10, 0), loaded.ScheduledDepartureTime);
         Assert.Equal(new TimeOnly(12, 0), loaded.ScheduledArrivalTime);
@@ -82,6 +83,7 @@ public class FlightServiceDbContextTests
 
         loaded.DepartureAirport.AddGate(AirportGate.Create(loaded.DepartureAirport, "A", "2"));
         await context.SaveChangesAsync();
+
         Assert.Equal(2, await context.AirportGates.CountAsync());
     }
 
@@ -118,6 +120,7 @@ public class FlightServiceDbContextTests
             .Include(value => value.AircraftConfiguration).ThenInclude(value => value.SeatMap)
                 .ThenInclude(value => value.SeatMapRows)
                 .ThenInclude(value => value.Cabin).SingleAsync();
+
         Assert.Same(AircraftOperationalState.Decommissioned, loaded.OperationalState);
         Assert.Throws<InvalidOperationException>(loaded.Activate);
         Assert.Throws<InvalidOperationException>(loaded.Deactivate);
@@ -207,11 +210,13 @@ public class FlightServiceDbContextTests
 
         await Assert.ThrowsAsync<SqliteException>(() =>
             context.Database.ExecuteSqlRawAsync("DELETE FROM AircraftConfigurations"));
+
         Assert.Equal(1, await context.SeatMaps.CountAsync());
         Assert.Equal(1, await context.SeatMapRows.CountAsync());
         Assert.Equal(1, await context.SeatMapPositions.CountAsync());
 
         await context.Database.ExecuteSqlRawAsync("DELETE FROM Aircrafts");
+
         Assert.Equal(1, await context.SeatMaps.CountAsync());
         await context.Database.ExecuteSqlRawAsync("DELETE FROM AircraftConfigurations");
 
@@ -240,6 +245,7 @@ public class FlightServiceDbContextTests
 
         await Assert.ThrowsAsync<SqliteException>(() => context.Database.ExecuteSqlRawAsync(
             "DELETE FROM Airports"));
+
         await context.Database.ExecuteSqlRawAsync("DELETE FROM Flights");
         Assert.Empty(await context.FlightSegments.ToListAsync());
         Assert.Single(await context.Airports.ToListAsync());

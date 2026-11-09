@@ -29,17 +29,20 @@ public sealed class InventoryProtocolTests
         var first = fixture.Command("first");
         await fixture.Run(participant => participant.Hold(first, default));
         await fixture.Run(participant => participant.Confirm(new(first.CorrelationId), default));
+
         Assert.Single(fixture.Holds.Active);
         var outcomeCount = fixture.Published.Count;
 
         await fixture.Cleanup(first.CorrelationId);
         await fixture.Cleanup(first.CorrelationId);
+
         Assert.Empty(fixture.Holds.Active);
         Assert.Equal(outcomeCount, fixture.Published.Count);
         Assert.Equal(1, await fixture.Allocations());
 
         var second = fixture.Command("second");
         await fixture.Run(participant => participant.Hold(second, default));
+
         Assert.Equal(InventoryOperationState.Held, await fixture.State(second.CorrelationId));
     }
 
@@ -53,12 +56,14 @@ public sealed class InventoryProtocolTests
         fixture.Holds.Unavailable = true;
 
         await Assert.ThrowsAsync<InjectedFailure>(() => fixture.Cleanup(hold.CorrelationId));
+
         Assert.Equal(InventoryOperationState.Confirmed, await fixture.State(hold.CorrelationId));
         Assert.Equal(1, await fixture.Allocations());
         Assert.Single(fixture.Holds.Active);
 
         fixture.Holds.Unavailable = false;
         await fixture.Cleanup(hold.CorrelationId);
+
         Assert.Empty(fixture.Holds.Active);
         Assert.Equal(1, await fixture.Allocations());
     }
@@ -71,17 +76,20 @@ public sealed class InventoryProtocolTests
         await fixture.Run(participant => participant.Hold(held, default));
         await fixture.Cleanup(held.CorrelationId);
         await fixture.Cleanup(Guid.NewGuid());
+
         Assert.True(fixture.Holds.Active.ContainsKey(held.CorrelationId));
 
         var confirmed = fixture.Command("confirmed");
         await fixture.Run(participant => participant.Hold(confirmed, default));
         await fixture.Run(participant => participant.Confirm(new(confirmed.CorrelationId), default));
         await fixture.Cleanup(confirmed.CorrelationId);
+
         Assert.True(fixture.Holds.Active.ContainsKey(held.CorrelationId));
         Assert.False(fixture.Holds.Active.ContainsKey(confirmed.CorrelationId));
 
         await fixture.Release(confirmed.CorrelationId);
         await fixture.Cleanup(confirmed.CorrelationId);
+
         Assert.True(fixture.Holds.Active.ContainsKey(held.CorrelationId));
     }
 
@@ -92,16 +100,19 @@ public sealed class InventoryProtocolTests
         var hold = fixture.Command("passenger", "1A");
         await fixture.Run(participant => participant.Hold(hold, default));
         await fixture.Run(participant => participant.Hold(hold, default));
+
         Assert.Single(fixture.Holds.Active);
 
         await fixture.Run(participant => participant.Confirm(new(hold.CorrelationId), default));
         await fixture.Run(participant => participant.Confirm(new(hold.CorrelationId), default));
+
         Assert.Equal(1, await fixture.Allocations());
         Assert.Single(fixture.Holds.Active);
         Assert.Equal(2, fixture.Published.OfType<ReservationInventoryConfirmed>().Count());
 
         await fixture.Release(hold.CorrelationId);
         await fixture.Release(hold.CorrelationId);
+
         Assert.Equal(0, await fixture.Allocations());
         Assert.Empty(fixture.Holds.Active);
         Assert.Equal(InventoryOperationState.Released, await fixture.State(hold.CorrelationId));
@@ -178,6 +189,7 @@ public sealed class InventoryProtocolTests
         var first = fixture.Command("first");
         await fixture.Run(participant => participant.Hold(first, default));
         fixture.Clock.Now = fixture.Clock.Now.AddMinutes(11);
+
         var second = fixture.Command("second");
         await fixture.Run(participant => participant.Hold(second, default));
         await fixture.Run(participant => participant.Confirm(new(first.CorrelationId), default));
@@ -214,6 +226,7 @@ public sealed class InventoryProtocolTests
         await fixture.Run(participant => participant.Confirm(new(unassigned.CorrelationId), default));
 
         Assert.Equal(2, await fixture.Allocations());
+
         var unknownSeat = fixture.Command("unknown-seat", "1B");
         await fixture.Run(participant => participant.Hold(unknownSeat, default));
         Assert.Contains(fixture.Published.OfType<ReservationInventoryRejected>(),
@@ -227,10 +240,12 @@ public sealed class InventoryProtocolTests
         var hold = fixture.Command("passenger");
         await Assert.ThrowsAsync<InjectedFailure>(() => fixture.Run(
             participant => participant.Hold(hold, default), failBeforeCommit: true));
+
         Assert.Single(fixture.Holds.Active);
 
         await fixture.Run(participant => participant.Hold(hold, default));
         await fixture.Run(participant => participant.Confirm(new(hold.CorrelationId), default));
+
         Assert.Single(fixture.Holds.Active);
         Assert.Equal(1, await fixture.Allocations());
     }
@@ -243,7 +258,9 @@ public sealed class InventoryProtocolTests
         fixture.Holds.Unavailable = true;
         await Assert.ThrowsAsync<InjectedFailure>(() =>
             fixture.Run(participant => participant.Hold(hold, default)));
+
         Assert.Empty(fixture.Published);
+
         fixture.Holds.Unavailable = false;
         await fixture.Run(participant => participant.Hold(hold, default));
         await fixture.Run(participant => participant.Confirm(new(hold.CorrelationId), default));
@@ -251,13 +268,17 @@ public sealed class InventoryProtocolTests
         fixture.Holds.Unavailable = true;
         await Assert.ThrowsAsync<InjectedFailure>(() =>
             fixture.Release(hold.CorrelationId));
+
         Assert.Equal(1, await fixture.Allocations());
         Assert.Equal(InventoryOperationState.Released, await fixture.State(hold.CorrelationId));
         Assert.DoesNotContain(fixture.Published, message => message is ReservationInventoryReleased);
         await fixture.Run(participant => participant.Hold(hold, default));
+
         Assert.IsType<ReservationInventoryRejected>(fixture.Published.Last());
+
         fixture.Holds.Unavailable = false;
         await fixture.Release(hold.CorrelationId);
+
         Assert.Equal(0, await fixture.Allocations());
     }
 
@@ -272,11 +293,14 @@ public sealed class InventoryProtocolTests
             Selections = [new("second", "flight", "cabin", null), new("second", "other", "cabin", null)]
         };
         await fixture.Run(participant => participant.Hold(second, default));
+
         Assert.Single(fixture.Holds.Active);
 
         await fixture.Release(second.CorrelationId);
+
         Assert.True(fixture.Holds.Active.ContainsKey(first.CorrelationId));
         await fixture.Run(participant => participant.Confirm(new(first.CorrelationId), default));
+
         Assert.Equal(1, await fixture.Allocations());
     }
 
@@ -287,6 +311,7 @@ public sealed class InventoryProtocolTests
         var time = DateTimeOffset.UtcNow.AddTicks(7);
         var first = InventoryKeys.Hold(id, time, [new("P", "F", "C", null)]);
         var second = InventoryKeys.Hold(id, time.ToOffset(TimeSpan.FromHours(-5)), [new("P", "F", "C", null)]);
+
         Assert.Equal(JsonSerializer.Serialize(first), JsonSerializer.Serialize(second));
         Assert.NotEqual(InventoryKeys.Bucket(" F", "C"), InventoryKeys.Bucket("F", "C"));
         Assert.NotEqual(InventoryKeys.Bucket("f", "C"), InventoryKeys.Bucket("F", "C"));
@@ -299,6 +324,7 @@ public sealed class InventoryProtocolTests
         var now = DateTimeOffset.UtcNow;
         var command = new HoldInventoryCommand(
             Guid.NewGuid(), "reservation", now.AddMinutes(10), [new("P", "F", "C", null)]);
+
         Assert.True(HoldInventoryRequestRule.IsSatisfiedBy(command, now));
         Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with { HoldUntil = now.AddMinutes(11) }, now));
         Assert.False(HoldInventoryRequestRule.IsSatisfiedBy(command with { HoldUntil = now }, now));
@@ -335,6 +361,7 @@ public sealed class InventoryProtocolTests
 
         var late = fixture.Command("late") with { HoldUntil = fixture.Clock.Now.AddSeconds(-1) };
         await fixture.Run(participant => participant.Hold(late, default));
+
         Assert.Equal(InventoryOperationState.Rejected, await fixture.State(late.CorrelationId));
     }
 
@@ -346,6 +373,7 @@ public sealed class InventoryProtocolTests
         await fixture.Run(participant => participant.Hold(hold, default));
 
         var operation = await fixture.Operation(hold.CorrelationId);
+
         Assert.Equal(hold.ReservationId, operation.ReservationId);
         Assert.Equal(new HeldSelection("passenger", "flight", "cabin", "1A"), Assert.Single(operation.Selections.Items));
         Assert.Equal(hold.HoldUntil.ToUnixTimeMilliseconds(), operation.ExpiresAt.ToUnixTimeMilliseconds());

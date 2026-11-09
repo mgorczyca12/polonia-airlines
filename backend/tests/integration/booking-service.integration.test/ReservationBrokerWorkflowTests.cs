@@ -41,6 +41,7 @@ public sealed class ReservationBrokerWorkflowTests
             new WebApplicationFactoryClientOptions { BaseAddress = new Uri("https://localhost") });
 
         using var checkoutResponse = await client.PostAsync("/api/booking/checkouts", null);
+
         Assert.Equal(HttpStatusCode.OK, checkoutResponse.StatusCode);
         var checkout = await checkoutResponse.Content.ReadFromJsonAsync<CheckoutResponse>();
         Assert.NotNull(checkout);
@@ -49,6 +50,7 @@ public sealed class ReservationBrokerWorkflowTests
         using var offerResponse = await client.PostAsJsonAsync("/api/booking/offers",
             new OfferRequest("PLN", 2,
                 [new(" flight/one ", fixture.ProductId), new(" flight/two ", fixture.ProductId)]));
+
         Assert.Equal(HttpStatusCode.Created, offerResponse.StatusCode);
         var offer = await offerResponse.Content.ReadFromJsonAsync<OfferResponse>();
         Assert.NotNull(offer);
@@ -56,6 +58,7 @@ public sealed class ReservationBrokerWorkflowTests
         var request = new ReservationRequest(offer.Id, "broker-workflow", "Guest", "guest@example.test",
             [new("First", "One", new DateOnly(1990, 1, 1)), new("Second", "Two", new DateOnly(1992, 2, 2))]);
         using var createdResponse = await client.PostAsJsonAsync("/api/booking/reservations", request);
+
         Assert.Equal(HttpStatusCode.Created, createdResponse.StatusCode);
         var created = await createdResponse.Content.ReadFromJsonAsync<ReservationResponse>();
         Assert.NotNull(created);
@@ -96,6 +99,7 @@ public sealed class ReservationBrokerWorkflowTests
 
         await using var bookingDatabase = new BookingDbContext(fixture.BookingOptions);
         await using var seatingDatabase = new SeatingDbContext(fixture.SeatingOptions);
+
         var saga = await bookingDatabase.Set<ReservationSagaState>().SingleAsync();
         var operation = await seatingDatabase.Operations.SingleAsync();
         Assert.Equal(created.WorkflowId, saga.CorrelationId);
@@ -106,6 +110,7 @@ public sealed class ReservationBrokerWorkflowTests
         Assert.True((await bookingDatabase.CheckoutOffers.SingleAsync()).Consumed);
 
         var assignments = await seatingDatabase.Assignments.AsNoTracking().ToArrayAsync();
+
         Assert.Equal(capacityAvailable ? 4 : 0, assignments.Length);
         Assert.All(assignments, assignment =>
         {
@@ -131,6 +136,7 @@ public sealed class ReservationBrokerWorkflowTests
             inventory => Assert.Equal(capacityAvailable ? 2 : 0, inventory.ReservedSeats));
 
         using var replay = await client.PostAsJsonAsync("/api/booking/reservations", request);
+
         Assert.Equal(HttpStatusCode.Created, replay.StatusCode);
         var replayed = await replay.Content.ReadFromJsonAsync<ReservationResponse>();
         Assert.NotNull(replayed);
