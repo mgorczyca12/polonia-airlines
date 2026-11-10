@@ -13,7 +13,7 @@ Desktop and native mobile applications are not present.
 | --- | --- |
 | `/` | Hero, flight-search panel, service highlights and destination cards; prefills from search parameters |
 | `/flightlist` | Booking progress, search recap, date fare strip, sortable flight cards with cabin/fare selection and a journey summary |
-| `/booking` | Selected flight/fare summary and passenger contact form (not yet redesigned) |
+| `/booking` | Passenger details, demo payment preview, and local confirmation for the selected flight and fares |
 | `/about` | Starter informational page |
 
 ## Visual design
@@ -27,7 +27,8 @@ surfaces, Lora display headings and Inter body text. Fonts are self-hosted throu
 values; the Mantine theme is in [theme.ts](../../frontend/polonia-web/src/app/theme.ts).
 Icons use `lucide-react`. Hero and destination photography are neutral placeholders
 until licensed Polonia images are supplied. Layouts are responsive down to mobile
-widths. Passenger details, payment and confirmation designs are not implemented yet.
+widths. Passenger details, demo payment, and confirmation screens are implemented
+as a UI prototype; they are not connected to the booking service.
 
 ## Data and behavior
 
@@ -48,16 +49,22 @@ Results filter by the selected departure UTC calendar date (or the earliest
 available date when none is given). The date strip shows the lowest fare per day
 for ±2 days; empty dates offer the nearest available date. Schedule times are the
 sample data's UTC values. Fares are shown per adult in USD; the summary multiplies
-the chosen fare by adults and children, and infant pricing is deferred to booking.
+the chosen fare by adults and children. Infant pricing is not implemented in this
+UI prototype.
 No taxes, return flights or availability are invented: round trips show that return
 flights are not in the current schedule. Continue passes the flight number and fare
 ID to `/booking`.
 
 Booking resolves the selected flight number and numeric fare ID from local data.
-Missing selections show a "Choose a flight first" prompt.
-The contact form validates first name, last name and email. Confirmation only
-sets React component state: it does not persist a reservation, contact the booking
-service, allocate a seat or process payment.
+Missing or mismatched selections show a "Choose a flight first" prompt. The
+passenger step collects required passenger and contact details and optional
+special requests in component state. The payment step shows disabled example card
+fields or wallet previews and requires the user to accept the demo terms; it does
+not collect or transmit payment information. Confirmation displays the selected
+itinerary, passenger and fare details, and a deterministic demo reference with
+copy/download actions. Booking data remains in UI state: no reservation is
+persisted, the booking service is not contacted, no seat is allocated, and no
+payment is processed.
 
 ## Search-to-confirmation sequence
 
@@ -68,7 +75,10 @@ sequenceDiagram
     participant Router as TanStack Router
     participant Data as Bundled JSON repositories
     participant Results as FlightResults
-    participant Booking as Booking route / passenger form
+    participant Booking as Booking route
+    participant Passengers as Passenger details
+    participant Payment as Demo payment
+    participant Confirmation as Local confirmation
     Search->>Data: Read airport options
     Customer->>Search: Enter search values and submit
     Search->>Router: Navigate to /flightlist with validated search parameters
@@ -79,13 +89,17 @@ sequenceDiagram
     Results->>Router: Navigate to /booking with flight and fare
     Router->>Booking: Resolve selected flight and fare
     Booking->>Data: Read sample flight by number
-    Customer->>Booking: Submit valid passenger contact details
-    Booking->>Booking: Set local confirmed state
-    Booking-->>Customer: Session-only confirmation message
+    Customer->>Passengers: Enter passenger and contact details
+    Passengers->>Booking: Keep details in component state
+    Customer->>Payment: Review demo payment options and accept terms
+    Payment->>Booking: Advance without collecting payment
+    Booking->>Confirmation: Render itinerary and demo reference
+    Confirmation-->>Customer: Local confirmation; no reservation or payment
 ```
 
 This is deliberately separate from the backend query and domain sequences.
-Connecting it to real availability, booking and payment requires new implementation.
+Connecting it to live availability, booking and payment requires frontend API
+integration and secure payment-provider implementation.
 
 ## Development
 

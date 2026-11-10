@@ -251,8 +251,10 @@ Shared reservation contracts connect booking and seating through MassTransit.
 The [booking](services/booking-service.md) and [seating](services/seating-service.md)
 pages describe the workflow and ownership boundaries. Redis/SQL handoff is an
 explicit recoverable protocol, not a distributed ACID transaction. Payment is
-deferred. Tests for the new implementation were deferred by the user; compiled
-test source must not be interpreted as verified live Redis/PostgreSQL/RabbitMQ delivery.
+deferred. Booking's external workflow and recovery integration tests passed
+locally on 2026-11-08; hosted verification and broader outage scenarios remain
+unverified. See [development](development.md#verification) for the exact coverage
+and limitations.
 
 The flight service has EF configurations and relational integration tests, but
 normal startup now selects PostgreSQL and requires external database and RabbitMQ
