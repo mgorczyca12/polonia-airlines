@@ -27,7 +27,7 @@
   },
   "workflows": {
     "dependency-fix-tier1": "fast",
-    "dependency-fix-tier2": "long-task",
+    "dependency-fix-tier2": "medium-sol",
     "docs-updater": "small",
     "pr-review": "medium-sonnet",
     "test-writer": "medium-sol"

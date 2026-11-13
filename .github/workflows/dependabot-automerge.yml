@@ -1,18 +1,38 @@
 name: Dependabot auto-merge
 
-on: pull_request_target
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, labeled]
 
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
+  manual-review:
+    if: >-
+      github.event.action == 'labeled' &&
+      github.event.label.name == 'needs-human-decision' &&
+      github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - run: gh pr merge --disable-auto "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
+
   automerge:
     # Opt-in: set repo variable DEPENDABOT_AUTOMERGE=true only after a ruleset requires CI, or auto-merge merges at once.
     # Actions updates are excluded on purpose: they change what CI executes.
     if: >-
       vars.DEPENDABOT_AUTOMERGE == 'true' &&
+      github.event.action != 'labeled' &&
       github.event.pull_request.user.login == 'dependabot[bot]' &&
+      github.event.pull_request.base.ref == 'main' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      !contains(github.event.pull_request.labels.*.name, 'needs-human-decision') &&
       (startsWith(github.event.pull_request.head.ref, 'dependabot/nuget/') ||
        startsWith(github.event.pull_request.head.ref, 'dependabot/npm_and_yarn/'))
     runs-on: ubuntu-latest
@@ -25,4 +45,15 @@ jobs:
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ github.token }}
+      - name: Route major upgrades to tier 2
+        if: steps.metadata.outputs.update-type == 'version-update:semver-major'
+        run: |
+          gh pr edit "$PR_URL" --add-label dependencies --add-label dependency-tier2
+          gh workflow run dependency-fix-tier2.lock.yml \
+            -f pr_number="$PR_NUMBER" \
+            -f summary="Major version upgrade; assess compatibility and repair only bounded changes."
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
           GH_TOKEN: ${{ github.token }}

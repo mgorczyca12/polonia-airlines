@@ -1,0 +1,76 @@
+name: Tier 2 dependency auto-merge
+
+on:
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: Dependabot PR reviewed by tier 2
+        required: true
+        type: string
+      reviewed_head_sha:
+        description: Original PR head checked out by tier 2
+        required: true
+        type: string
+      reviewed_tree_sha:
+        description: Exact source tree validated by tier 2 before signed output
+        required: true
+        type: string
+      review_run_id:
+        description: Tier 2 workflow run that requested this merge
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  checks: read
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: dependency-automerge-${{ inputs.pr_number }}
+  cancel-in-progress: false
+
+jobs:
+  merge:
+    if: vars.DEPENDABOT_AUTOMERGE == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      # Only trusted main is checked out; never execute the dependency PR's code with this token.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          persist-credentials: false
+      - name: Validate review provenance
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const policy = require('./.github/scripts/dependency-merge-policy.cjs');
+            await policy.validateReview({ github, context });
+      - name: Wait for tier 2 outputs to finish successfully
+        run: gh run watch "$REVIEW_RUN_ID" --exit-status --interval 10
+        env:
+          REVIEW_RUN_ID: ${{ inputs.review_run_id }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+      - name: Wait for PR checks
+        run: gh pr checks "$PR_NUMBER" --watch --interval 10
+        env:
+          PR_NUMBER: ${{ inputs.pr_number }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+      - name: Verify reviewed head and mandatory CI
+        id: policy
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const policy = require('./.github/scripts/dependency-merge-policy.cjs');
+            const sha = await policy.validateMerge({ github, context });
+            core.setOutput('merge_sha', sha);
+      - name: Enable guarded squash auto-merge
+        run: gh pr merge "$PR_NUMBER" --auto --squash --match-head-commit "$REVIEWED_SHA"
+        env:
+          PR_NUMBER: ${{ inputs.pr_number }}
+          REVIEWED_SHA: ${{ steps.policy.outputs.merge_sha }}
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}

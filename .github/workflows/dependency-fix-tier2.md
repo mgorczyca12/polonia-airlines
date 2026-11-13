@@ -1,6 +1,6 @@
 ---
 name: Dependency fixer, tier 2
-description: Tier 2 fixer for Dependabot PRs escalated by tier 1 (preview-only). Escalates to a human.
+description: Reviews and repairs major Dependabot upgrades and tier 1 escalations; requests guarded auto-merge or human review.
 on:
   workflow_dispatch:
     inputs:
@@ -9,7 +9,7 @@ on:
         required: true
         type: string
       summary:
-        description: What tier 1 tried
+        description: Routing reason or what tier 1 tried
         required: false
         type: string
 permissions:
@@ -18,13 +18,13 @@ permissions:
   checks: read
 engine:
   id: copilot
-  model: gpt-6-astra
+  model: gpt-6.1-sol
 sandbox:
   agent:
     version: v0.28.37
 timeout-minutes: 45
 concurrency:
-  job-discriminator: ${{ github.run_id }}
+  job-discriminator: ${{ github.event.inputs.pr_number }}
 max-turns: 60
 max-ai-credits: 300
 max-daily-ai-credits: 600
@@ -49,7 +49,6 @@ tools:
     min-integrity: approved
   bash: ["dotnet:*", "pnpm:*", "git:*", "cat", "ls", "grep", "find", "head", "tail"]
 safe-outputs:
-  staged: true
   report-failure-as-issue: false
   push-to-pull-request-branch:
     target: "*"
@@ -68,6 +67,9 @@ safe-outputs:
     allowed: [needs-human-decision]
     max: 1
   add-comment:
+    max: 1
+  dispatch-workflow:
+    workflows: [dependency-automerge]
     max: 1
   create-issue:
     title-prefix: "[decision] "

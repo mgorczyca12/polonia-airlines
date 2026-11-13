@@ -1,6 +1,6 @@
 ---
 name: Dependency fixer, tier 1
-description: Tier 1 fixer for failing Dependabot PRs (preview-only). Escalates to tier 2, then to a human.
+description: Tier 1 fixer for failing Dependabot PRs. Routes major upgrades and larger repairs to tier 2.
 on:
   schedule: every 4h
   workflow_dispatch:
@@ -40,7 +40,6 @@ tools:
     min-integrity: approved
   bash: ["dotnet:*", "pnpm:*", "git:*", "cat", "ls", "grep", "find", "head", "tail"]
 safe-outputs:
-  staged: true
   report-failure-as-issue: false
   push-to-pull-request-branch:
     target: "*"
