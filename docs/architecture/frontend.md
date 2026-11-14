@@ -11,10 +11,9 @@ Desktop and native mobile applications are not present.
 | Route | Current feature |
 | --- | --- |
 | `/` | One-way flight search, airport swap, traveller counts and editorial destination inspiration |
-| `/flightlist` | Real paginated flight search, current USD fares and per-passenger fare selection |
+| `/flightlist` | Real paginated flight search (page in the URL), current USD fares, cabin/fare choice with baggage terms and per-passenger fare selection |
 | `/booking?offer=...` | Guest offer, passenger details, review, reservation submission, workflow polling and stored PNR summary |
 | `/api/web/*` | Server-only customer API layer; explicitly allowlisted reads and guest checkout operations |
-| `/about` | Starter informational page |
 
 ## Scope and data
 
@@ -38,13 +37,16 @@ Empty flights/prices and backend failures are explicit, with no sample-data fall
 
 Flight DTOs do not expose aircraft descriptions or timed connection details, and
 fare products do not expose the prototype's lounge, meal, change/refund claims.
-The integrated screens omit these claims and adjacent-day price strips rather
-than inventing data. Cabin/brand labels, baggage limits, currency and amounts come
-from actual product/offer responses. A priced fare is not guaranteed availability.
+The integrated screens omit these claims rather than inventing data: the results
+timeline shows only UTC times, airports, duration and flight number, and the date
+strip navigates to nearby dates without showing their prices. Cabin/brand labels,
+baggage limits, currency and amounts come from actual product/offer responses.
+A priced fare is not guaranteed availability.
 
 ## Guest session and reservation lifecycle
 
-[The web API layer](../../frontend/polonia-web/src/shared/api/web-api.server.ts)
+[The web API layer](../../frontend/polonia-web/src/server/web-api/handler.server.ts)
+dispatches an explicit [route allowlist](../../frontend/polonia-web/src/server/web-api/routes.server.ts) and
 uses `iron-session` to encrypt the backend guest token in a one-day HttpOnly,
 SameSite=Strict cookie. HTTPS origins use Secure cookies; HTTP is accepted only for
 localhost/127.0.0.1 development. All mutations require the configured exact Origin
@@ -111,6 +113,28 @@ sequenceDiagram
     Server->>Booking: Read persisted workflow and summary
     Booking-->>Web: Completed/Reserved or explicit failure through Server
 ```
+
+## Code structure
+
+Agent and contributor rules are in the
+[frontend instructions](../../.github/instructions/frontend.instructions.md).
+
+| Folder | Responsibility |
+| --- | --- |
+| `src/routes` | Thin file routes: search validation and one feature page each |
+| `src/app` | Shell, layouts, theme and the router-scoped TanStack Query client |
+| `src/features` | `flight-search`, `flight-results`, `booking`, `home`; each exposes `index.ts`, with `model/` hooks and `ui/` components plus colocated SCSS modules |
+| `src/entities` | Airport, flight, fare, offer and reservation view models, mappers, rules and shared `queryOptions` |
+| `src/shared` | Typed `/api/web` client, contracts and guards; formatting and identifier helpers; UI primitives; test helpers |
+| `src/server/web-api` | Server-only route allowlist, guest session, upstream client and request validation |
+
+ESLint enforces downward imports (routes → app/features → entities → shared),
+feature public APIs and `import/no-cycle`. Server state uses TanStack Query in the
+browser. Reservation submission never retries automatically and recovers through
+its idempotent request identity. Reservation status polls with bounded backoff until
+a terminal workflow state; `deriveReservationView` maps stored status to the shown
+state. First loads show section skeletons after a short delay, result paging keeps
+the previous page visible while updating, and submissions use button loading states.
 
 ## Development and verification
 

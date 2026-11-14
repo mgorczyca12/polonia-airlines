@@ -15,7 +15,9 @@ export function AppHeader() {
   const computedColorScheme = useComputedColorScheme('light', {
     getInitialValueInEffect: true,
   })
-  const pathname = useRouterState({ select: (state) => state.location.pathname })
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  })
   const isDark = computedColorScheme === 'dark'
   const isBookingFlow = BOOKING_FLOW_PATHS.includes(pathname)
   const themeLabel = isDark ? 'Switch to light theme' : 'Switch to dark theme'
@@ -23,7 +25,11 @@ export function AppHeader() {
   return (
     <header className={styles.header}>
       <div className={styles.inner}>
-        <Link className={styles.brand} to="/" aria-label="Polonia Airlines home">
+        <Link
+          className={styles.brand}
+          to="/"
+          aria-label="Polonia Airlines home"
+        >
           <span className={styles.emblem} aria-hidden="true">
             <Plane size={24} strokeWidth={1.75} />
           </span>
@@ -47,7 +53,9 @@ export function AppHeader() {
           <span className={styles.locale}>
             <Globe2 size={17} strokeWidth={1.75} aria-hidden="true" />
             <span aria-hidden="true">EN · USD</span>
-            <VisuallyHidden>Language: English. Prices in US dollars.</VisuallyHidden>
+            <VisuallyHidden>
+              Language: English. Prices in US dollars.
+            </VisuallyHidden>
           </span>
           <ActionIcon
             variant="subtle"

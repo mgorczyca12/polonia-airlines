@@ -1,0 +1,262 @@
+import { useNavigate } from '@tanstack/react-router'
+import {
+  ActionIcon,
+  Button,
+  SegmentedControl,
+  Select,
+  Tabs,
+} from '@mantine/core'
+import { DatePickerInput } from '@mantine/dates'
+import { useForm } from '@mantine/form'
+import {
+  ArrowRight,
+  ArrowRightLeft,
+  BriefcaseBusiness,
+  CalendarDays,
+  Clock3,
+  MapPin,
+  PlaneTakeoff,
+  Ticket,
+} from 'lucide-react'
+import { getAirportSelectOptions } from '#/entities/airport'
+import { FormProvider } from '../model/form-context'
+import type { FlightSearchFormValues } from '../model/form-context'
+import { DEFAULT_CABIN, resolveTravellers } from '../model/search-params'
+import type { FlightSearchParams } from '../model/search-params'
+import styles from './FlightSearch.module.scss'
+import { PassengerDropdown } from './PassengerDropdown'
+
+const airportOptions = getAirportSelectOptions()
+
+const fieldClassNames = {
+  label: styles.fieldLabel,
+  input: styles.fieldInput,
+  section: styles.fieldSection,
+}
+
+const UNAVAILABLE_SERVICES = [
+  { value: 'manage', label: 'Manage booking', icon: BriefcaseBusiness },
+  { value: 'check-in', label: 'Check in', icon: Ticket },
+  { value: 'status', label: 'Flight status', icon: Clock3 },
+]
+
+interface FlightSearchProps {
+  initialSearch?: FlightSearchParams
+}
+
+export function FlightSearch({ initialSearch = {} }: FlightSearchProps) {
+  const navigate = useNavigate()
+  const form = useForm<FlightSearchFormValues>({
+    mode: 'controlled',
+    initialValues: {
+      departureAirportCode: initialSearch.from ?? null,
+      arrivalAirportCode: initialSearch.to ?? null,
+      departureDate: initialSearch.departure ?? null,
+      returnDate: null,
+      tripType: 'oneWay',
+      passengers: { ...resolveTravellers(initialSearch), infant: 0 },
+      cabin: initialSearch.cabin ?? DEFAULT_CABIN,
+    },
+    validate: {
+      departureAirportCode: (value) =>
+        value ? null : 'Choose a departure airport',
+      arrivalAirportCode: (value, values) =>
+        !value
+          ? 'Choose a destination'
+          : value === values.departureAirportCode
+            ? 'Choose a destination different from your departure airport'
+            : null,
+      departureDate: (value) => (value ? null : 'Choose a departure date'),
+    },
+  })
+  const { tripType, departureDate, returnDate } = form.values
+
+  const handleSubmit = (values: FlightSearchFormValues) => {
+    void navigate({
+      to: '/flightlist',
+      search: {
+        from: values.departureAirportCode ?? undefined,
+        to: values.arrivalAirportCode ?? undefined,
+        departure: values.departureDate ?? undefined,
+        return:
+          values.tripType === 'roundTrip'
+            ? (values.returnDate ?? undefined)
+            : undefined,
+        tripType: values.tripType,
+        adults: values.passengers.adult,
+        children: values.passengers.child,
+        infants: values.passengers.infant,
+        cabin: values.cabin,
+      },
+    })
+  }
+
+  const handleTripTypeChange = (value: string) => {
+    form.setFieldValue('tripType', value === 'oneWay' ? 'oneWay' : 'roundTrip')
+
+    if (value === 'oneWay') {
+      form.setFieldValue('returnDate', null)
+    }
+  }
+
+  const swapAirports = () => {
+    form.setValues({
+      departureAirportCode: form.values.arrivalAirportCode,
+      arrivalAirportCode: form.values.departureAirportCode,
+    })
+  }
+
+  return (
+    <FormProvider form={form}>
+      <form
+        className={styles.panel}
+        onSubmit={form.onSubmit(handleSubmit)}
+        aria-label="Search flights"
+      >
+        <Tabs
+          value="book"
+          classNames={{
+            root: styles.tabs,
+            list: styles.tabList,
+            tab: styles.tab,
+            tabSection: styles.tabSection,
+          }}
+        >
+          <Tabs.List>
+            <Tabs.Tab value="book" leftSection={<PlaneTakeoff size={17} />}>
+              Book a flight
+            </Tabs.Tab>
+            {UNAVAILABLE_SERVICES.map(({ value, label, icon: Icon }) => (
+              <Tabs.Tab
+                key={value}
+                value={value}
+                leftSection={<Icon size={17} />}
+                disabled
+                title={`${label} is coming soon`}
+              >
+                {label}
+              </Tabs.Tab>
+            ))}
+          </Tabs.List>
+        </Tabs>
+
+        <SegmentedControl
+          value={tripType}
+          onChange={handleTripTypeChange}
+          aria-label="Trip type"
+          data={[
+            {
+              value: 'roundTrip',
+              label: 'Return (not available yet)',
+              disabled: true,
+            },
+            { value: 'oneWay', label: 'One way' },
+            {
+              value: 'multiCity',
+              label: (
+                <span title="Multi-city journeys are coming soon">
+                  Multi-city
+                </span>
+              ),
+              disabled: true,
+            },
+          ]}
+          withItemsBorders
+          classNames={{
+            root: styles.tripTypeControl,
+            control: styles.tripTypeControlItem,
+            label: styles.tripTypeLabel,
+            indicator: styles.tripTypeIndicator,
+          }}
+        />
+
+        <div className={styles.fields}>
+          <Select
+            label="From"
+            placeholder="Departure airport"
+            data={airportOptions}
+            searchable
+            nothingFoundMessage="No airports found"
+            rightSection={<MapPin size={17} aria-hidden="true" />}
+            rightSectionPointerEvents="none"
+            classNames={{ ...fieldClassNames, root: styles.fromField }}
+            {...form.getInputProps('departureAirportCode')}
+          />
+
+          <ActionIcon
+            className={styles.swapButton}
+            variant="subtle"
+            size={30}
+            aria-label="Swap departure and destination airports"
+            title="Swap airports"
+            onClick={swapAirports}
+          >
+            <ArrowRightLeft size={19} />
+          </ActionIcon>
+
+          <Select
+            label="To"
+            placeholder="Destination"
+            data={airportOptions}
+            searchable
+            nothingFoundMessage="No airports found"
+            rightSection={<MapPin size={17} aria-hidden="true" />}
+            rightSectionPointerEvents="none"
+            classNames={{ ...fieldClassNames, root: styles.toField }}
+            {...form.getInputProps('arrivalAirportCode')}
+          />
+
+          {tripType === 'roundTrip' ? (
+            <DatePickerInput
+              key="return-dates"
+              type="range"
+              label="Departure — Return"
+              placeholder="Choose dates"
+              valueFormat="D MMM YYYY"
+              labelSeparator="—"
+              minDate={new Date()}
+              allowSingleDateInRange
+              rightSection={<CalendarDays size={17} aria-hidden="true" />}
+              rightSectionPointerEvents="none"
+              classNames={{ ...fieldClassNames, root: styles.dateField }}
+              value={[departureDate, returnDate]}
+              onChange={([departure, returnValue]) => {
+                form.setFieldValue('departureDate', departure)
+                form.setFieldValue('returnDate', returnValue)
+              }}
+            />
+          ) : (
+            <DatePickerInput
+              key="departure-date"
+              label="Departure"
+              placeholder="Choose a date"
+              valueFormat="D MMM YYYY"
+              minDate={new Date()}
+              rightSection={<CalendarDays size={17} aria-hidden="true" />}
+              rightSectionPointerEvents="none"
+              classNames={{ ...fieldClassNames, root: styles.dateField }}
+              value={departureDate}
+              error={form.errors.departureDate}
+              onChange={(value) => form.setFieldValue('departureDate', value)}
+            />
+          )}
+
+          <PassengerDropdown
+            classNames={{ ...fieldClassNames, root: styles.travellersField }}
+          />
+        </div>
+
+        <div className={styles.actions}>
+          <Button
+            type="submit"
+            size="lg"
+            className={`polonia-action-button ${styles.searchButton}`}
+            rightSection={<ArrowRight size={17} />}
+          >
+            Search flights
+          </Button>
+        </div>
+      </form>
+    </FormProvider>
+  )
+}

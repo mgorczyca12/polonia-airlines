@@ -13,3 +13,13 @@ export function getAirportSelectOptions(): AirportSelectOption[] {
 export function getAirportByCode(airportCode: string): Airport | undefined {
   return airports.find((airport) => airport.Code === airportCode)
 }
+
+export function getCityName(airportCode: string): string {
+  return getAirportByCode(airportCode)?.City ?? airportCode
+}
+
+/** City and code, e.g. "Chicago (ORD)", falling back to the code alone. */
+export function airportLabel(airportCode: string): string {
+  const airport = getAirportByCode(airportCode)
+  return airport ? `${airport.City} (${airportCode})` : airportCode
+}

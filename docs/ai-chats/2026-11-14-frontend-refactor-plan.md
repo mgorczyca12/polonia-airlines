@@ -6,8 +6,9 @@ Date: 2026-11-14. Previous context:
 ## Goal
 
 Review [polonia-web](../../frontend/polonia-web/) for organization, readability
-and applicable frontend patterns. The user asked for a **report and plan only**;
-no application code was changed.
+and applicable frontend patterns. The review was first delivered as a report and
+plan; the user then asked to implement it, which is recorded under
+[Implementation](#implementation).
 
 ## Decisions
 
@@ -250,7 +251,79 @@ Done before the frontend refactor, at the user's request.
   `backend-style.instructions.md` and its index line cover, and the CQRS bullet
   whose typos were fixed. `git diff --check` **passed**.
 
+## Implementation
+
+Done on branch `refactor/frontend-architecture`, one commit per plan step, so
+it can go through a pull request (`main` requires PRs). The plan was followed
+with these decisions and deviations:
+
+- **Tooling:** Tailwind, Tabler icons, the `@/` alias and the broken `/about`
+  starter route were removed; TanStack `latest` ranges were pinned; a
+  `typecheck` script was added and devtools now load in development only.
+- **Boundaries:** ESLint `no-restricted-imports` enforces feature public APIs
+  and downward layer imports. `import/no-cycle` had been silently inert because
+  the TanStack config sets no resolver and import-x parses only `.js` by
+  default. `eslint-plugin-import-x` was added as a direct dev dependency to
+  configure its resolver and TypeScript parsing; a temporary cycle probe
+  confirmed detection for relative and `#/` imports.
+- **Query options in entities:** query-key factories and `queryOptions` live in
+  `entities/<name>/<name>.queries.ts` (not in feature `api/` folders) so all
+  features share cache keys. Queries run in the browser; route loaders do not
+  prefetch because the `/api/web` client uses relative URLs and the guest
+  cookie.
+- **Flight list:** thin route plus page container, `useFlightResults`,
+  `useFareSelection` and `useContinueToBooking`. The page number is in the URL.
+  The adapted card shows UTC times, airports, duration and flight number; fares
+  show baggage terms. Sorting, recommendations, aircraft, stops, segment
+  details and adjacent-day prices were dropped, and the date strip only
+  navigates.
+- **Booking:** `LiveBooking` was replaced by `BookingPage` with
+  `useBookingSession` (recovery first, idempotent submit, explicit status
+  check), `useReservationStatus` (TanStack Query polling with the same backoff
+  and 40-poll cap) and `useOfferExpired`. Forms use `@mantine/form` with
+  validation mirroring the web API. The mock confirmation layout became
+  `ReservationStatus`, driven by `deriveReservationView`. Destination hero,
+  travel tips, itinerary download and the payment form were deleted rather than
+  kept unused.
+- **Server:** the web API moved to `src/server/web-api/` with an explicit route
+  table. One intentional behavior change: unknown routes now return 404 even
+  without a guest cookie (previously 401).
+- **Return/infant search parameters** were kept, because the product scope is
+  expected to grow.
+- **CI and docs:** one-time Prettier pass; CI now runs typecheck, lint, format,
+  build and test without `--passWithNoTests`. Updated the polonia-web README,
+  [frontend architecture](../architecture/frontend.md),
+  [development](../architecture/development.md) and the
+  [frontend instructions](../../.github/instructions/frontend.instructions.md).
+
 ## Checks and results
+
+- Baseline before changes: `tsc`, ESLint and 18 Vitest tests **passed**;
+  Prettier **failed** on 26 pre-existing files.
+- After every step: `tsc`, ESLint, Vitest and `pnpm build` **passed**. Final:
+  typecheck, lint, format, build all **passed**; tests **47 passed** in 11 files,
+  including the unchanged server security tests plus a new unknown-route case.
+- The client bundle contains no session-password, guest-cookie, guest-header or
+  backend-URL strings.
+- Browser smoke test against a throwaway mock backend (session folder, not
+  committed): search, skeleton, fares, per-traveller pricing, offer creation,
+  form validation, review, submission, pending state and confirmation by
+  polling **passed**. Confirmation survived a reload; no horizontal overflow at
+  390 px; the guest cookie was not readable from JavaScript.
+- **Not run:** the `tests/system` suite against real services, and a visual
+  comparison with the Figma designs.
+
+## Deferred and open items
+
+- Visual review of the adapted screens against Figma.
+- Run the system tests once the live stack is available.
+- The [integration-tests agent](../../.github/agents/integration-tests.agent.md)
+  still places UI tests in `frontend/polonia-web/e2e`, while system tests live in
+  `tests/system`. Changing it also requires updating the test-writer workflow's
+  `push_to_pull_request_branch.allowed_files` and recompiling the lock file.
+- Open a pull request from `refactor/frontend-architecture`.
+
+## Pre-implementation checks
 
 - Baseline only: `pnpm exec tsc --noEmit` **passed**, `pnpm exec eslint src`
   **passed**, and `pnpm test` **passed** (3 files, 18 tests).
@@ -258,12 +331,13 @@ Done before the frontend refactor, at the user's request.
   instructions ask agents to format only the files they change.
 - No application code was changed and no build, browser or system test was run.
 
-## Deferred and open items
+## Pre-implementation deferred items (superseded)
 
-- All refactor steps above are **proposed, not implemented**.
+- All refactor steps above were **proposed, not implemented** at this point;
+  see [Implementation](#implementation) for what was done.
 - Visual adaptation must be checked against the Figma designs. Some mock
   styling assumes fields that do not exist, such as aircraft and layovers.
-- Decide whether `/about` stays.
+- Decide whether `/about` stays (removed during implementation).
 - The [integration-tests agent](../../.github/agents/integration-tests.agent.md)
   still places UI tests in `frontend/polonia-web/e2e`, while system tests live in
   `tests/system`. Changing it also requires updating the test-writer workflow's

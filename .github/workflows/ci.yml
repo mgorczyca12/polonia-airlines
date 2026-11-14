@@ -95,6 +95,8 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/polonia-web/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm format
       - run: pnpm build
-      # Remove --passWithNoTests once the first frontend test exists.
-      - run: pnpm test --passWithNoTests
+      - run: pnpm test

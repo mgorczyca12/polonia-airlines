@@ -1,37 +1,37 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import {
+  HeadContent,
+  Scripts,
+  createRootRouteWithContext,
+} from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ColorSchemeScript, MantineProvider } from '@mantine/core'
+import type { QueryClient } from '@tanstack/react-query'
+import type { ReactNode } from 'react'
 import { ApplicationShell } from '#/app/ApplicationShell'
 import { theme } from '#/app/theme'
 import '@fontsource-variable/inter'
 import '@fontsource/lora/400.css'
-import '@mantine/core/styles.css';
-import '@mantine/dates/styles.css';
+import '@mantine/core/styles.css'
+import '@mantine/dates/styles.css'
 import '#/styles/index.scss'
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('mantine-color-scheme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);root.style.colorScheme=resolved;}catch(e){}})();`
 
-export const Route = createRootRoute({
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'Polonia Airlines',
-      },
-    ]
-  }),
-  shellComponent: RootDocument,
-})
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  {
+    head: () => ({
+      meta: [
+        { charSet: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { title: 'Polonia Airlines' },
+      ],
+    }),
+    shellComponent: RootDocument,
+  },
+)
 
-function RootDocument({ children }: { children: React.ReactNode }) {
-
+function RootDocument({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -43,17 +43,17 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <MantineProvider theme={theme} defaultColorScheme="auto">
           <ApplicationShell>{children}</ApplicationShell>
         </MantineProvider>
-        <TanStackDevtools
-          config={{
-            position: 'bottom-right',
-          }}
-          plugins={[
-            {
-              name: 'Tanstack Router',
-              render: <TanStackRouterDevtoolsPanel />,
-            },
-          ]}
-        />
+        {import.meta.env.DEV && (
+          <TanStackDevtools
+            config={{ position: 'bottom-right' }}
+            plugins={[
+              {
+                name: 'Tanstack Router',
+                render: <TanStackRouterDevtoolsPanel />,
+              },
+            ]}
+          />
+        )}
         <Scripts />
       </body>
     </html>

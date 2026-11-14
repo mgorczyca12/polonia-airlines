@@ -1,90 +1,60 @@
-import {
-  isFare,
-  isFlight,
-  isOffer,
-  isRecord,
-  isReservation,
-  webReservationRequestId,
-} from './contracts'
 import type { ReservationRequest } from './contracts'
+import { isFare, isFlight, isOffer, isReservation } from './guards'
+import { isNotFound, request } from './http'
+import { webReservationRequestId } from '#/shared/lib/identifiers'
 
-export class ApiError extends Error {
-  constructor(
-    public readonly status: number,
-    public readonly code: string,
-    message: string,
-    public readonly errors: Record<string, string[]> = {},
-  ) {
-    super(message)
-  }
-}
+export const FLIGHT_SEARCH_PAGE_SIZE = 20
 
-async function request(
-  path: string,
-  signal?: AbortSignal,
-  body?: unknown,
-): Promise<unknown> {
-  const response = await fetch(`/api/web/${path}`, {
-    method: body === undefined ? 'GET' : 'POST',
-    credentials: 'same-origin',
-    cache: 'no-store',
-    signal,
-    headers:
-      body === undefined ? undefined : { 'Content-Type': 'application/json' },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  })
-  const data: unknown = await response.json()
-  if (!response.ok) {
-    const errors: Record<string, string[]> = {}
-    if (isRecord(data) && isRecord(data.errors)) {
-      for (const [key, messages] of Object.entries(data.errors)) {
-        if (
-          Array.isArray(messages) &&
-          messages.every((message) => typeof message === 'string')
-        ) {
-          errors[key] = messages
-        }
-      }
-    }
-    throw new ApiError(
-      response.status,
-      isRecord(data) && typeof data.code === 'string'
-        ? data.code
-        : 'request_failed',
-      isRecord(data) && typeof data.detail === 'string'
-        ? data.detail
-        : 'The request failed. Please try again.',
-      errors,
-    )
-  }
-  return data
+export interface FlightSearchCriteria {
+  from: string
+  to: string
+  departure: string
+  page: number
 }
 
 export async function searchFlights(
-  params: URLSearchParams,
-  signal: AbortSignal,
+  criteria: FlightSearchCriteria,
+  signal?: AbortSignal,
 ) {
-  const data = await request(`flights?${params}`, signal)
-  if (!Array.isArray(data) || !data.every(isFlight))
+  const query = new URLSearchParams({
+    DepartureAirport: criteria.from,
+    ArrivalAirport: criteria.to,
+    DepartureDate: criteria.departure,
+    Page: String(criteria.page),
+    PageSize: String(FLIGHT_SEARCH_PAGE_SIZE),
+  })
+  const data = await request(`flights?${query}`, signal)
+
+  if (!Array.isArray(data) || !data.every(isFlight)) {
     throw new Error('Invalid flight search response.')
+  }
+
   return data
 }
 
-export async function getFlight(id: string, signal: AbortSignal) {
+export async function getFlight(id: string, signal?: AbortSignal) {
   const data = await request(`flights/${encodeURIComponent(id)}`, signal)
-  if (!isFlight(data)) throw new Error('Invalid flight response.')
+
+  if (!isFlight(data)) {
+    throw new Error('Invalid flight response.')
+  }
+
   return data
 }
 
-export async function getFares(ids: number[], signal: AbortSignal) {
+export async function getFares(flightIds: number[], signal?: AbortSignal) {
   const query = new URLSearchParams({ Currency: 'USD' })
-  ids.forEach((id) => query.append('FlightIds', String(id)))
+  flightIds.forEach((id) => query.append('FlightIds', String(id)))
   const data = await request(`fares?${query}`, signal)
-  if (!Array.isArray(data) || !data.every(isFare))
+
+  if (!Array.isArray(data) || !data.every(isFare)) {
     throw new Error('Invalid fare response.')
+  }
+
   return data
 }
 
+/** Starts (or reuses) the guest checkout session, then creates a server-priced offer. */
 export async function createOffer(
   flightId: number,
   productIds: string[],
@@ -100,53 +70,67 @@ export async function createOffer(
       passengerIndex,
     })),
   })
-  if (!isOffer(data)) throw new Error('Invalid offer response.')
+
+  if (!isOffer(data)) {
+    throw new Error('Invalid offer response.')
+  }
+
   return data
 }
 
-export async function getOffer(id: string, signal: AbortSignal) {
+export async function getOffer(id: string, signal?: AbortSignal) {
   const data = await request(`offers/${encodeURIComponent(id)}`, signal)
-  if (!isOffer(data)) throw new Error('Invalid offer response.')
+
+  if (!isOffer(data)) {
+    throw new Error('Invalid offer response.')
+  }
+
   return data
 }
 
-export async function getReservation(id: number, signal: AbortSignal) {
+export async function getReservation(id: number, signal?: AbortSignal) {
   const data = await request(`reservations/${id}`, signal)
-  if (!isReservation(data)) throw new Error('Invalid reservation response.')
+
+  if (!isReservation(data)) {
+    throw new Error('Invalid reservation response.')
+  }
+
   return data
 }
 
-export async function recoverReservation(offerId: string, signal: AbortSignal) {
+/**
+ * Finds a reservation already committed for an offer. Returns `null` only for an
+ * actual not-found response; every other failure is rethrown.
+ */
+export async function recoverReservation(
+  offerId: string,
+  signal?: AbortSignal,
+) {
+  const requestId = encodeURIComponent(webReservationRequestId(offerId))
+
   try {
-    const data = await request(
-      `reservations/by-request/${encodeURIComponent(webReservationRequestId(offerId))}`,
-      signal,
-    )
-    if (!isReservation(data)) throw new Error('Invalid reservation response.')
+    const data = await request(`reservations/by-request/${requestId}`, signal)
+
+    if (!isReservation(data)) {
+      throw new Error('Invalid reservation response.')
+    }
+
     return data
   } catch (error) {
-    if (
-      error instanceof ApiError &&
-      error.status === 404 &&
-      error.code === 'not_found'
-    )
+    if (isNotFound(error)) {
       return null
+    }
+
     throw error
   }
 }
 
 export async function createReservation(body: ReservationRequest) {
   const data = await request('reservations', undefined, body)
-  if (!isReservation(data)) throw new Error('Invalid reservation response.')
-  return data
-}
 
-export function errorMessage(error: unknown): string {
-  if (error instanceof ApiError) {
-    const fields = Object.values(error.errors).flat().join(' ')
-    return fields ? `${error.message} ${fields}` : error.message
+  if (!isReservation(data)) {
+    throw new Error('Invalid reservation response.')
   }
-  return error instanceof Error
-    ? error.message
-    : 'An unexpected error occurred.'
+
+  return data
 }

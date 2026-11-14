@@ -1,7 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { Alert } from '@mantine/core'
-import { FlightSearch } from '#/features/flight-search'
-import { parseLiveSearchParams } from '#/features/flight-search/model/search-params'
+import { FlightSearch, parseLiveSearchParams } from '#/features/flight-search'
 import {
   DestinationHighlights,
   HomeHero,

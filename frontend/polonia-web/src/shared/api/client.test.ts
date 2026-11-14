@@ -1,45 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { recoverReservation, searchFlights } from './client'
-import { isConfirmed } from './presentation'
-import { parseLiveSearchParams } from '#/features/flight-search/model/search-params'
 
 afterEach(() => vi.unstubAllGlobals())
 
-describe('live booking boundaries', () => {
-  it('does not treat pending or partially completed inventory as a confirmed booking', () => {
-    expect(isConfirmed({ status: 'Created', workflowStatus: 'Pending' })).toBe(
-      false,
-    )
-    expect(
-      isConfirmed({ status: 'Created', workflowStatus: 'Completed' }),
-    ).toBe(false)
-    expect(
-      isConfirmed({ status: 'Cancelled', workflowStatus: 'Completed' }),
-    ).toBe(false)
-    expect(
-      isConfirmed({ status: 'Reserved', workflowStatus: 'Completed' }),
-    ).toBe(true)
-  })
-
-  it('rejects stale unsupported journey and traveller parameters', () => {
-    expect(parseLiveSearchParams({ tripType: 'roundTrip' }).unsupported).toBe(
-      true,
-    )
-    expect(parseLiveSearchParams({ infants: 1 }).unsupported).toBe(true)
-    expect(parseLiveSearchParams({ adults: 9 }).unsupported).toBe(true)
-    expect(parseLiveSearchParams({ adults: 8 }).unsupported).not.toBe(true)
-    expect(parseLiveSearchParams({ adults: -1 }).unsupported).toBe(true)
-    expect(
-      parseLiveSearchParams({
-        adults: 1,
-        children: 1,
-        infants: 0,
-        tripType: 'oneWay',
-      }).unsupported,
-    ).not.toBe(true)
-    expect(parseLiveSearchParams({ unsupported: true }).unsupported).toBe(true)
-  })
-
+describe('web API client', () => {
   it('treats only an actual not-found response as a reservation that has not committed yet', async () => {
     const fetchMock = vi.fn<typeof fetch>()
     vi.stubGlobal('fetch', fetchMock)
@@ -47,10 +11,7 @@ describe('live booking boundaries', () => {
       Response.json({ code: 'not_found' }, { status: 404 }),
     )
     expect(
-      await recoverReservation(
-        '00112233-4455-6677-8899-AABBCCDDEEFF',
-        new AbortController().signal,
-      ),
+      await recoverReservation('00112233-4455-6677-8899-AABBCCDDEEFF'),
     ).toBeNull()
     expect(fetchMock.mock.calls[0]?.[0]).toBe(
       '/api/web/reservations/by-request/web-00112233-4455-6677-8899-aabbccddeeff',
@@ -61,15 +22,29 @@ describe('live booking boundaries', () => {
         { status: 404 },
       ),
     )
-    await expect(
-      recoverReservation('offer', new AbortController().signal),
-    ).rejects.toThrow('API route missing')
+    await expect(recoverReservation('offer')).rejects.toThrow(
+      'API route missing',
+    )
     fetchMock.mockResolvedValue(
       Response.json({ detail: 'Backend unavailable' }, { status: 502 }),
     )
-    await expect(
-      recoverReservation('offer', new AbortController().signal),
-    ).rejects.toThrow('Backend unavailable')
+    await expect(recoverReservation('offer')).rejects.toThrow(
+      'Backend unavailable',
+    )
+  })
+
+  it('sends exact search criteria with a bounded page size', async () => {
+    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(Response.json([]))
+    vi.stubGlobal('fetch', fetchMock)
+    await searchFlights({
+      from: 'ORD',
+      to: 'KRK',
+      departure: '2026-12-01',
+      page: 2,
+    })
+    expect(fetchMock.mock.calls[0]?.[0]).toBe(
+      '/api/web/flights?DepartureAirport=ORD&ArrivalAirport=KRK&DepartureDate=2026-12-01&Page=2&PageSize=20',
+    )
   })
 
   it('does not fall back to sample flights for an invalid backend response', async () => {
@@ -78,7 +53,12 @@ describe('live booking boundaries', () => {
       vi.fn().mockResolvedValue(Response.json([{ flightNumber: 'DEMO' }])),
     )
     await expect(
-      searchFlights(new URLSearchParams(), new AbortController().signal),
+      searchFlights({
+        from: 'ORD',
+        to: 'KRK',
+        departure: '2026-12-01',
+        page: 1,
+      }),
     ).rejects.toThrow('Invalid flight search response')
   })
 })

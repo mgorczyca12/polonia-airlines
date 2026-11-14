@@ -1,4 +1,3 @@
-const SCHEDULE_DATE_TIME = /^(\d{2})\/(\d{2})\/(\d{4}) (\d{2}):(\d{2}):(\d{2})$/
 const DATE_KEY = /^(\d{4})-(\d{2})-(\d{2})$/
 const MILLISECONDS_PER_DAY = 24 * 60 * 60 * 1000
 
@@ -13,6 +12,10 @@ const dayMonthFormatter = new Intl.DateTimeFormat('en-GB', {
   month: 'short',
   timeZone: 'UTC',
 })
+const weekdayFormatter = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'short',
+  timeZone: 'UTC',
+})
 const shortDateFormatter = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
   month: 'short',
@@ -25,44 +28,20 @@ const longDateFormatter = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
   timeZone: 'UTC',
 })
-const wholeUsdFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 0,
-})
-const exactUsdFormatter = new Intl.NumberFormat('en-US', {
-  style: 'currency',
-  currency: 'USD',
-  minimumFractionDigits: 2,
+const utcDateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'UTC',
 })
 
-function createUtcDate(
-  year: number,
-  month: number,
-  day: number,
-  hours = 0,
-  minutes = 0,
-  seconds = 0,
-): Date | null {
-  const date = new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds))
+function createUtcDate(year: number, month: number, day: number): Date | null {
+  const date = new Date(Date.UTC(year, month - 1, day))
   const isSameCalendarDate =
     date.getUTCFullYear() === year &&
     date.getUTCMonth() === month - 1 &&
     date.getUTCDate() === day
 
   return isSameCalendarDate ? date : null
-}
-
-/** Parses the sample schedule format `MM/DD/YYYY HH:mm:ss`, which is stored in UTC. */
-export function parseScheduleDateTime(value: string): Date | null {
-  const match = SCHEDULE_DATE_TIME.exec(value)
-
-  if (!match) {
-    return null
-  }
-
-  const [, month, day, year, hours, minutes, seconds] = match.map(Number)
-  return createUtcDate(year, month, day, hours, minutes, seconds)
 }
 
 /** Parses a `YYYY-MM-DD` calendar date as the start of that UTC day. */
@@ -110,13 +89,20 @@ export function formatTime(date: Date): string {
   return timeFormatter.format(date)
 }
 
-function formatDateKey(dateKey: string, formatter: Intl.DateTimeFormat): string {
+function formatDateKey(
+  dateKey: string,
+  formatter: Intl.DateTimeFormat,
+): string {
   const date = parseDateKey(dateKey)
   return date ? formatter.format(date) : dateKey
 }
 
 export function formatDayMonth(dateKey: string): string {
   return formatDateKey(dateKey, dayMonthFormatter)
+}
+
+export function formatWeekday(dateKey: string): string {
+  return formatDateKey(dateKey, weekdayFormatter)
 }
 
 export function formatShortDate(dateKey: string): string {
@@ -153,11 +139,13 @@ export function formatDuration(totalMinutes: number): string {
   return `${hours}h ${String(minutes).padStart(2, '0')}m`
 }
 
-export function formatUsd(
-  amount: number,
-  options: { exact?: boolean } = {},
-): string {
-  return options.exact
-    ? exactUsdFormatter.format(amount)
-    : wholeUsdFormatter.format(amount)
+export function formatMoney(amount: number, currency: string): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(
+    amount,
+  )
+}
+
+/** Formats an ISO timestamp as a UTC date and time with an explicit "UTC" label. */
+export function formatUtcDateTime(timestamp: string): string {
+  return `${utcDateTimeFormatter.format(new Date(timestamp))} UTC`
 }

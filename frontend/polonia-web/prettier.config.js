@@ -6,7 +6,7 @@ const config = {
   useTabs: false,
   semi: false,
   singleQuote: true,
-  trailingComma: "all",
-};
+  trailingComma: 'all',
+}
 
-export default config;
+export default config

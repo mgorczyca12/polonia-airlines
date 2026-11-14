@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { handleWebApi } from '#/shared/api/web-api.server'
+import { handleWebApi } from '#/server/web-api/handler.server'
 
 export const Route = createFileRoute('/api/web/$')({
   server: {
