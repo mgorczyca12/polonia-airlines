@@ -7,7 +7,6 @@
   gap: 1rem;
 }
 
-.memberNote,
 .infoNote {
   display: flex;
   align-items: flex-start;
@@ -42,8 +41,7 @@
   gap: 0.75rem;
 }
 
-.passengerIcon,
-.requestIcon {
+.passengerIcon {
   display: inline-flex;
   flex-shrink: 0;
   align-items: center;
@@ -76,7 +74,7 @@
 
 .fields {
   display: grid;
-  grid-template-columns: minmax(0, 0.65fr) repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.875rem;
 }
 
@@ -119,54 +117,12 @@
   }
 }
 
-.requestHeading {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.requestIcon {
-  width: 2.25rem;
-  height: 2.25rem;
-  background: transparent;
-}
-
-.requestToggle {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  margin-inline-start: auto;
-  color: var(--color-primary-text);
-  font-size: 0.75rem;
-  font-weight: 600;
-  white-space: nowrap;
-
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 3px;
-  }
-}
-
 .actions {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 1rem;
   padding-top: 0.25rem;
-}
-
-.backButton {
-  color: var(--color-text-muted);
-  font-size: 0.75rem;
-
-  &:hover {
-    color: var(--color-text);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--color-primary);
-    outline-offset: 3px;
-  }
 }
 
 @include below($bp-md) {
@@ -176,25 +132,6 @@
 
   .fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .fields > :first-child,
-  .fields > :nth-child(2),
-  .fields > :nth-child(3) {
-    grid-column: span 1;
-  }
-
-  .requestHeading {
-    flex-wrap: wrap;
-  }
-
-  .requestHeading .sectionHeading {
-    flex: 1;
-    min-width: 10rem;
-  }
-
-  .requestToggle {
-    margin-inline-start: 2.75rem;
   }
 }
 
@@ -206,10 +143,6 @@
 
   .actions {
     align-items: stretch;
-    flex-direction: column-reverse;
-  }
-
-  .backButton {
-    align-self: flex-start;
+    flex-direction: column;
   }
 }

@@ -23,6 +23,8 @@ interface JourneySummaryProps {
   /** Message shown in place of the flight before one is chosen or loaded. */
   pendingFlightMessage?: string
   lines: JourneySummaryLine[]
+  /** Authoritative total, e.g. from an offer; otherwise the sum of priced lines. */
+  total?: number
   currency: string
   totalLabel: string
   totalNote: string
@@ -72,6 +74,7 @@ export function JourneySummary({
   flight,
   pendingFlightMessage = 'Choose a fare to add this flight.',
   lines,
+  total: authoritativeTotal,
   currency,
   totalLabel,
   totalNote,
@@ -80,9 +83,10 @@ export function JourneySummary({
 }: JourneySummaryProps) {
   const isPriced =
     lines.length > 0 && lines.every((line) => line.amount !== null)
-  const total = isPriced
+  const lineTotal = isPriced
     ? lines.reduce((sum, line) => sum + (line.amount ?? 0), 0)
     : null
+  const total = authoritativeTotal ?? lineTotal
 
   return (
     <section

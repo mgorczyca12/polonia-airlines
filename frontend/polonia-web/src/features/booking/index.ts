@@ -1,5 +1,5 @@
+export { BookingPage } from './ui/BookingPage'
 export { BookingProgress } from './ui/BookingProgress'
 export type { BookingStep } from './ui/BookingProgress'
 export { JourneySummary } from './ui/JourneySummary'
 export type { JourneySummaryLine } from './ui/JourneySummary'
-export { LiveBooking } from './ui/LiveBooking'
