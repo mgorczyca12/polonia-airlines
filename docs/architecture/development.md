@@ -198,12 +198,15 @@ Frontend CI runs, from the web folder:
 
 ```powershell
 pnpm install --frozen-lockfile
+pnpm typecheck
+pnpm lint
+pnpm format
 pnpm build
-pnpm test --passWithNoTests
+pnpm test
 ```
 
-The final option permits an empty suite, but focused guest-session/API-client tests
-now exist. Browser success, cancellation and refresh checks used an isolated mock
+ESLint enforces feature public APIs, downward layer imports and import cycles; see
+[frontend architecture](frontend.md#code-structure). Browser success, cancellation and refresh checks used an isolated mock
 API fixture during frontend integration; a real browser-to-PostgreSQL/Redis/RabbitMQ
 run remains pending. On 2026-11-13, the Docker-backed `ExternalInventory` and
 `ExternalWorkflow` selection passed all ten tests: five inventory cases and five

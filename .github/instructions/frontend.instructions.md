@@ -12,9 +12,9 @@ routes, scope and the guest-session design. The
 [frontend refactor plan](../../docs/ai-chats/2026-11-14-frontend-refactor-plan.md)
 describes the target structure and migration order.
 
-The code is being migrated toward this structure. All new and changed code must
-follow these rules. Do not perform unrelated large migrations as a side effect;
-leave untouched code in its current shape unless the task is that migration step.
+The codebase follows this structure; the
+[frontend refactor plan](../../docs/ai-chats/2026-11-14-frontend-refactor-plan.md)
+records how it got here. All new and changed code must follow these rules.
 
 ## Platform strategy
 
@@ -32,9 +32,9 @@ src/
   routes/     thin TanStack Router files
   app/        providers, shell, layouts, theme
   features/   user-facing capabilities, e.g. flight-search, flight-results, booking
-  entities/   frontend domain types, mappers and rules (airport, flight, fare, reservation)
-  shared/     api (client, contracts, guards), lib (pure helpers), ui (primitives)
-  server/     server-only web API layer (target location of web-api.server.ts)
+  entities/   frontend domain models, mappers, rules and query options (airport, flight, fare, offer, reservation)
+  shared/     api (client, contracts, guards), lib (pure helpers), ui (primitives), testing (test helpers)
+  server/     server-only web API layer (web-api/ route table, session, upstream, validation)
 ```
 
 - Dependencies point downward:
@@ -43,14 +43,16 @@ src/
   `features`.
 - A feature does not import another feature's internals. If code is shared,
   move it to `entities` or `shared`, or import from the other feature's
-  `index.ts`. Avoid cycles.
+  `index.ts`. Avoid cycles; ESLint enforces these boundaries and
+  `import/no-cycle`.
 - Each feature exposes its public API through `index.ts`. Routes and other
-  features import only from that file, never from `components/`, `model/` or
-  `ui/` subpaths. Code inside a feature uses relative imports and never imports
-  its own barrel.
-- Inside a feature, use `api/` for query and mutation options, `model/` for
-  types, mappers, reducers and hooks, and `ui/` for components. Store
-  `Component.module.scss` next to `Component.tsx`.
+  features import only from that file, never from `model/` or `ui/` subpaths.
+  Code inside a feature uses relative imports and never imports its own barrel.
+- Inside a feature, use `model/` for view logic, hooks (queries and mutations
+  composed for the feature), reducers and URL parsers, and `ui/` for
+  components. Store `Component.module.scss` next to `Component.tsx`.
+- Query-key factories and `queryOptions` for API resources live in
+  `entities/<name>/<name>.queries.ts` so every feature shares one cache key.
 - Use the `#/` import alias for cross-layer imports. Do not use `@/`.
 - `entities` and `shared` mirror the planned `domain`, `api-client` and `ui`
   packages. Keep them free of route and feature knowledge so they can move to a
@@ -58,8 +60,8 @@ src/
 
 ## Routes
 
-- Route files only handle `validateSearch`, loaders and data prefetching, head
-  metadata, and rendering a feature page component. They do not fetch data in
+- Route files only handle `validateSearch`, head metadata and rendering a
+  feature page component. They do not fetch data in
   effects, manage multi-step state or contain long markup.
 - Use URL search params, validated by a parser in the owning feature, for
   shareable state: route, date, traveller counts, page and offer ID. Reject or
@@ -73,14 +75,12 @@ src/
   client in `shared/api`. Never call backend services directly from the browser.
 - Validate every response at runtime with type guards in `shared/api` before
   use. Invalid responses are errors. Never fall back to sample or mock data.
-- Use TanStack Query (`@tanstack/react-query`) for server state:
-  - Shared query-key factories and `queryOptions`, reused by route loaders.
-  - `useMutation` for commands.
-  - `refetchInterval` for polling.
-
-  If it is not installed yet, add it as its own change, following the refactor
-  plan. Do not add new hand-written `useEffect` fetching, retry counters or
-  polling loops.
+- Use TanStack Query (`@tanstack/react-query`) for server state: entity
+  `queryOptions`, `useMutation` for commands and `refetchInterval` for polling.
+  Do not add hand-written `useEffect` fetching, retry counters or polling loops.
+- Queries currently run in the browser: the `/api/web` client uses relative
+  URLs and the guest cookie, so do not call it from route loaders during SSR.
+  First loads show section skeletons instead.
 - Pass `AbortSignal` through all request functions. Treat cancellation as normal,
   not as an error.
 - Keep explicit, idempotent recovery for reservation submission. Do not enable
@@ -144,15 +144,16 @@ src/
 - Keep TypeScript strict. Do not use `any`, `@ts-ignore` or non-null assertions
   unless an invariant is proven nearby. Use `import type` for type-only imports.
 - Follow [prettier.config.js](../../frontend/polonia-web/prettier.config.js),
-  which uses no semicolons, single quotes and trailing commas. Format only the
-  files you change; do not reformat unrelated files.
+  which uses no semicolons, single quotes and trailing commas. The whole package
+  is formatted and CI checks it with `pnpm format`.
 - Comment only non-obvious decisions.
 
 ## Tests
 
 - Put Vitest unit and component tests next to the source as `*.test.ts(x)`. Use
-  Testing Library queries by role or label, and wrap components in
-  `MantineProvider`.
+  Testing Library queries by role or label. Render components with
+  `renderWithProviders` and `stubMatchMedia` from `#/shared/testing/render`,
+  and mock `#/shared/api` rather than `fetch` in component tests.
 - Test entity rules, mappers, search-param parsers, hooks and the server-layer
   security behavior. Assert user-visible outcomes, not implementation details.
 - Full browser-to-backend system tests belong in
@@ -160,16 +161,17 @@ src/
 
 ## Checks
 
-Run these from `frontend/polonia-web` before finishing frontend changes:
+Run these from `frontend/polonia-web` before finishing frontend changes. CI runs
+the same commands:
 
 ```shell
-pnpm exec tsc --noEmit
-pnpm exec eslint src
+pnpm typecheck
+pnpm lint
+pnpm format
 pnpm test
 pnpm build
-pnpm exec prettier --check <changed files>
 ```
 
-CI runs `pnpm build` and `pnpm test`. Do not claim a check passed unless you ran
-it. Use `pnpm` and the existing lockfile; add dependencies only when a task
-requires them and record the reason.
+`pnpm check` applies Prettier and ESLint fixes. Do not claim a check passed
+unless you ran it. Use `pnpm` and the existing lockfile; add dependencies only
+when a task requires them and record the reason.
