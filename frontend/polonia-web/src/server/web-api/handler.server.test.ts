@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getIronSession, webCookies } from 'iron-session'
-import { handleWebApi } from './web-api.server'
+import { handleWebApi } from './handler.server'
 
 const TOKEN = 'a'.repeat(64)
 const OFFER = '12345678-1234-1234-1234-123456789abc'
@@ -187,6 +187,13 @@ describe('guest web API', () => {
     )
     expect(response.status).toBe(404)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('reports unknown routes as not found even without a guest session', async () => {
+    const response = await handleWebApi(apiRequest('GET', 'flights/abc'))
+    expect(response.status).toBe(404)
+    expect(fetchMock).not.toHaveBeenCalled()
+    expect(response.headers.get('set-cookie')).toBeNull()
   })
 
   it('bounds JSON requests by encoded bytes, including non-ASCII input', async () => {
