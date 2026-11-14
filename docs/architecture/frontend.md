@@ -6,107 +6,129 @@
 
 [polonia-web](../../frontend/polonia-web/) uses React, TypeScript, TanStack Start
 and file-based TanStack Router routes, Mantine components/forms, and Vite.
-The root document supplies the application shell, theme initialization and devtools.
 Desktop and native mobile applications are not present.
 
 | Route | Current feature |
 | --- | --- |
-| `/` | Hero, flight-search panel, service highlights and destination cards; prefills from search parameters |
-| `/flightlist` | Booking progress, search recap, date fare strip, sortable flight cards with cabin/fare selection and a journey summary |
-| `/booking` | Passenger details, demo payment preview, and local confirmation for the selected flight and fares |
+| `/` | One-way flight search, airport swap, traveller counts and editorial destination inspiration |
+| `/flightlist` | Real paginated flight search, current USD fares and per-passenger fare selection |
+| `/booking?offer=...` | Guest offer, passenger details, review, reservation submission, workflow polling and stored PNR summary |
+| `/api/web/*` | Server-only customer API layer; explicitly allowlisted reads and guest checkout operations |
 | `/about` | Starter informational page |
 
-## Visual design
+## Scope and data
 
-Search and results follow the October 2026 Figma booking-flow designs, adapted to
-Polonia Airlines branding: deep red `#A51D35`, gold accent `#AC8A51`, warm neutral
-surfaces, Lora display headings and Inter body text. Fonts are self-hosted through
-`@fontsource` packages. Tokens live in
-[_variables.scss](../../frontend/polonia-web/src/styles/abstracts/_variables.scss) and
-[global.scss](../../frontend/polonia-web/src/styles/global.scss) with light and dark
-values; the Mantine theme is in [theme.ts](../../frontend/polonia-web/src/app/theme.ts).
-Icons use `lucide-react`. Hero and destination photography are neutral placeholders
-until licensed Polonia images are supplied. Layouts are responsive down to mobile
-widths. Passenger details, demo payment, and confirmation screens are implemented
-as a UI prototype; they are not connected to the booking service.
+The first integration supports one selected flight and up to eight seated travellers
+aged two or older. Return journeys, connection selection and infant bookings are
+disabled; unsupported stale URL parameters show an explicit unsupported-journey
+state. Children use the selected product's price: there is no age-based discount.
+Manage booking, check-in, flight status and multi-city remain disabled.
 
-## Data and behavior
+[Airport labels](../../frontend/polonia-web/src/entities/airport/airport.repository.ts)
+remain bundled reference data, not a promise that a route is operated.
+The current booking routes no longer use sample flight JSON or demo PNRs.
+Editorial destination cards show no sample prices.
 
-[Airport repository](../../frontend/polonia-web/src/entities/airport/airport.repository.ts)
-loads bundled airport JSON for select options, city names and code lookup.
-[Flight repository](../../frontend/polonia-web/src/features/flight-results/data/flight.repository.ts)
-loads bundled sample flight JSON (two Chicago–Kraków outbound flights) and filters
-by departure and arrival airport. There is no backend fetch/API client yet.
+[Typed API clients](../../frontend/polonia-web/src/shared/api/client.ts) validate
+response shapes and call the same-origin server layer. Flight search uses exact
+IATA codes, a required UTC calendar date and 20-result pages. Fare discovery batches
+that page's canonical flight references against booking's actual active prices.
+Flight IDs and product UUIDs identify selections; flight numbers are display labels.
+Empty flights/prices and backend failures are explicit, with no sample-data fallback.
 
-The search form collects airports (with swap), a departure/return date range or
-single date, trip type, traveller counts and cabin preference. Search parameters are
-validated by
-[search-params.ts](../../frontend/polonia-web/src/features/flight-search/model/search-params.ts)
-and shared by `/` and `/flightlist`; invalid values fall back to defaults.
-Manage booking, check-in, flight status and multi-city are shown as disabled.
+Flight DTOs do not expose aircraft descriptions or timed connection details, and
+fare products do not expose the prototype's lounge, meal, change/refund claims.
+The integrated screens omit these claims and adjacent-day price strips rather
+than inventing data. Cabin/brand labels, baggage limits, currency and amounts come
+from actual product/offer responses. A priced fare is not guaranteed availability.
 
-Results filter by the selected departure UTC calendar date (or the earliest
-available date when none is given). The date strip shows the lowest fare per day
-for ±2 days; empty dates offer the nearest available date. Schedule times are the
-sample data's UTC values. Fares are shown per adult in USD; the summary multiplies
-the chosen fare by adults and children. Infant pricing is not implemented in this
-UI prototype.
-No taxes, return flights or availability are invented: round trips show that return
-flights are not in the current schedule. Continue passes the flight number and fare
-ID to `/booking`.
+## Guest session and reservation lifecycle
 
-Booking resolves the selected flight number and numeric fare ID from local data.
-Missing or mismatched selections show a "Choose a flight first" prompt. The
-passenger step collects required passenger and contact details and optional
-special requests in component state. The payment step shows disabled example card
-fields or wallet previews and requires the user to accept the demo terms; it does
-not collect or transmit payment information. Confirmation displays the selected
-itinerary, passenger and fare details, and a deterministic demo reference with
-copy/download actions. Booking data remains in UI state: no reservation is
-persisted, the booking service is not contacted, no seat is allocated, and no
-payment is processed.
+[The web API layer](../../frontend/polonia-web/src/shared/api/web-api.server.ts)
+uses `iron-session` to encrypt the backend guest token in a one-day HttpOnly,
+SameSite=Strict cookie. HTTPS origins use Secure cookies; HTTP is accepted only for
+localhost/127.0.0.1 development. All mutations require the configured exact Origin
+as a CSRF defense. No guest token is returned to browser JavaScript, put in a URL,
+or stored in local/session storage. The echoed reservation token is stripped.
+All API responses use `Cache-Control: no-store`; JSON mutation bodies are limited
+to 16,384 encoded bytes. Administrative backend routes are not proxied.
 
-## Search-to-confirmation sequence
+Checkout creation precedes an authoritative offer. Offers expire after 15 minutes;
+the review screen displays its returned price/baggage snapshots and expiry.
+An expired offer cannot be submitted from the review screen. A replacement offer
+requires a new selection and review.
+
+Only first/last name and date of birth are collected for each passenger, plus
+contact name/email. Unsupported travel-document, membership, phone, SMS and
+special-request inputs are not shown. Draft details live in component state,
+not URLs or browser persistence; a refresh before submission requires re-entry.
+
+Submission uses a stable `web-{offerId}` request identity using the GUID contract's
+canonical lowercase representation. Before submission and on
+refresh, a guest-scoped request lookup recovers any committed reservation after an
+ambiguous response. Retrying the same payload is safe; changed payloads conflict.
+Lookup failure is not treated as absence unless it is an actual 404.
+
+The UI polls with bounded increasing delays and cancellation:
+
+- Pending/AwaitingCapacity/ConfirmingAllocations are not confirmation.
+- Compensating means capacity release is still in progress.
+- RequiresIntervention instructs the user not to create a replacement booking
+  while release is unresolved, and supports explicit status refresh.
+- Only `Reserved` plus `Completed` shows confirmation.
+- Cancelled is a failed booking; network/poll timeout does not imply cancellation.
+
+Reservation reads include stored passenger names, contact and the real PNR, so
+confirmation survives refresh within the guest session. Itinerary details are
+queried separately from flight-service; itinerary-read failures do not turn a
+confirmed reservation into a failed reservation.
+
+Payment UI is replaced with review and "Reserve without payment". No payment,
+ticket issuance or confirmation email is claimed.
 
 ```mermaid
 sequenceDiagram
     actor Customer
-    participant Search as FlightSearch
-    participant Router as TanStack Router
-    participant Data as Bundled JSON repositories
-    participant Results as FlightResults
-    participant Booking as Booking route
-    participant Passengers as Passenger details
-    participant Payment as Demo payment
-    participant Confirmation as Local confirmation
-    Search->>Data: Read airport options
-    Customer->>Search: Enter search values and submit
-    Search->>Router: Navigate to /flightlist with validated search parameters
-    Router->>Results: Pass airports, date, travellers and cabin
-    Results->>Data: Filter sample flights by airports and UTC departure date
-    Data-->>Results: Matching local flights
-    Customer->>Results: Select cabin and fare, continue to booking
-    Results->>Router: Navigate to /booking with flight and fare
-    Router->>Booking: Resolve selected flight and fare
-    Booking->>Data: Read sample flight by number
-    Customer->>Passengers: Enter passenger and contact details
-    Passengers->>Booking: Keep details in component state
-    Customer->>Payment: Review demo payment options and accept terms
-    Payment->>Booking: Advance without collecting payment
-    Booking->>Confirmation: Render itinerary and demo reference
-    Confirmation-->>Customer: Local confirmation; no reservation or payment
+    participant Web as Browser
+    participant Server as TanStack Start web API
+    participant Flight as Flight service
+    participant Booking as Booking service
+    participant Seating as Seating participant
+    Customer->>Web: Search route/date
+    Web->>Server: GET flights and fares
+    Server->>Flight: Validated flight query
+    Server->>Booking: Active flight prices
+    Customer->>Web: Select per-passenger fares
+    Web->>Server: Start checkout and create offer
+    Server->>Booking: Checkout/offer commands
+    Server-->>Web: Encrypted HttpOnly cookie and public offer DTO
+    Customer->>Web: Enter details and review offer
+    Web->>Server: Submit reservation
+    Server->>Booking: Guest-scoped idempotent command
+    Booking->>Seating: Hold/confirm inventory over RabbitMQ
+    Booking-->>Web: Pending reservation through Server
+    Web->>Server: Poll/recover secured reservation
+    Server->>Booking: Read persisted workflow and summary
+    Booking-->>Web: Completed/Reserved or explicit failure through Server
 ```
 
-This is deliberately separate from the backend query and domain sequences.
-Connecting it to live availability, booking and payment requires frontend API
-integration and secure payment-provider implementation.
+## Development and verification
 
-## Development
+See [development setup](development.md) for server-only environment variables and
+infrastructure/data prerequisites. Existing Nginx already proxies the web app;
+the API layer runs in that web server, so no browser CORS or Vite backend proxy is
+required.
 
-See [development commands](development.md). Production builds and the search and
-results flows were checked in Edge at desktop and mobile widths in light and dark
-themes; this is not an accessibility certification.
-[vite.config.ts](../../frontend/polonia-web/vite.config.ts) disables TanStack devtools
-console piping, which re-logged errors between browser and dev server in a growing
-loop, and skips devtools source annotations for `__root.tsx`, whose server and client
-line numbers differed and caused hydration mismatches.
+Focused web API/client tests cover encrypted cookies, CSRF, capability isolation,
+idempotent identities, response validation, unsupported scope and safe failures.
+Browser success, cancellation and refresh were checked with an isolated mock API
+fixture, including a 390-pixel viewport; these are not live inventory checks.
+After Docker became available, five live inventory tests and five booking
+broker-workflow/crash-recovery tests passed against disposable PostgreSQL, Redis
+and RabbitMQ containers. These exercise backend hosts, not the browser or
+flight-service. A [full system-test harness](../../tests/system/README.md) has been
+added, but its web-to-PostgreSQL/Redis/RabbitMQ scenarios have not yet been run.
+
+The existing Polonia theme, fonts and responsive layout shell are retained.
+[Vite configuration](../../frontend/polonia-web/vite.config.ts) still prevents the
+previous devtools console-piping and root hydration annotation problems.

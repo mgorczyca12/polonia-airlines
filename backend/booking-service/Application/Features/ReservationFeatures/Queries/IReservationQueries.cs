@@ -6,6 +6,10 @@ namespace booking_service.Application.Features.ReservationFeatures.Queries;
 
 public interface IReservationQueries
 {
+    Task<Result<ReservationResponse>> GetByRequest(
+        GetReservationByRequest request,
+        CancellationToken cancellationToken);
+
     Task<Result<ReservationResponse>> GetReservation(
         GetReservationRequest request,
         CancellationToken cancellationToken);

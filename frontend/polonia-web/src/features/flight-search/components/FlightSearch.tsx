@@ -21,11 +21,7 @@ import {
 import { getAirportSelectOptions } from '#/entities/airport'
 import { FormProvider } from '../model/form-context'
 import type { FlightSearchFormValues } from '../model/form-context'
-import {
-  DEFAULT_CABIN,
-  resolveTravellers,
-  resolveTripType,
-} from '../model/search-params'
+import { DEFAULT_CABIN, resolveTravellers } from '../model/search-params'
 import type { FlightSearchParams } from '../model/search-params'
 import styles from '../styles/FlightSearch.module.scss'
 import { PassengerDropdown } from './PassengerDropdown'
@@ -56,16 +52,21 @@ export function FlightSearch({ initialSearch = {} }: FlightSearchProps) {
       departureAirportCode: initialSearch.from ?? null,
       arrivalAirportCode: initialSearch.to ?? null,
       departureDate: initialSearch.departure ?? null,
-      returnDate: initialSearch.return ?? null,
-      tripType: resolveTripType(initialSearch),
-      passengers: resolveTravellers(initialSearch),
+      returnDate: null,
+      tripType: 'oneWay',
+      passengers: { ...resolveTravellers(initialSearch), infant: 0 },
       cabin: initialSearch.cabin ?? DEFAULT_CABIN,
     },
     validate: {
+      departureAirportCode: (value) =>
+        value ? null : 'Choose a departure airport',
       arrivalAirportCode: (value, values) =>
-        value !== null && value === values.departureAirportCode
-          ? 'Choose a destination different from your departure airport'
-          : null,
+        !value
+          ? 'Choose a destination'
+          : value === values.departureAirportCode
+            ? 'Choose a destination different from your departure airport'
+            : null,
+      departureDate: (value) => (value ? null : 'Choose a departure date'),
     },
   })
   const { tripType, departureDate, returnDate } = form.values
@@ -144,7 +145,11 @@ export function FlightSearch({ initialSearch = {} }: FlightSearchProps) {
           onChange={handleTripTypeChange}
           aria-label="Trip type"
           data={[
-            { value: 'roundTrip', label: 'Return' },
+            {
+              value: 'roundTrip',
+              label: 'Return (not available yet)',
+              disabled: true,
+            },
             { value: 'oneWay', label: 'One way' },
             {
               value: 'multiCity',
@@ -231,6 +236,7 @@ export function FlightSearch({ initialSearch = {} }: FlightSearchProps) {
               rightSectionPointerEvents="none"
               classNames={{ ...fieldClassNames, root: styles.dateField }}
               value={departureDate}
+              error={form.errors.departureDate}
               onChange={(value) => form.setFieldValue('departureDate', value)}
             />
           )}

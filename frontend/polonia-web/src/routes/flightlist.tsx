@@ -1,103 +1,121 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { Button } from '@mantine/core'
-import { ArrowRight } from 'lucide-react'
-import { useState } from 'react'
-import { BookingLayout, BookingNextStep } from '#/app/layout/BookingLayout'
-import { BookingProgress, JourneySummary } from '#/features/booking'
+import { createFileRoute, Link } from '@tanstack/react-router'
 import {
-  FlightResults,
-  ReturnFlightNotice,
-  assignFare,
-  findFare,
-  getCityName,
-  getFlightByNumber,
-} from '#/features/flight-results'
-import type { FareSelection } from '#/features/flight-results'
+  Alert,
+  Button,
+  Group,
+  Loader,
+  Paper,
+  Select,
+  Stack,
+  Text,
+  Title,
+} from '@mantine/core'
+import { useEffect, useState } from 'react'
+import { BookingLayout } from '#/app/layout/BookingLayout'
+import { BookingProgress } from '#/features/booking'
 import {
-  DEFAULT_CABIN,
-  SearchRecap,
   getSeatedPassengers,
   resolveTravellers,
-  resolveTripType,
+  SearchRecap,
 } from '#/features/flight-search'
-import { parseFlightSearchParams } from '#/features/flight-search/model/search-params'
-import { formatShortDate } from '#/shared/lib/formatting'
+import { parseLiveSearchParams } from '#/features/flight-search/model/search-params'
+import {
+  createOffer,
+  errorMessage,
+  getFares,
+  searchFlights,
+} from '#/shared/api/client'
+import type { FlightFareResponse, FlightResponse } from '#/shared/api/contracts'
+import { airportLabel, formatMoney, formatUtc } from '#/shared/api/presentation'
 
 function FlightListingRoute() {
   const search = Route.useSearch()
   const navigate = Route.useNavigate()
-  const [selection, setSelection] = useState<FareSelection | null>(null)
-  const travellers = resolveTravellers(search)
-  const passengers = getSeatedPassengers(travellers)
-  const tripType = resolveTripType(search)
-  const cabin = search.cabin ?? DEFAULT_CABIN
-  const selectedFlight = selection
-    ? getFlightByNumber(selection.flightNumber)
-    : undefined
-  const passengerFares = passengers.map((passenger) => {
-    const fareId = selection?.fareIds[passenger.id]
+  const [flights, setFlights] = useState<FlightResponse[]>([])
+  const [fares, setFares] = useState<FlightFareResponse[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [retry, setRetry] = useState(0)
+  const [page, setPage] = useState(1)
+  const [selection, setSelection] = useState<{
+    flightId: number
+    products: string[]
+  } | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const passengers = getSeatedPassengers(resolveTravellers(search))
+  const valid =
+    !search.unsupported && Boolean(search.from && search.to && search.departure)
 
-    return {
-      passenger,
-      fare:
-        selectedFlight && fareId !== undefined
-          ? findFare(selectedFlight, fareId)?.fare
-          : undefined,
-    }
-  })
-  const pendingPassengers = passengerFares.filter(({ fare }) => !fare)
-  const hasAllFares = passengers.length > 0 && pendingPassengers.length === 0
-  const nextStepNote = hasAllFares
-    ? 'Review your selection, then add passenger details.'
-    : pendingPassengers.length === passengers.length
-      ? 'Select a fare to continue.'
-      : `Choose a fare for ${pendingPassengers.map(({ passenger }) => passenger.label).join(', ')}.`
-
-  const selectFare = (
-    flightNumber: string,
-    passengerIds: string[],
-    fareId: number,
-  ) => {
-    setSelection((current) =>
-      assignFare(current, flightNumber, passengerIds, fareId),
-    )
-  }
-
-  const changeDepartureDate = (departure: string) => {
+  useEffect(() => {
+    setPage(1)
     setSelection(null)
-    void navigate({
-      search: (previous) => ({
-        ...previous,
-        departure,
-        return:
-          previous.return && previous.return >= departure
-            ? previous.return
-            : undefined,
-      }),
-      replace: true,
+  }, [search.from, search.to, search.departure, search.adults, search.children])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    if (!valid) {
+      setLoading(false)
+      return () => controller.abort()
+    }
+    setLoading(true)
+    setError(null)
+    setSelection(null)
+    const params = new URLSearchParams({
+      DepartureAirport: search.from!,
+      ArrivalAirport: search.to!,
+      DepartureDate: search.departure!,
+      Page: String(page),
+      PageSize: '20',
     })
+    void (async () => {
+      try {
+        const result = await searchFlights(params, controller.signal)
+        const prices = result.length
+          ? await getFares(
+              result.map((flight) => flight.id),
+              controller.signal,
+            )
+          : []
+        if (!controller.signal.aborted) {
+          setFlights(result)
+          setFares(prices)
+        }
+      } catch (failure) {
+        if (!controller.signal.aborted) setError(errorMessage(failure))
+      } finally {
+        if (!controller.signal.aborted) setLoading(false)
+      }
+    })()
+    return () => controller.abort()
+  }, [valid, search.from, search.to, search.departure, page, retry])
+
+  const continueBooking = async () => {
+    if (!selection || selection.products.some((product) => !product)) return
+    setSubmitting(true)
+    setError(null)
+    try {
+      const offer = await createOffer(selection.flightId, selection.products)
+      await navigate({ to: '/booking', search: { offer: offer.id } })
+    } catch (failure) {
+      setError(errorMessage(failure))
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const continueToPassengers = () => {
-    if (selection && hasAllFares) {
-      void navigate({
-        to: '/booking',
-        search: {
-          flight: selection.flightNumber,
-          fares: passengerFares.flatMap(({ fare }) =>
-            fare ? [fare.fareId] : [],
-          ),
-          from: search.from,
-          to: search.to,
-          departure: search.departure,
-          return: search.return,
-          tripType,
-          adults: travellers.adult,
-          children: travellers.child,
-          infants: travellers.infant,
-        },
-      })
-    }
+  if (!valid) {
+    return (
+      <BookingLayout eyebrow="Flight search" title="Choose a supported journey">
+        <Alert color="yellow">
+          Select departure and arrival airports and a departure date. This
+          release supports one-way bookings for up to eight travellers aged two
+          or older.
+        </Alert>
+        <Button component={Link} to="/" mt="md">
+          Modify search
+        </Button>
+      </BookingLayout>
+    )
   }
 
   return (
@@ -105,61 +123,141 @@ function FlightListingRoute() {
       <BookingProgress currentStep="Flights" />
       <SearchRecap search={search} />
       <BookingLayout
-        eyebrow="A journey to look forward to"
-        title="Find your perfect flight."
-        description="Choose a little more comfort, a little more freedom. Every fare includes our signature service."
-        sidebar={
-          <>
-            <JourneySummary
-              from={search.from}
-              to={search.to}
-              tripType={tripType}
-              travellers={travellers}
-              cabinLabel={cabin}
-              returnDate={search.return}
-              flight={selectedFlight}
-              passengerFares={passengerFares}
-            />
-            <BookingNextStep note={nextStepNote}>
-              <Button
-                className="polonia-action-button"
-                size="lg"
-                fullWidth
-                disabled={!hasAllFares}
-                rightSection={<ArrowRight size={17} />}
-                onClick={continueToPassengers}
-              >
-                Continue to passengers
-              </Button>
-            </BookingNextStep>
-          </>
-        }
+        eyebrow="Your next journey"
+        title="Choose your flight and fares."
+        description="Current prices in USD. Capacity is confirmed only after reservation submission; children use the selected product price."
       >
-        <FlightResults
-          from={search.from}
-          to={search.to}
-          departureDate={search.departure}
-          preferredCabin={cabin}
-          selection={selection}
-          passengers={passengers}
-          onSelectFare={selectFare}
-          onDepartureDateChange={changeDepartureDate}
-        />
-
-        {tripType === 'roundTrip' && search.from && search.to && (
-          <ReturnFlightNotice
-            routeLabel={`${getCityName(search.to)} to ${getCityName(search.from)}`}
-            returnDateLabel={
-              search.return ? formatShortDate(search.return) : undefined
-            }
-          />
-        )}
+        <Stack>
+          {error && (
+            <Alert color="red" title="Unable to complete the request">
+              {error}
+              <Button
+                onClick={() => setRetry((value) => value + 1)}
+                variant="outline"
+                ml="md"
+              >
+                Retry search
+              </Button>
+            </Alert>
+          )}
+          {loading ? (
+            <Loader aria-label="Loading flights and fares" />
+          ) : (
+            !error && (
+              <>
+                {flights.length === 0 && (
+                  <Alert>
+                    No scheduled flights match this search. Choose another date
+                    or route.
+                  </Alert>
+                )}
+                {flights.map((flight) => {
+                  const prices = fares.filter(
+                    (fare) => fare.flightId === String(flight.id),
+                  )
+                  const options = prices.map((fare) => ({
+                    value: fare.productId,
+                    label: `${fare.cabinClass} · ${fare.brand} · ${formatMoney(fare.amount, fare.currency)}`,
+                  }))
+                  const chosen =
+                    selection?.flightId === flight.id ? selection.products : []
+                  return (
+                    <Paper key={flight.id} withBorder p="lg" radius="md">
+                      <Stack>
+                        <Title order={2}>{flight.flightNumber}</Title>
+                        <Text>
+                          {airportLabel(flight.departureAirport)} →{' '}
+                          {airportLabel(flight.arrivalAirport)}
+                        </Text>
+                        <Text>
+                          Departure: {formatUtc(flight.departureTime)}
+                        </Text>
+                        <Text>Arrival: {formatUtc(flight.arrivalTime)}</Text>
+                        {!prices.length ? (
+                          <Text>
+                            No fares are currently priced for this flight.
+                          </Text>
+                        ) : (
+                          <>
+                            {passengers.map((passenger, index) => (
+                              <Select
+                                key={passenger.id}
+                                label={`${passenger.label} fare`}
+                                data={options}
+                                value={chosen[index] || null}
+                                disabled={submitting}
+                                allowDeselect={false}
+                                onChange={(product) => {
+                                  if (!product) return
+                                  const products =
+                                    selection?.flightId === flight.id
+                                      ? [...selection.products]
+                                      : passengers.map(() => '')
+                                  products[index] = product
+                                  setSelection({
+                                    flightId: flight.id,
+                                    products,
+                                  })
+                                }}
+                              />
+                            ))}
+                            {chosen.map((product, index) => {
+                              const fare = prices.find(
+                                (price) => price.productId === product,
+                              )
+                              return fare ? (
+                                <Text key={index} size="sm">
+                                  {passengers[index].label}:{' '}
+                                  {fare.baggage.includedPieces} checked pieces,
+                                  up to {fare.baggage.maxWeightPerPieceKg} kg
+                                  per piece.
+                                </Text>
+                              ) : null
+                            })}
+                          </>
+                        )}
+                      </Stack>
+                    </Paper>
+                  )
+                })}
+                <Group justify="space-between">
+                  <Button
+                    disabled={page === 1 || submitting}
+                    variant="outline"
+                    onClick={() => setPage((value) => value - 1)}
+                  >
+                    Previous page
+                  </Button>
+                  <Text>Page {page}</Text>
+                  <Button
+                    disabled={flights.length < 20 || submitting}
+                    variant="outline"
+                    onClick={() => setPage((value) => value + 1)}
+                  >
+                    Next page
+                  </Button>
+                </Group>
+                <Button
+                  loading={submitting}
+                  disabled={
+                    !selection ||
+                    selection.products.length !== passengers.length ||
+                    selection.products.some((product) => !product)
+                  }
+                  onClick={() => void continueBooking()}
+                >
+                  Review priced offer and add passengers
+                </Button>
+              </>
+            )
+          )}
+        </Stack>
       </BookingLayout>
     </>
   )
 }
 
 export const Route = createFileRoute('/flightlist')({
-  validateSearch: parseFlightSearchParams,
+  validateSearch: parseLiveSearchParams,
   component: FlightListingRoute,
 })

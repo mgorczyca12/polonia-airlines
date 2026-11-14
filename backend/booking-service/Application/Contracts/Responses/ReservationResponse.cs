@@ -12,4 +12,7 @@ public sealed record ReservationResponse(
     FareSnapshot[] Fares,
     Guid WorkflowId,
     string WorkflowStatus,
-    string? FailureCode);
+    string? FailureCode,
+    string ContactName,
+    string ContactEmail,
+    PassengerSummaryResponse[] Passengers);

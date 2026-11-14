@@ -1,35 +1,16 @@
 import { Link } from '@tanstack/react-router'
 import { getAirportByCode } from '#/entities/airport'
-import { getCityName, getFlights, getLowestFare } from '#/features/flight-results'
-import { formatUsd } from '#/shared/lib/formatting'
 import { PhotoPlaceholder } from '#/shared/ui/PhotoPlaceholder'
 import styles from '../styles/DestinationHighlights.module.scss'
 
 interface Destination {
   originCode: string
   destinationCode: string
-  lowestFare: number
 }
 
-function getDestinations(): Destination[] {
-  const destinations = new Map<string, Destination>()
-
-  for (const flight of getFlights()) {
-    const originCode = flight.departureAirport.airportCode
-    const destinationCode = flight.arrivalAirport.airportCode
-    const lowestFare = getLowestFare(flight)
-    const key = `${originCode}-${destinationCode}`
-    const existing = destinations.get(key)
-
-    if (lowestFare !== null && (!existing || lowestFare < existing.lowestFare)) {
-      destinations.set(key, { originCode, destinationCode, lowestFare })
-    }
-  }
-
-  return [...destinations.values()]
-}
-
-const destinations = getDestinations()
+const destinations: Destination[] = [
+  { originCode: 'ORD', destinationCode: 'KRK' },
+]
 
 export function DestinationHighlights() {
   if (destinations.length === 0) {
@@ -46,27 +27,33 @@ export function DestinationHighlights() {
       </div>
 
       <ul className={styles.cards}>
-        {destinations.map(({ originCode, destinationCode, lowestFare }) => {
-          const city = getCityName(destinationCode)
+        {destinations.map(({ originCode, destinationCode }) => {
+          const city =
+            getAirportByCode(destinationCode)?.City ?? destinationCode
 
           return (
             <li key={`${originCode}-${destinationCode}`}>
               <Link
                 className={styles.card}
-                to="/flightlist"
-                search={{ from: originCode, to: destinationCode, tripType: 'oneWay' }}
+                to="/"
+                search={{
+                  from: originCode,
+                  to: destinationCode,
+                  tripType: 'oneWay',
+                }}
               >
                 <PhotoPlaceholder className={styles.photo} />
                 <div className={styles.information}>
                   <div className={styles.name}>
                     <p className={styles.country}>
-                      {getAirportByCode(destinationCode)?.Country ?? destinationCode}
+                      {getAirportByCode(destinationCode)?.Country ??
+                        destinationCode}
                     </p>
                     <p className={styles.city}>{city}</p>
                   </div>
                   <div className={styles.fare}>
-                    <p className={styles.fareLabel}>One way from {getCityName(originCode)}</p>
-                    <p className={styles.farePrice}>{formatUsd(lowestFare)}</p>
+                    <p className={styles.fareLabel}>Explore this destination</p>
+                    <p className={styles.farePrice}>Choose dates</p>
                   </div>
                 </div>
               </Link>
@@ -76,7 +63,8 @@ export function DestinationHighlights() {
       </ul>
 
       <p className={styles.footnote}>
-        Lowest published fare per adult, in US dollars. Subject to availability.
+        Destination inspiration only. Search your dates for scheduled flights
+        and current prices.
       </p>
     </section>
   )

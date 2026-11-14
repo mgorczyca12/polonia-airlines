@@ -120,7 +120,31 @@ export function resolveTravellers(params: FlightSearchParams): TravellerCounts {
 }
 
 export function resolveTripType(params: FlightSearchParams): TripType {
-  return params.tripType ?? 'roundTrip'
+  return params.tripType ?? 'oneWay'
+}
+
+export function parseLiveSearchParams(
+  search: Record<string, unknown>,
+): FlightSearchParams & { unsupported?: boolean } {
+  const parsed = parseFlightSearchParams(search)
+  const invalidCounts = ['adults', 'children', 'infants'].some(
+    (key) =>
+      search[key] !== undefined &&
+      (typeof search[key] !== 'number' ||
+        !Number.isInteger(search[key]) ||
+        Number(search[key]) < (key === 'adults' ? 1 : 0)),
+  )
+  const total = (parsed.adults ?? 1) + (parsed.children ?? 0)
+  const unsupported =
+    search.unsupported === true ||
+    invalidCounts ||
+    (search.tripType !== undefined && search.tripType !== 'oneWay') ||
+    search.return !== undefined ||
+    (search.infants !== undefined && search.infants !== 0) ||
+    (search.adults !== undefined && parsed.adults === undefined) ||
+    (search.children !== undefined && parsed.children === undefined) ||
+    total > MAX_SEATED_TRAVELLERS
+  return { ...parsed, ...(unsupported ? { unsupported: true } : {}) }
 }
 
 function pluralize(count: number, singular: string, plural: string): string {

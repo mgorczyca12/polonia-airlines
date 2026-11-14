@@ -68,6 +68,28 @@ sent only over HTTPS, and never put in URLs/logs. Responses disable caching.
    until the saga starts. Unauthorized/wrong-owner lookups return indistinguishable 404s.
    The response's `guestAccessToken` is the same checkout secret, not a second credential.
 
+Additional read APIs:
+
+- `GET /fares?FlightIds=1&FlightIds=2&Currency=USD` returns active, actually priced
+  products for 1-100 distinct nonblank flight references. Currency is exact
+  uppercase; references retain their supplied representation. Results contain
+  flight/product identities, version, physical cabin, cabin class/brand, amount,
+  currency and baggage terms, ordered by ordinal flight/product code then version
+  and ID. Missing prices succeed with an empty array, not an invented fare or an
+  assertion about flight existence/capacity.
+- `GET /reservations/by-request/{requestId}` requires the guest token and recovers
+  a committed reservation after an ambiguous submission response. Request IDs
+  must be nonblank and at most 100 characters. Missing/wrong-guest requests return
+  indistinguishable 404s. It reuses the same secured reservation response.
+- Reservation responses now include stored contact name/email and passenger name
+  summaries ordered by their service-owned IDs. No date of birth is exposed.
+  Passenger IDs are not offer passenger indexes.
+
+The [web integration](../../docs/architecture/frontend.md) encrypts guest tokens
+in HttpOnly cookies and strips the echoed `guestAccessToken` from browser responses.
+It uses `web-{offerId}` for submission identity and supports a narrower first release:
+one flight, up to eight travellers aged two or older, USD, and no payment.
+
 Offer consumption, reservation insertion, persisted idempotency, and the
 `ReservationRequested` MassTransit bus-outbox message commit in one local transaction.
 Database-generated integer passenger IDs are saved before publishing; messages carry

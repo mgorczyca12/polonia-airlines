@@ -45,7 +45,8 @@ dotnet run --project backend\flight-service\flight-service.csproj
 ```
 
 Other hosts can be run with their respective booking/seating project paths.
-Use launch-profile/console URLs; no unified gateway is configured.
+Use launch-profile/console URLs. Compose supplies Nginx for the web application;
+its TanStack Start API layer calls private backend services server-side.
 Flight data reads use the configured PostgreSQL database.
 Booking exposes the guest checkout API; seating consumes inventory workflow
 messages and exposes a liveness-only `/health` endpoint.
@@ -55,11 +56,39 @@ For the web application:
 ```powershell
 Set-Location frontend\polonia-web
 pnpm install --frozen-lockfile
+$env:WEB_SESSION_PASSWORD = [Guid]::NewGuid().ToString('N') + [Guid]::NewGuid().ToString('N')
+$env:WEB_ORIGIN = 'http://localhost:3000'
+$env:FLIGHT_API_URL = 'http://localhost:5114'
+$env:BOOKING_API_URL = 'http://localhost:5180'
 pnpm dev
 ```
 
-The dev script uses port 3000. The UI currently reads local JSON and does not need
-the backend hosts for its sample search and booking-preview flow.
+The API URLs above match the `http` launch profiles; use the actual service URLs
+when choosing other profiles. The web server does not disable TLS validation or
+follow upstream redirects. For HTTPS backend profiles, trust/configure the
+development certificate instead of bypassing validation.
+
+The web flow now requires the backend hosts, initialized schemas and coherent
+business data. Provision actual flight rows, booking products/USD flight prices
+and seating capacity/seat membership using the owning services' canonical IDs.
+Flight/cabin references in prices and seating must match exactly. There is no
+automatic business seeding, live aircraft-to-inventory synchronization or public
+administration API added by this integration. See the
+[booking](../../backend/booking-service/README.md) and
+[seating](../../backend/seating-service/README.md) provisioning prerequisites.
+
+`WEB_SESSION_PASSWORD` must contain at least 32 random characters; all web
+instances must share a stable externally managed value. Generating a new one
+invalidates existing guest sessions. Never expose it as a `VITE_` variable.
+`WEB_ORIGIN` is the browser's exact origin (no trailing slash) and guards mutations;
+HTTPS enables Secure cookies. HTTP is allowed only on localhost/127.0.0.1.
+The remaining API URLs are server-only configuration, not browser URLs.
+
+Compose obtains the password and browser origin from
+[`.env.example`](../../.env.example), and supplies internal service URLs automatically.
+Adjust `WEB_ORIGIN` if changing `WEB_PORT` or putting TLS in front of Nginx.
+Existing Nginx proxying handles `/api/web/*` through the web server; no direct
+backend mutation proxy or browser CORS policy is required.
 
 ## Verification
 
@@ -173,8 +202,21 @@ pnpm build
 pnpm test --passWithNoTests
 ```
 
-The final option permits an empty test suite; successful CI alone does not mean
-frontend behavior has test coverage.
+The final option permits an empty suite, but focused guest-session/API-client tests
+now exist. Browser success, cancellation and refresh checks used an isolated mock
+API fixture during frontend integration; a real browser-to-PostgreSQL/Redis/RabbitMQ
+run remains pending. On 2026-11-13, the Docker-backed `ExternalInventory` and
+`ExternalWorkflow` selection passed all ten tests: five inventory cases and five
+booking broker-workflow/crash-recovery cases. They used disposable containers,
+which were removed after execution, and did not exercise the web UI or
+flight-service. Unit/mocked browser checks must not be described as proof of live
+inventory allocation.
+
+The proposed full-system Playwright suite is now set up in
+[tests/system](../../tests/system/README.md), separately from backend integration
+and frontend component tests. It provisions an isolated Compose stack and covers
+browser booking success and insufficient capacity. It has **not yet been run**;
+automatic CI execution is deliberately deferred until its first validated run.
 
 ## Backend readability convention
 

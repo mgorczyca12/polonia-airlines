@@ -118,6 +118,11 @@ services:
       - "127.0.0.1:${SEATING_PORT:-5103}:8080"
 
   polonia-web:
+    environment:
+      FLIGHT_API_URL: http://flight-service:8080
+      BOOKING_API_URL: http://booking-service:8080
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:8080}
+      WEB_SESSION_PASSWORD: ${WEB_SESSION_PASSWORD:?Set a random 32+ character WEB_SESSION_PASSWORD in .env}
     build:
       context: .
       dockerfile: frontend/polonia-web/Dockerfile

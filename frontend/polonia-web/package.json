@@ -31,6 +31,7 @@
     "@tanstack/react-start": "latest",
     "@tanstack/router-plugin": "^1.168.48",
     "dayjs": "^1.11.23",
+    "iron-session": "^9.1.0",
     "lucide-react": "^1.66.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",

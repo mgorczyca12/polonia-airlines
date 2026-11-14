@@ -1,10 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Alert } from '@mantine/core'
 import { FlightSearch } from '#/features/flight-search'
-import { parseFlightSearchParams } from '#/features/flight-search/model/search-params'
-import { DestinationHighlights, HomeHero, ServicePromises } from '#/features/home'
+import { parseLiveSearchParams } from '#/features/flight-search/model/search-params'
+import {
+  DestinationHighlights,
+  HomeHero,
+  ServicePromises,
+} from '#/features/home'
 
 export const Route = createFileRoute('/')({
-  validateSearch: parseFlightSearchParams,
+  validateSearch: parseLiveSearchParams,
   component: HomeRoute,
 })
 
@@ -14,6 +19,13 @@ function HomeRoute() {
   return (
     <>
       <HomeHero>
+        {search.unsupported && (
+          <Alert color="yellow">
+            The previous journey includes unsupported options. Choose a new
+            one-way search without infants; no return or infant booking will be
+            submitted.
+          </Alert>
+        )}
         <FlightSearch initialSearch={search} />
       </HomeHero>
       <ServicePromises />

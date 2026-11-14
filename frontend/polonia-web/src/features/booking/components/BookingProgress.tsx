@@ -1,7 +1,7 @@
 import { Check } from 'lucide-react'
 import styles from '../styles/BookingProgress.module.scss'
 
-const STEPS = ['Flights', 'Passengers', 'Payment', 'Confirmation'] as const
+const STEPS = ['Flights', 'Passengers', 'Review', 'Confirmation'] as const
 
 export type BookingStep = (typeof STEPS)[number]
 
@@ -17,7 +17,11 @@ export function BookingProgress({ currentStep }: BookingProgressProps) {
       <ol className={styles.steps}>
         {STEPS.map((step, index) => {
           const state =
-            index < currentIndex ? 'complete' : index === currentIndex ? 'current' : 'upcoming'
+            index < currentIndex
+              ? 'complete'
+              : index === currentIndex
+                ? 'current'
+                : 'upcoming'
 
           return (
             <li
@@ -26,7 +30,11 @@ export function BookingProgress({ currentStep }: BookingProgressProps) {
               aria-current={state === 'current' ? 'step' : undefined}
             >
               <span className={styles.marker} aria-hidden="true">
-                {state === 'complete' ? <Check size={13} strokeWidth={2.5} /> : index + 1}
+                {state === 'complete' ? (
+                  <Check size={13} strokeWidth={2.5} />
+                ) : (
+                  index + 1
+                )}
               </span>
               <span className={styles.label}>
                 {step}

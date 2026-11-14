@@ -11,9 +11,9 @@ differs by service.
 
 | Area | Implemented | Not wired or not implemented |
 | --- | --- | --- |
-| Web | Search, fare selection, booking preview from local JSON | Backend API client, persistent reservations, payment processing |
+| Web | Backend flight/fare reads, encrypted guest session, offers, persistent reservation submission/recovery and status UI | Payment, infant/return/connection flows, full live browser verification |
 | Flight | Validated flight/layout queries, configuration/assignment commands, PostgreSQL registration, initial EF migration, RabbitMQ EF bus outbox | Automated schema deployment, deployed infrastructure, general aircraft queries and management authorization |
-| Booking | Fare catalog, priced offers, guest reservation API/persistence, MassTransit completion saga | Payment processing, authenticated catalog-management API, frontend integration |
+| Booking | Fare catalog/discovery, priced offers, guest reservation API/persistence/recovery, MassTransit completion saga | Payment processing, authenticated catalog-management API |
 | Seating | Redis temporary holds, SQL confirmed allocations, idempotent messaging participant | Public inventory-management API, live infrastructure verification |
 | Shared | Entity/aggregate bases, repositories, command pipelines, domain-event dispatch, EF outbox helpers and reservation workflow contracts | A generic business-saga framework (not needed) |
 
@@ -26,9 +26,9 @@ integrations to draw.
 ```mermaid
 C4Context
     title Polonia Airlines - current system context
-    Person(customer, "Customer", "Explores flights and confirms a local booking preview")
-    System(polonia, "Polonia Airlines", "Web prototype and backend service projects; backend integration is incomplete")
-    Rel(customer, polonia, "Searches and reviews sample flight and fare data", "Browser")
+    Person(customer, "Customer", "Searches flights and submits a one-way guest reservation")
+    System(polonia, "Polonia Airlines", "Backend-connected web prototype; provisioned infrastructure/data required; payment deferred")
+    Rel(customer, polonia, "Searches, reviews offers and follows reservation status", "Browser")
 ```
 
 ## C4 level 2: containers
@@ -44,20 +44,24 @@ C4Container
     Person(customer, "Customer", "Uses the customer web application")
     Person(apiCaller, "API caller / integration tests", "Calls backend routes directly")
     System_Boundary(polonia, "Polonia Airlines repository") {
-        Container(web, "polonia-web", "React, TanStack Start/Router, Mantine", "Local JSON-backed search and booking preview")
+        Container(web, "polonia-web", "React, TanStack Start/Router, Mantine", "Customer UI and server-only API with encrypted guest cookie")
         Container(flight, "flight-service", "ASP.NET Core / EF Core", "Flight query API; PostgreSQL and RabbitMQ outbox configured in code, infrastructure required")
         Container(booking, "booking-service", "ASP.NET Core / MassTransit / EF Core", "Fare catalog, offers, guest reservations and completion saga")
         Container(seating, "seating-service", "ASP.NET Core / MassTransit / EF Core", "Capacity/seat holds and confirmed allocations")
         ContainerQueue(bus, "RabbitMQ", "Message broker", "Durable reservation workflow messages")
         ContainerDb(bookingDb, "Booking database", "PostgreSQL", "Catalog, offers, reservations, saga state and outbox")
+        ContainerDb(flightDb, "Flight database", "PostgreSQL", "Provisioned flight schedules and layouts")
         ContainerDb(seatingDb, "Seating database", "PostgreSQL", "Confirmed allocations, operation ledger and outbox")
         ContainerDb(redis, "Temporary holds", "Redis", "Expiring owner-aware cabin-capacity and optional seat holds")
         ContainerDb(testDb, "Flight test database", "SQLite in memory", "Integration-test fixture only; not production storage")
     }
-    Rel(customer, web, "Uses search and booking-preview pages", "Browser")
+    Rel(customer, web, "Searches and submits/follows reservations", "Browser")
+    Rel(web, flight, "Queries scheduled flights server-side", "HTTP")
+    Rel(web, booking, "Reads prices and manages guest offers/reservations server-side", "HTTP with guest capability for checkout")
     Rel(apiCaller, flight, "Queries flights", "HTTP")
     Rel(apiCaller, booking, "Requests offers and creates/reads guest reservations", "HTTP")
     Rel(booking, bookingDb, "Persists local state and outgoing messages", "EF Core")
+    Rel(flight, flightDb, "Reads provisioned flight data", "EF Core")
     Rel(seating, seatingDb, "Persists confirmed inventory and operation outcomes", "EF Core")
     Rel(seating, redis, "Atomically acquires and validates temporary holds", "Redis/Lua")
     Rel(booking, bus, "Publishes commands and consumes inventory outcomes", "AMQP")
@@ -265,4 +269,4 @@ service READMEs for schema initialization and inventory/catalog provisioning.
 Do not describe a production database, gateway, or distributed deployment as implemented.
 
 See [development](development.md) for commands and [frontend](frontend.md) for the
-separate local-data UI flow.
+backend-connected UI flow, session handling and remaining verification limits.

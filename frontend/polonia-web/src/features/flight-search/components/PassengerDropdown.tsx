@@ -3,13 +3,11 @@ import {
   Button,
   Combobox,
   InputBase,
-  Radio,
   useCombobox,
 } from '@mantine/core'
 import { ChevronDown, Minus, Plus } from 'lucide-react'
 import { useFormContext } from '../model/form-context'
 import {
-  CABIN_OPTIONS,
   formatTravellers,
   isValidTravellerCounts,
 } from '../model/search-params'
@@ -23,7 +21,6 @@ const TRAVELLER_TYPES: Array<{
 }> = [
   { type: 'adult', label: 'Adults', description: 'Age 12+' },
   { type: 'child', label: 'Children', description: 'Age 2–11' },
-  { type: 'infant', label: 'Infants', description: "Under 2, on an adult's lap" },
 ]
 
 interface PassengerDropdownProps {
@@ -32,12 +29,15 @@ interface PassengerDropdownProps {
 
 export function PassengerDropdown({ classNames }: PassengerDropdownProps) {
   const form = useFormContext()
-  const { passengers, cabin } = form.values
+  const { passengers } = form.values
   const combobox = useCombobox({
     onDropdownClose: () => combobox.resetSelectedOption(),
   })
 
-  const nextCounts = (type: keyof TravellerCounts, delta: number): TravellerCounts => ({
+  const nextCounts = (
+    type: keyof TravellerCounts,
+    delta: number,
+  ): TravellerCounts => ({
     ...passengers,
     [type]: passengers[type] + delta,
   })
@@ -57,7 +57,7 @@ export function PassengerDropdown({ classNames }: PassengerDropdownProps) {
         <InputBase
           component="button"
           type="button"
-          label="Travellers & cabin"
+          label="Travellers"
           pointer
           rightSection={<ChevronDown size={17} aria-hidden="true" />}
           rightSectionPointerEvents="none"
@@ -66,12 +66,16 @@ export function PassengerDropdown({ classNames }: PassengerDropdownProps) {
           aria-expanded={combobox.dropdownOpened}
           onClick={() => combobox.toggleDropdown()}
         >
-          {formatTravellers(passengers)} · {cabin}
+          {formatTravellers(passengers)}
         </InputBase>
       </Combobox.Target>
 
       <Combobox.Dropdown>
-        <div className={styles.menu} role="group" aria-label="Travellers and cabin">
+        <div
+          className={styles.menu}
+          role="group"
+          aria-label="Travellers and cabin"
+        >
           {TRAVELLER_TYPES.map(({ type, label, description }) => (
             <div className={styles.travellerRow} key={type}>
               <div>
@@ -104,28 +108,16 @@ export function PassengerDropdown({ classNames }: PassengerDropdownProps) {
             </div>
           ))}
 
-          <Radio.Group
-            label="Cabin"
-            value={cabin}
-            onChange={(value) => {
-              const selectedCabin = CABIN_OPTIONS.find((option) => option === value)
+          <p className={styles.note}>
+            Up to 8 travellers aged two or older. Infant bookings are not
+            available yet. Choose a cabin from priced fares in the results.
+          </p>
 
-              if (selectedCabin) {
-                form.setFieldValue('cabin', selectedCabin)
-              }
-            }}
-            classNames={{ label: styles.cabinLabel }}
+          <Button
+            variant="outline"
+            fullWidth
+            onClick={() => combobox.closeDropdown()}
           >
-            <div className={styles.cabinOptions}>
-              {CABIN_OPTIONS.map((option) => (
-                <Radio key={option} value={option} label={option} size="xs" />
-              ))}
-            </div>
-          </Radio.Group>
-
-          <p className={styles.note}>Up to 8 seated travellers. One infant per adult.</p>
-
-          <Button variant="outline" fullWidth onClick={() => combobox.closeDropdown()}>
             Done
           </Button>
         </div>

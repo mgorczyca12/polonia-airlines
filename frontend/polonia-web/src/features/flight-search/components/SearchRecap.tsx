@@ -3,7 +3,6 @@ import { SlidersHorizontal } from 'lucide-react'
 import { getAirportByCode } from '#/entities/airport'
 import { formatDateRange } from '#/shared/lib/formatting'
 import {
-  DEFAULT_CABIN,
   formatTravellers,
   resolveTravellers,
   resolveTripType,
@@ -36,11 +35,14 @@ export function SearchRecap({ search }: SearchRecapProps) {
           <span className={styles.divider} aria-hidden="true" />
           <p className={styles.detail}>
             {search.departure
-              ? formatDateRange(search.departure, isReturn ? search.return : undefined)
+              ? formatDateRange(
+                  search.departure,
+                  isReturn ? search.return : undefined,
+                )
               : 'Flexible dates'}
           </p>
           <p className={styles.detail}>
-            {formatTravellers(resolveTravellers(search))} · {search.cabin ?? DEFAULT_CABIN}
+            {formatTravellers(resolveTravellers(search))}
           </p>
         </div>
         <Link className={styles.modify} to="/" search={search}>

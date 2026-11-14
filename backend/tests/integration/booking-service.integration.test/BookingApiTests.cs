@@ -51,6 +51,16 @@ public sealed class BookingApiTests
         Assert.Equal("Pending", reservation.WorkflowStatus);
         Assert.Equal(125m, reservation.TotalAmount);
         Assert.Equal(" cabin ", Assert.Single(reservation.Fares).CabinId);
+        var reloaded = await client.GetFromJsonAsync<ReservationResponse>(response.Headers.Location);
+        Assert.NotNull(reloaded);
+        Assert.Equal("Guest", reloaded.ContactName);
+        Assert.Equal("guest@example.test", reloaded.ContactEmail);
+        Assert.Equal("First", Assert.Single(reloaded.Passengers).FirstName);
+        Assert.Equal("Last", Assert.Single(reloaded.Passengers).LastName);
+        var recovered = await client.GetFromJsonAsync<ReservationResponse>(
+            "/api/booking/reservations/by-request/browser-request");
+        Assert.NotNull(recovered);
+        Assert.Equal(reservation.Id, recovered.Id);
 
         var replay = await client.PostAsJsonAsync("/api/booking/reservations", request);
 
@@ -65,6 +75,8 @@ public sealed class BookingApiTests
 
         var unauthorized = await client.GetAsync(response.Headers.Location);
         Assert.Equal(HttpStatusCode.NotFound, unauthorized.StatusCode);
+        Assert.Equal(HttpStatusCode.NotFound,
+            (await client.GetAsync("/api/booking/reservations/by-request/browser-request")).StatusCode);
 
         using var json = JsonDocument.Parse(await unauthorized.Content.ReadAsStringAsync());
         Assert.Equal("not_found", json.RootElement.GetProperty("code").GetString());
@@ -106,6 +118,68 @@ public sealed class BookingApiTests
 
         Assert.False(json.RootElement[0].TryGetProperty("cabinId", out _));
         Assert.False(json.RootElement[0].TryGetProperty("isSuccess", out _));
+    }
+
+    [Fact]
+    public async Task FareSearch_ExactReferencesAndActivePrices_ReturnOnlyMatchingProducts()
+    {
+        using var factory = new Factory();
+        using var client = factory.CreateSeededClient();
+        using (var scope = factory.Services.CreateScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+            var retired = FareProduct.Create("RETIRED", 1, "Economy", "Retired", BaggageAllowance.None);
+            retired.Retire();
+            database.FareProducts.Add(retired);
+            database.FlightPrices.Add(FlightPrice.Create(" flight ", retired.Id, "PLN", 1m, " cabin "));
+            database.FlightPrices.Add(FlightPrice.Create("other", factory.ProductId, "PLN", 200m, "other-cabin"));
+            database.SaveChanges();
+        }
+
+        var fares = await client.GetFromJsonAsync<FlightFareResponse[]>(
+            "/api/booking/fares?FlightIds=%20flight%20&FlightIds=other&Currency=PLN");
+        Assert.NotNull(fares);
+        Assert.Equal(2, fares.Length);
+        Assert.Equal(" flight ", fares[0].FlightId);
+        Assert.Equal(125m, fares[0].Amount);
+        Assert.Equal(factory.ProductId, fares[0].ProductId);
+        Assert.Equal(" cabin ", fares[0].CabinId);
+        Assert.Equal("other", fares[1].FlightId);
+
+        Assert.Empty((await client.GetFromJsonAsync<FlightFareResponse[]>(
+            "/api/booking/fares?FlightIds=flight&Currency=PLN"))!);
+        Assert.Empty((await client.GetFromJsonAsync<FlightFareResponse[]>(
+            "/api/booking/fares?FlightIds=%20flight%20&Currency=USD"))!);
+    }
+
+    [Theory]
+    [InlineData("Currency=USD")]
+    [InlineData("FlightIds=1&Currency=usd")]
+    [InlineData("FlightIds=1&FlightIds=1&Currency=USD")]
+    [InlineData("FlightIds=%20%20&Currency=USD")]
+    public async Task FareSearch_InvalidInput_ReturnsValidationProblem(string query)
+    {
+        using var factory = new Factory();
+        using var client = factory.CreateSeededClient();
+
+        var response = await client.GetAsync($"/api/booking/fares?{query}");
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        using var json = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+        Assert.True(json.RootElement.TryGetProperty("errors", out _));
+    }
+
+    [Fact]
+    public async Task FareSearch_AboveBatchLimit_ReturnsBadRequest()
+    {
+        using var factory = new Factory();
+        using var client = factory.CreateSeededClient();
+        var maximum = string.Join("&", Enumerable.Range(1, 100).Select(id => $"FlightIds={id}"));
+        var query = string.Join("&", Enumerable.Range(1, 101).Select(id => $"FlightIds={id}"));
+
+        Assert.Equal(HttpStatusCode.OK,
+            (await client.GetAsync($"/api/booking/fares?{maximum}&Currency=USD")).StatusCode);
+        Assert.Equal(HttpStatusCode.BadRequest,
+            (await client.GetAsync($"/api/booking/fares?{query}&Currency=USD")).StatusCode);
     }
 
     private sealed class Factory : WebApplicationFactory<Program>

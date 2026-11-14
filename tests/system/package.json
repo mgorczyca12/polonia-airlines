@@ -1,0 +1,11 @@
+{
+  "name": "polonia-system-tests",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node run-system-tests.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
+  }
+}

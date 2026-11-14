@@ -8,8 +8,8 @@ The host wires booking's API, application, and infrastructure layers. Pricing st
 inside booking: fare products are separate from flight-specific prices, expiring
 offers, and purchased fare snapshots. Reservation creation starts a booking-owned
 MassTransit saga. PostgreSQL, RabbitMQ, and the seating participant are required
-for the distributed workflow. The sample-data web application is not connected
-to it; payment-provider integration is deferred.
+for the distributed workflow. The web application now calls guest checkout and
+reservation APIs through its server-only capability/session layer; payment is deferred.
 
 See the [service README](../../../backend/booking-service/README.md) for API,
 configuration, schema initialization, catalog provisioning, and access-token details.
@@ -102,5 +102,6 @@ seating; it does not replace the reservation aggregate.
   recreate completed work. Payment is not part of this first-release workflow.
 
 Unit and integration test sources cover catalog/offer rules, reservation
-idempotency, domain invariants, and saga transitions. Execution of tests for this
-implementation was explicitly deferred by the user.
+idempotency, domain invariants, and saga transitions. The new fare query and
+guest-scoped request lookup have SQLite HTTP integration coverage. Live browser
+workflow verification remains pending; see [frontend](../frontend.md).

@@ -1,6 +1,21 @@
 @booking_service_HostAddress = http://localhost:5180
+@guestToken = paste-checkout-token-here
+@requestId = web-11111111-1111-1111-1111-111111111111
 
-GET {{booking_service_HostAddress}}/weatherforecast/
+### Active prices; references are opaque and case-sensitive
+GET {{booking_service_HostAddress}}/api/booking/fares?FlightIds=1&FlightIds=2&Currency=USD
 Accept: application/json
 
-###
+### Invalid currency returns validation problem details
+GET {{booking_service_HostAddress}}/api/booking/fares?FlightIds=1&Currency=usd
+
+### Start guest checkout (keep returned token secret)
+POST {{booking_service_HostAddress}}/api/booking/checkouts
+
+### Recover a committed guest reservation after a lost response (404 if unknown)
+GET {{booking_service_HostAddress}}/api/booking/reservations/by-request/{{requestId}}
+X-Guest-Token: {{guestToken}}
+
+### Reload the stored contact/passenger-name summary
+GET {{booking_service_HostAddress}}/api/booking/reservations/1
+X-Guest-Token: {{guestToken}}

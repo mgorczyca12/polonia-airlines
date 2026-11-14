@@ -5,13 +5,33 @@ using booking_service.Application.Features.ReservationFeatures.Queries;
 using booking_service.Domain.ValueObjects;
 using booking_service.Infrastructure.Integrations.Sagas;
 using FluentResults;
+using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 
 namespace booking_service.Infrastructure.Persistence.Queries;
 
-public sealed class ReservationQueries(BookingDbContext context) : IReservationQueries
+public sealed class ReservationQueries(
+    BookingDbContext context,
+    IValidator<GetReservationByRequest> requestValidator) : IReservationQueries
 {
     private const string PendingWorkflowStatus = "Pending";
+
+    public async Task<Result<ReservationResponse>> GetByRequest(
+        GetReservationByRequest request,
+        CancellationToken cancellationToken)
+    {
+        await requestValidator.ValidateAndThrowAsync(request, cancellationToken);
+        var tokenHash = GuestToken.From(request.GuestToken).Hash;
+        var reservationId = await context.ReservationCheckouts
+            .AsNoTracking()
+            .Where(checkout => checkout.GuestTokenHash == tokenHash && checkout.RequestId == request.RequestId)
+            .Select(checkout => (int?)checkout.ReservationId)
+            .SingleOrDefaultAsync(cancellationToken);
+
+        return reservationId.HasValue
+            ? await GetReservation(new GetReservationRequest(reservationId.Value, request.GuestToken), cancellationToken)
+            : Result.Fail<ReservationResponse>(BookingError.NotFound("Reservation"));
+    }
 
     public async Task<Result<ReservationResponse>> GetReservation(
         GetReservationRequest request,
@@ -53,6 +73,15 @@ public sealed class ReservationQueries(BookingDbContext context) : IReservationQ
             offer.Fares.Select(ResponseMapper.ToSnapshot).ToArray(),
             access.CorrelationId,
             workflow?.CurrentState ?? PendingWorkflowStatus,
-            workflow?.FailureCode));
+            workflow?.FailureCode,
+            reservation.ContactName,
+            reservation.ContactEmail,
+            reservation.Passengers
+                .OrderBy(passenger => passenger.Id)
+                .Select(passenger => new PassengerSummaryResponse(
+                    passenger.Id,
+                    passenger.FirstName,
+                    passenger.LastName))
+                .ToArray()));
     }
 }

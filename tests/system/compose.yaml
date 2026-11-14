@@ -1,0 +1,166 @@
+name: ${SYSTEM_TEST_PROJECT:?Run through the system-test runner}
+
+x-backend-environment: &backend-environment
+  ASPNETCORE_ENVIRONMENT: Production
+  ASPNETCORE_HTTP_PORTS: "8080"
+  RabbitMq__Host: rabbitmq
+  RabbitMq__User: system_test
+  RabbitMq__Pass: ${SYSTEM_TEST_BROKER_PASSWORD:?Missing test broker password}
+  RabbitMq__VHost: /
+  RabbitMq__UseSsl: "false"
+  MASSTRANSIT_USAGE_TELEMETRY: "false"
+
+x-backend-health: &backend-health
+  test: ["CMD", "bash", "-c", "echo > /dev/tcp/127.0.0.1/8080"]
+  interval: 3s
+  timeout: 3s
+  retries: 30
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: system_test
+      POSTGRES_PASSWORD: ${SYSTEM_TEST_DB_PASSWORD:?Missing test database password}
+    tmpfs:
+      - /var/lib/postgresql
+    volumes:
+      - ../../docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-databases.sql:ro
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "psql -h 127.0.0.1 -U system_test -d polonia_seating -c 'SELECT 1' > /dev/null",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:8-alpine
+    tmpfs:
+      - /data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: system_test
+      RABBITMQ_DEFAULT_PASS: ${SYSTEM_TEST_BROKER_PASSWORD:?Missing test broker password}
+    tmpfs:
+      - /var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 10s
+      retries: 30
+
+  fixture:
+    build:
+      context: ../..
+      dockerfile: tests/system/fixture/Dockerfile
+    environment:
+      SYSTEM_TEST_DB_PASSWORD: ${SYSTEM_TEST_DB_PASSWORD:?Missing test database password}
+      SYSTEM_TEST_DEPARTURE: ${SYSTEM_TEST_DEPARTURE:?Missing test departure date}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  flight-service:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: flight-service
+    environment:
+      <<: *backend-environment
+      ConnectionStrings__FlightDatabase: Host=postgres;Database=polonia_flight;Username=system_test;Password=${SYSTEM_TEST_DB_PASSWORD}
+    healthcheck: *backend-health
+    depends_on:
+      fixture:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+  booking-service:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: booking-service
+    environment:
+      <<: *backend-environment
+      ConnectionStrings__BookingDatabase: Host=postgres;Database=polonia_booking;Username=system_test;Password=${SYSTEM_TEST_DB_PASSWORD}
+    healthcheck: *backend-health
+    depends_on:
+      fixture:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+
+  seating-service:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+      args:
+        SERVICE: seating-service
+    environment:
+      <<: *backend-environment
+      ConnectionStrings__SeatingDatabase: Host=postgres;Database=polonia_seating;Username=system_test;Password=${SYSTEM_TEST_DB_PASSWORD}
+      ConnectionStrings__InventoryRedis: redis:6379
+    healthcheck: *backend-health
+    depends_on:
+      fixture:
+        condition: service_completed_successfully
+      rabbitmq:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  polonia-web:
+    build:
+      context: ../..
+      dockerfile: frontend/polonia-web/Dockerfile
+    environment:
+      FLIGHT_API_URL: http://flight-service:8080
+      BOOKING_API_URL: http://booking-service:8080
+      WEB_ORIGIN: ${SYSTEM_TEST_ORIGIN:?Missing test web origin}
+      WEB_SESSION_PASSWORD: ${SYSTEM_TEST_SESSION_PASSWORD:?Missing test session password}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/').then(r => { if (!r.ok) process.exit(1) }).catch(() => process.exit(1))",
+        ]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    depends_on:
+      flight-service:
+        condition: service_healthy
+      booking-service:
+        condition: service_healthy
+      seating-service:
+        condition: service_healthy
+
+  nginx:
+    build:
+      context: ../..
+      dockerfile: docker/nginx/Dockerfile
+    ports:
+      - "127.0.0.1:${SYSTEM_TEST_WEB_PORT:?Missing test web port}:8080"
+    healthcheck:
+      test:
+        ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+    depends_on:
+      polonia-web:
+        condition: service_healthy

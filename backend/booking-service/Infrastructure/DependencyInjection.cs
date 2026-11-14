@@ -38,6 +38,7 @@ public static class DependencyInjection
         builder.Services.AddScoped<IReservationRepository, ReservationRepository>();
         builder.Services.AddScoped<IReservationCheckoutRepository, ReservationCheckoutRepository>();
         builder.Services.AddScoped<ICatalogQueries, CatalogQueries>();
+        builder.Services.AddScoped<IFareQueries, FareQueries>();
         builder.Services.AddScoped<IOfferQueries, OfferQueries>();
         builder.Services.AddScoped<IReservationQueries, ReservationQueries>();
         builder.Services.AddScoped<CompleteReservationActivity>();

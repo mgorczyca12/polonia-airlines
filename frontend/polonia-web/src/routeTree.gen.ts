@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as BookingRouteImport } from './routes/booking'
 import { Route as FlightlistRouteImport } from './routes/flightlist'
+import { Route as ApiWebSplatRouteImport } from './routes/api.web.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -34,18 +35,25 @@ const FlightlistRoute = FlightlistRouteImport.update({
   path: '/flightlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiWebSplatRoute = ApiWebSplatRouteImport.update({
+  id: '/api/web/$',
+  path: '/api/web/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/booking': typeof BookingRoute
   '/flightlist': typeof FlightlistRoute
+  '/api/web/$': typeof ApiWebSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/about': typeof AboutRoute
   '/booking': typeof BookingRoute
   '/flightlist': typeof FlightlistRoute
+  '/api/web/$': typeof ApiWebSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -53,13 +61,14 @@ export interface FileRoutesById {
   '/about': typeof AboutRoute
   '/booking': typeof BookingRoute
   '/flightlist': typeof FlightlistRoute
+  '/api/web/$': typeof ApiWebSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/about' | '/booking' | '/flightlist'
+  fullPaths: '/' | '/about' | '/booking' | '/flightlist' | '/api/web/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/about' | '/booking' | '/flightlist'
-  id: '__root__' | '/' | '/about' | '/booking' | '/flightlist'
+  to: '/' | '/about' | '/booking' | '/flightlist' | '/api/web/$'
+  id: '__root__' | '/' | '/about' | '/booking' | '/flightlist' | '/api/web/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -67,6 +76,7 @@ export interface RootRouteChildren {
   AboutRoute: typeof AboutRoute
   BookingRoute: typeof BookingRoute
   FlightlistRoute: typeof FlightlistRoute
+  ApiWebSplatRoute: typeof ApiWebSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -99,6 +109,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FlightlistRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/web/$': {
+      id: '/api/web/$'
+      path: '/api/web/$'
+      fullPath: '/api/web/$'
+      preLoaderRoute: typeof ApiWebSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -107,6 +124,7 @@ const rootRouteChildren: RootRouteChildren = {
   AboutRoute: AboutRoute,
   BookingRoute: BookingRoute,
   FlightlistRoute: FlightlistRoute,
+  ApiWebSplatRoute: ApiWebSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

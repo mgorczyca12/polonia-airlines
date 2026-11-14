@@ -19,7 +19,8 @@ namespace booking_service.Api.Controllers;
 public sealed class ReservationController(
     IMediator mediator,
     IReservationQueries queries,
-    IValidator<GetReservationRequest> reservationValidator) : ControllerBase
+    IValidator<GetReservationRequest> reservationValidator,
+    IValidator<GetReservationByRequest> requestValidator) : ControllerBase
 {
     [HttpPost]
     [EndpointSummary("Turn an offer into a pending reservation; its inventory workflow completes asynchronously.")]
@@ -62,6 +63,26 @@ public sealed class ReservationController(
         await reservationValidator.ValidateAndThrowAsync(request, cancellationToken);
 
         var result = await queries.GetReservation(request, cancellationToken);
+        if (result.IsFailed)
+        {
+            return this.BookingFailure(result);
+        }
+
+        return Ok(result.Value);
+    }
+
+    [HttpGet("by-request/{requestId}")]
+    [EndpointSummary("Recover a guest reservation after an ambiguous submission response.")]
+    [ProducesResponseType<ReservationResponse>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<ReservationResponse>> GetByRequest(
+        [FromRoute] string requestId,
+        [FromHeader(Name = "X-Guest-Token")] string guestToken,
+        CancellationToken cancellationToken)
+    {
+        var request = new GetReservationByRequest(requestId, guestToken);
+        await requestValidator.ValidateAndThrowAsync(request, cancellationToken);
+
+        var result = await queries.GetByRequest(request, cancellationToken);
         if (result.IsFailed)
         {
             return this.BookingFailure(result);
