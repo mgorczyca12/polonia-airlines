@@ -222,8 +222,8 @@ describe('reservation submission', () => {
     await completeDetails()
     fireEvent.click(screen.getByRole('button', { name: 'Edit details' }))
 
-    expect(
-      screen.getByLabelText<HTMLInputElement>(/First name/).value,
-    ).toBe('Ada')
+    expect(screen.getByLabelText<HTMLInputElement>(/First name/).value).toBe(
+      'Ada',
+    )
   })
 })

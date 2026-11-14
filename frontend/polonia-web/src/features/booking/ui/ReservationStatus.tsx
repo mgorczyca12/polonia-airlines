@@ -186,7 +186,8 @@ export function ReservationStatus({
             )}
             <p className={styles.summaryFlight}>
               {flight ? `${flight.flightNumber} · ` : ''}
-              {travellerCount} {travellerCount === 1 ? 'traveller' : 'travellers'}
+              {travellerCount}{' '}
+              {travellerCount === 1 ? 'traveller' : 'travellers'}
             </p>
             <div className={styles.summaryItems}>
               {fares.map((fare) => (

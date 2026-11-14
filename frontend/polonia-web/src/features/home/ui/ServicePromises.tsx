@@ -25,7 +25,12 @@ export function ServicePromises() {
       <ul className={styles.list}>
         {PROMISES.map(({ icon: Icon, title, description }) => (
           <li key={title} className={styles.promise}>
-            <Icon className={styles.icon} size={26} strokeWidth={1.5} aria-hidden="true" />
+            <Icon
+              className={styles.icon}
+              size={26}
+              strokeWidth={1.5}
+              aria-hidden="true"
+            />
             <div>
               <p className={styles.title}>{title}</p>
               <p className={styles.description}>{description}</p>

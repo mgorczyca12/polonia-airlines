@@ -1,6 +1,7 @@
 //  @ts-check
 
 import { tanstackConfig } from '@tanstack/eslint-config'
+import { createNodeResolver } from 'eslint-plugin-import-x'
 
 const featureInternals = {
   regex: '^#/features/[^/]+/',
@@ -20,7 +21,6 @@ export default [
   ...tanstackConfig,
   {
     rules: {
-      'import/no-cycle': 'error',
       'import/order': 'off',
       'sort-imports': 'off',
       '@typescript-eslint/array-type': 'off',
@@ -30,6 +30,20 @@ export default [
         'error',
         { patterns: [featureInternals, ...forbidLayers(['routes'])] },
       ],
+    },
+  },
+  {
+    files: ['src/**/*.{ts,tsx}'],
+    settings: {
+      // Lets import rules parse and resolve TypeScript, `#/` and relative imports.
+      'import-x/extensions': ['.ts', '.tsx', '.js'],
+      'import-x/parsers': { '@typescript-eslint/parser': ['.ts', '.tsx'] },
+      'import-x/resolver-next': [
+        createNodeResolver({ extensions: ['.ts', '.tsx', '.js', '.json'] }),
+      ],
+    },
+    rules: {
+      'import/no-cycle': 'error',
     },
   },
   {
@@ -47,12 +61,23 @@ export default [
       'no-restricted-imports': [
         'error',
         {
-          patterns: forbidLayers(['routes', 'app', 'features', 'entities', 'server']),
+          patterns: forbidLayers([
+            'routes',
+            'app',
+            'features',
+            'entities',
+            'server',
+          ]),
         },
       ],
     },
   },
   {
-    ignores: ['eslint.config.js', 'prettier.config.js', 'src/routeTree.gen.ts'],
+    ignores: [
+      'eslint.config.js',
+      'prettier.config.js',
+      'src/routeTree.gen.ts',
+      '.tanstack/**',
+    ],
   },
 ]

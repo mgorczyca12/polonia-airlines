@@ -18,16 +18,18 @@ import '#/styles/index.scss'
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('mantine-color-scheme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);root.style.colorScheme=resolved;}catch(e){}})();`
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
-  head: () => ({
-    meta: [
-      { charSet: 'utf-8' },
-      { name: 'viewport', content: 'width=device-width, initial-scale=1' },
-      { title: 'Polonia Airlines' },
-    ],
-  }),
-  shellComponent: RootDocument,
-})
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
+  {
+    head: () => ({
+      meta: [
+        { charSet: 'utf-8' },
+        { name: 'viewport', content: 'width=device-width, initial-scale=1' },
+        { title: 'Polonia Airlines' },
+      ],
+    }),
+    shellComponent: RootDocument,
+  },
+)
 
 function RootDocument({ children }: { children: ReactNode }) {
   return (

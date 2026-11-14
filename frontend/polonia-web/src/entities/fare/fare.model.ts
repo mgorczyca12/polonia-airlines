@@ -52,7 +52,8 @@ export function groupFaresByCabin(fares: Fare[]): CabinFares[] {
     .map(([cabinClass, cabinFares]) => {
       const sorted = [...cabinFares].sort(
         (first, second) =>
-          first.amount - second.amount || first.brand.localeCompare(second.brand),
+          first.amount - second.amount ||
+          first.brand.localeCompare(second.brand),
       )
 
       return { cabinClass, fares: sorted, lowestAmount: sorted[0].amount }

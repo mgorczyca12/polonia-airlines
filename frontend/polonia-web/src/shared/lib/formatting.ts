@@ -89,7 +89,10 @@ export function formatTime(date: Date): string {
   return timeFormatter.format(date)
 }
 
-function formatDateKey(dateKey: string, formatter: Intl.DateTimeFormat): string {
+function formatDateKey(
+  dateKey: string,
+  formatter: Intl.DateTimeFormat,
+): string {
   const date = parseDateKey(dateKey)
   return date ? formatter.format(date) : dateKey
 }

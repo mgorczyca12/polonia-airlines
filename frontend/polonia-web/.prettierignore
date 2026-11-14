@@ -1,3 +1,6 @@
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
+dist
+.tanstack
+src/routeTree.gen.ts

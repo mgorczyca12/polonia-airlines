@@ -14,6 +14,9 @@ export function offerQuery(offerId: string) {
 }
 
 /** Milliseconds until the offer expires; zero or negative once expired. */
-export function offerTimeRemaining(expiresAt: string, now = Date.now()): number {
+export function offerTimeRemaining(
+  expiresAt: string,
+  now = Date.now(),
+): number {
   return Date.parse(expiresAt) - now
 }

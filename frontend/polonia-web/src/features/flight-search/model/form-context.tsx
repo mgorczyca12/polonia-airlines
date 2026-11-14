@@ -1,5 +1,9 @@
 import { createFormContext } from '@mantine/form'
-import type { CabinPreference, TravellerCounts, TripType } from './search-params'
+import type {
+  CabinPreference,
+  TravellerCounts,
+  TripType,
+} from './search-params'
 
 /** Date fields hold Mantine's `YYYY-MM-DD` date strings. */
 export interface FlightSearchFormValues {

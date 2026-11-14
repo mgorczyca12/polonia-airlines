@@ -17,7 +17,9 @@ describe('LoadingRegion', () => {
       </LoadingRegion>,
     )
 
-    expect(screen.getByRole('status', { name: 'Loading flights' })).toBeDefined()
+    expect(
+      screen.getByRole('status', { name: 'Loading flights' }),
+    ).toBeDefined()
     expect(screen.queryByText('Skeleton')).toBeNull()
 
     act(() => vi.advanceTimersByTime(200))

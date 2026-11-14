@@ -140,7 +140,12 @@ const ROUTES: WebApiRoute[] = [
         request,
       }),
   },
-  { method: 'POST', pattern: /^checkout$/, access: 'guest', handle: startCheckout },
+  {
+    method: 'POST',
+    pattern: /^checkout$/,
+    access: 'guest',
+    handle: startCheckout,
+  },
   { method: 'POST', pattern: /^offers$/, access: 'guest', handle: createOffer },
   {
     method: 'POST',

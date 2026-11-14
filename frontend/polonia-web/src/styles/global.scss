@@ -30,13 +30,19 @@
     rgba(23, 40, 49, 0.21) 65%,
     rgba(23, 40, 49, 0) 100%
   );
-  --placeholder-hero: linear-gradient(135deg, #3b4a52 0%, #5d6b70 55%, #8a8478 100%);
+  --placeholder-hero: linear-gradient(
+    135deg,
+    #3b4a52 0%,
+    #5d6b70 55%,
+    #8a8478 100%
+  );
   --placeholder-photo: linear-gradient(135deg, #ebe7df 0%, #dcd6cb 100%);
   --placeholder-icon: #{$slate-gray};
 
   --shadow-raised: 0 8px 28px rgba(32, 39, 45, 0.07);
 
-  --font-body: 'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body:
+    'Inter Variable', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-display: Lora, Georgia, 'Times New Roman', serif;
 
   --radius-control: 0.25rem;
@@ -90,7 +96,12 @@
   --color-banner: #{$midnight};
   --color-banner-text: #{$mist-gray};
 
-  --placeholder-hero: linear-gradient(135deg, #1d2529 0%, #2c363b 55%, #3f3b34 100%);
+  --placeholder-hero: linear-gradient(
+    135deg,
+    #1d2529 0%,
+    #2c363b 55%,
+    #3f3b34 100%
+  );
   --placeholder-photo: linear-gradient(135deg, #24262c 0%, #2e3037 100%);
   --placeholder-icon: #{$mist-gray};
 

@@ -81,7 +81,8 @@ export function useBookingSession(offerId: string) {
       ? { reservation: recovery.data, updatedAt: recovery.dataUpdatedAt }
       : undefined,
     offer: offer.data,
-    isLoading: recovery.isPending || (reservationId === null && offer.isPending),
+    isLoading:
+      recovery.isPending || (reservationId === null && offer.isPending),
     loadError: recovery.error ?? offer.error,
     submit,
     checkSubmission,

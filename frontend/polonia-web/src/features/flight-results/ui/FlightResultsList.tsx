@@ -102,8 +102,8 @@ export function FlightResultsList({
         ) : (
           <>
             <p className={styles.count} role="status">
-              {flights.length} {flights.length === 1 ? 'flight' : 'flights'}{' '}
-              on this page · Prices per traveller
+              {flights.length} {flights.length === 1 ? 'flight' : 'flights'} on
+              this page · Prices per traveller
             </p>
             {flights.map((flight) => (
               <FlightResultCard
@@ -114,9 +114,7 @@ export function FlightResultsList({
                 expanded={flight.id === openFlightId}
                 passengers={passengers}
                 productIds={
-                  selection?.flightId === flight.id
-                    ? selection.productIds
-                    : []
+                  selection?.flightId === flight.id ? selection.productIds : []
                 }
                 sameFareForAll={sameFareForAll}
                 disabled={disabled}

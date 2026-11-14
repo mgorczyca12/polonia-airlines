@@ -53,7 +53,12 @@ describe('web API client', () => {
       vi.fn().mockResolvedValue(Response.json([{ flightNumber: 'DEMO' }])),
     )
     await expect(
-      searchFlights({ from: 'ORD', to: 'KRK', departure: '2026-12-01', page: 1 }),
+      searchFlights({
+        from: 'ORD',
+        to: 'KRK',
+        departure: '2026-12-01',
+        page: 1,
+      }),
     ).rejects.toThrow('Invalid flight search response')
   })
 })
