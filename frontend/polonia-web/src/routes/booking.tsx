@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { LiveBooking } from '#/features/booking/components/LiveBooking'
+import { LiveBooking } from '#/features/booking'
 
 function BookingRoute() {
   const search = Route.useSearch()

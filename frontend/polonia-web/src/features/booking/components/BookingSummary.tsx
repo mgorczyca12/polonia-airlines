@@ -1,6 +1,5 @@
 import { Box, Card, List, Text } from '@mantine/core'
-import type { Flight } from '#/features/flight-results'
-import type { BrandedFare } from '#/features/flight-results/model/flight.types'
+import type { BrandedFare, Flight } from '#/features/flight-results'
 
 interface BookingSummaryProps {
   flight: Flight

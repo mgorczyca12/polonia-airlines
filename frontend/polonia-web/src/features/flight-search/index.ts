@@ -7,6 +7,7 @@ export {
   formatTravellers,
   getSeatedPassengers,
   parseFlightSearchParams,
+  parseLiveSearchParams,
   resolveTravellers,
   resolveTripType,
   seatedTravellerCount,

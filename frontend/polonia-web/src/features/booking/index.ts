@@ -1,5 +1,6 @@
 export { BookingProgress } from './components/BookingProgress'
 export type { BookingStep } from './components/BookingProgress'
+export { LiveBooking } from './components/LiveBooking'
 export { BookingSummary } from './components/BookingSummary'
 export { BookingConfirmation } from './components/BookingConfirmation'
 export { JourneySummary } from './components/JourneySummary'

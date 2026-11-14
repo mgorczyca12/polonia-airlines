@@ -1,6 +1,7 @@
 import { createServerOnlyFn } from '@tanstack/react-start'
 import { getIronSession, webCookies } from 'iron-session'
-import { isRecord, webReservationRequestId } from './contracts'
+import { isRecord } from './guards'
+import { webReservationRequestId } from '#/shared/lib/identifiers'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 

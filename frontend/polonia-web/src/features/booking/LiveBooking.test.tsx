@@ -9,9 +9,9 @@ import {
   getOffer,
   getReservation,
   recoverReservation,
-} from '#/shared/api/client'
-import type { ReservationResponse } from '#/shared/api/contracts'
-import type * as ApiClient from '#/shared/api/client'
+} from '#/shared/api'
+import type { ReservationResponse } from '#/shared/api'
+import type * as ApiModule from '#/shared/api'
 
 vi.mock('@tanstack/react-router', () => ({
   Link: ({ children, to }: { children?: ReactNode; to?: string }) => (
@@ -19,8 +19,8 @@ vi.mock('@tanstack/react-router', () => ({
   ),
 }))
 
-vi.mock('#/shared/api/client', async () => {
-  const actual = await vi.importActual<typeof ApiClient>('#/shared/api/client')
+vi.mock('#/shared/api', async () => {
+  const actual = await vi.importActual<typeof ApiModule>('#/shared/api')
   return {
     ...actual,
     getFlight: vi.fn(),

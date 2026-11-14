@@ -35,6 +35,11 @@ const exactUsdFormatter = new Intl.NumberFormat('en-US', {
   currency: 'USD',
   minimumFractionDigits: 2,
 })
+const utcDateTimeFormatter = new Intl.DateTimeFormat('en-US', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'UTC',
+})
 
 function createUtcDate(
   year: number,
@@ -160,4 +165,15 @@ export function formatUsd(
   return options.exact
     ? exactUsdFormatter.format(amount)
     : wholeUsdFormatter.format(amount)
+}
+
+export function formatMoney(amount: number, currency: string): string {
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(
+    amount,
+  )
+}
+
+/** Formats an ISO timestamp as a UTC date and time with an explicit "UTC" label. */
+export function formatUtcDateTime(timestamp: string): string {
+  return `${utcDateTimeFormatter.format(new Date(timestamp))} UTC`
 }

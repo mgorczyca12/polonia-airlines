@@ -15,18 +15,14 @@ import { BookingLayout } from '#/app/layout/BookingLayout'
 import { BookingProgress } from '#/features/booking'
 import {
   getSeatedPassengers,
+  parseLiveSearchParams,
   resolveTravellers,
   SearchRecap,
 } from '#/features/flight-search'
-import { parseLiveSearchParams } from '#/features/flight-search/model/search-params'
-import {
-  createOffer,
-  errorMessage,
-  getFares,
-  searchFlights,
-} from '#/shared/api/client'
-import type { FlightFareResponse, FlightResponse } from '#/shared/api/contracts'
-import { airportLabel, formatMoney, formatUtc } from '#/shared/api/presentation'
+import { airportLabel } from '#/entities/airport'
+import { createOffer, errorMessage, getFares, searchFlights } from '#/shared/api'
+import type { FlightFareResponse, FlightResponse } from '#/shared/api'
+import { formatMoney, formatUtcDateTime as formatUtc } from '#/shared/lib/formatting'
 
 function FlightListingRoute() {
   const search = Route.useSearch()
@@ -60,16 +56,17 @@ function FlightListingRoute() {
     setLoading(true)
     setError(null)
     setSelection(null)
-    const params = new URLSearchParams({
-      DepartureAirport: search.from!,
-      ArrivalAirport: search.to!,
-      DepartureDate: search.departure!,
-      Page: String(page),
-      PageSize: '20',
-    })
     void (async () => {
       try {
-        const result = await searchFlights(params, controller.signal)
+        const result = await searchFlights(
+          {
+            from: search.from!,
+            to: search.to!,
+            departure: search.departure!,
+            page,
+          },
+          controller.signal,
+        )
         const prices = result.length
           ? await getFares(
               result.map((flight) => flight.id),

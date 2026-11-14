@@ -12,7 +12,8 @@ import {
 } from '@mantine/core'
 import { useEffect, useState } from 'react'
 import { BookingLayout } from '#/app/layout/BookingLayout'
-import { BookingProgress } from '#/features/booking'
+import { airportLabel } from '#/entities/airport'
+import { isConfirmed, isTerminal } from '#/entities/reservation'
 import {
   createReservation,
   errorMessage,
@@ -20,20 +21,15 @@ import {
   getOffer,
   getReservation,
   recoverReservation,
-} from '#/shared/api/client'
+} from '#/shared/api'
 import type {
   FlightResponse,
   OfferResponse,
   PassengerRequest,
   ReservationResponse,
-} from '#/shared/api/contracts'
-import {
-  airportLabel,
-  formatMoney,
-  formatUtc,
-  isConfirmed,
-  isTerminal,
-} from '#/shared/api/presentation'
+} from '#/shared/api'
+import { formatMoney, formatUtcDateTime as formatUtc } from '#/shared/lib/formatting'
+import { BookingProgress } from './BookingProgress'
 
 export function LiveBooking({ offerId }: { offerId?: string }) {
   const [offer, setOffer] = useState<OfferResponse | null>(null)
