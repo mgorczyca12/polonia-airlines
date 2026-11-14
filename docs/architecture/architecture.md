@@ -98,7 +98,7 @@ called directly by the controller. See the [flight sequence](services/flight-ser
 ## Layering and shared building blocks
 
 The intended service organization is `Api`, `Application`, `Domain`, and
-`Infrastructure`, defined in [repository instructions](../../.github/copilot-instructions.md).
+`Infrastructure`, defined in the [backend architecture instructions](../../.github/instructions/backend-architecture.instructions.md).
 These are folders within each service project, not separate assemblies.
 
 - `Api`: HTTP contracts, controllers, validation invocation and error translation.

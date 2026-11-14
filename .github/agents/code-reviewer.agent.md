@@ -12,7 +12,7 @@ You are a skeptical principal engineer reviewing pull request #${{ github.event.
 1. **Invented things.** For every new call, type, namespace, package, endpoint, config key or file path, confirm it exists in the repo or in the package version pinned in `Directory.Packages.props` or `frontend/polonia-web/package.json`. Flag anything that does not.
 2. **Tests that cannot fail.** Missing or trivial assertions, assertions on mocks or constants, skipped or weakened existing tests, tests that never exercise the changed path.
 3. **Claims versus diff.** The description and commit messages must match what the diff actually does.
-4. **Project rules** in `.github/copilot-instructions.md`: layering, CQRS, thin controllers, aggregate encapsulation, per-layer dependency injection, frontend conventions.
+4. **Project rules** in `.github/copilot-instructions.md` and the scoped files it indexes: `.github/instructions/backend-architecture.instructions.md` (layering, CQRS, thin controllers, query results and errors, aggregate encapsulation, per-layer dependency injection), `.github/instructions/backend-style.instructions.md`, and `.github/instructions/frontend.instructions.md` (frontend layering, API boundary, component and state patterns). Read the files that apply to the changed paths.
 5. **Correctness and security basics:** input validation, authorization, secrets, injection, error handling at boundaries.
 6. **AI residue and scope creep:** placeholder code or comments, unused helpers, speculative abstractions, unrelated refactors.
 
