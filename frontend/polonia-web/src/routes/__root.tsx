@@ -1,7 +1,12 @@
-import { HeadContent, Scripts, createRootRoute } from '@tanstack/react-router'
+import {
+  HeadContent,
+  Scripts,
+  createRootRouteWithContext,
+} from '@tanstack/react-router'
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
 import { TanStackDevtools } from '@tanstack/react-devtools'
 import { ColorSchemeScript, MantineProvider } from '@mantine/core'
+import type { QueryClient } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { ApplicationShell } from '#/app/ApplicationShell'
 import { theme } from '#/app/theme'
@@ -13,7 +18,7 @@ import '#/styles/index.scss'
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('mantine-color-scheme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);root.style.colorScheme=resolved;}catch(e){}})();`
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: 'utf-8' },
