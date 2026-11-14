@@ -3,7 +3,7 @@ import { MantineProvider } from '@mantine/core'
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ReactNode } from 'react'
-import { LiveBooking } from './components/LiveBooking'
+import { LiveBooking } from './ui/LiveBooking'
 import {
   getFlight,
   getOffer,

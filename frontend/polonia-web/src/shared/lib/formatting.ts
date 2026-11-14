@@ -13,6 +13,10 @@ const dayMonthFormatter = new Intl.DateTimeFormat('en-GB', {
   month: 'short',
   timeZone: 'UTC',
 })
+const weekdayFormatter = new Intl.DateTimeFormat('en-GB', {
+  weekday: 'short',
+  timeZone: 'UTC',
+})
 const shortDateFormatter = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
   month: 'short',
@@ -122,6 +126,10 @@ function formatDateKey(dateKey: string, formatter: Intl.DateTimeFormat): string 
 
 export function formatDayMonth(dateKey: string): string {
   return formatDateKey(dateKey, dayMonthFormatter)
+}
+
+export function formatWeekday(dateKey: string): string {
+  return formatDateKey(dateKey, weekdayFormatter)
 }
 
 export function formatShortDate(dateKey: string): string {

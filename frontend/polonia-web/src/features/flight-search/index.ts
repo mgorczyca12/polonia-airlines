@@ -1,5 +1,5 @@
-export { FlightSearch } from './components/FlightSearch'
-export { SearchRecap } from './components/SearchRecap'
+export { FlightSearch } from './ui/FlightSearch'
+export { SearchRecap } from './ui/SearchRecap'
 export type { FlightSearchFormValues } from './model/form-context'
 export {
   CABIN_OPTIONS,
