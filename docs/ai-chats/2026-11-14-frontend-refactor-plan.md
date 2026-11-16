@@ -321,7 +321,20 @@ with these decisions and deviations:
   still places UI tests in `frontend/polonia-web/e2e`, while system tests live in
   `tests/system`. Changing it also requires updating the test-writer workflow's
   `push_to_pull_request_branch.allowed_files` and recompiling the lock file.
-- Open a pull request from `refactor/frontend-architecture`.
+- PR #41 was merged into `main`; the local branch was fast-forwarded to the
+  merge commit.
+
+## PR reviewer investigation
+
+- The [reviewer run](https://github.com/mgorczyca12/polonia-airlines/actions/runs/43625298328)
+  failed during activation before the agent ran. The generated workflow uses
+  gh-aw v0.89.21; the setup runtime now requires v0.91.10 or newer. The
+  frontmatter hash check passed, but the compile-version check failed.
+- The other four generated agentic workflows also identify v0.89.21 and may
+  encounter the same incompatibility. Update gh-aw and recompile the affected
+  workflows, then rerun and verify; no fix or rerun was performed here.
+- GitHub CLI was not authenticated in this session; the run and job logs were
+  inspected through the GitHub tool instead.
 
 ## Pre-implementation checks
 
