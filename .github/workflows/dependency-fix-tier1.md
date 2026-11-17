@@ -81,8 +81,12 @@ safe-outputs:
       - frontend/polonia-web/src/**
   add-labels:
     allowed: [dependency-tier2, needs-human-decision]
+    target: "*"
+    required-labels: [dependencies]
     max: 2
   add-comment:
+    target: "*"
+    required-labels: [dependencies]
     max: 1
   dispatch-workflow:
     workflows: [dependency-fix-tier2]

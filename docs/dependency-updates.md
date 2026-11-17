@@ -93,6 +93,10 @@ Already-open major PRs without a new event can be reviewed by dispatching
 `needs-human-decision` PRs remain manual; remove that label only after a human
 decides to re-enter automation.
 
+Tier 1's scheduled runs may comment on and label dependency-labelled items.
+Tier 2's dispatched runs target the supplied PR number and require both
+`dependencies` and `dependency-tier2` labels for those outputs.
+
 Compile changed agent workflows with
 `gh aw compile <workflow-id> --action-mode action --action-tag 406c7719e31d7fe354224d4bb8fe3d4aeb47da1c`
 to retain the pinned setup action. The firewall version must have a reviewed

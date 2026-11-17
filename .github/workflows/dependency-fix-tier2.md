@@ -65,8 +65,12 @@ safe-outputs:
       - frontend/polonia-web/src/**
   add-labels:
     allowed: [needs-human-decision]
+    target: ${{ github.event.inputs.pr_number }}
+    required-labels: [dependencies, dependency-tier2]
     max: 1
   add-comment:
+    target: ${{ github.event.inputs.pr_number }}
+    required-labels: [dependencies, dependency-tier2]
     max: 1
   dispatch-workflow:
     workflows: [dependency-automerge]
