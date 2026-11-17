@@ -17,6 +17,9 @@ change.
 - [Tier 1](../.github/agents/dependency-fixer.agent.md) repairs failing minor/patch
   PRs. It routes any major upgrade it discovers to Tier 2 without attempting a
   repair, and retains its small-repair and human-escalation limits.
+- Before starting Tier 1, a deterministic gate checks the latest Actions check
+  runs and commit statuses for eligible open PRs; GitHub's `status:failure`
+  search qualifier alone does not reliably find failed Actions checks.
 - Tier 2 checks upstream breaking changes, affected usage, runtime behavior,
   transitive compatibility, licensing and security implications. It makes
   bounded compatibility fixes and runs applicable builds/tests, or approves the
@@ -89,10 +92,12 @@ Already-open major PRs without a new event can be reviewed by dispatching
 `needs-human-decision` PRs remain manual; remove that label only after a human
 decides to re-enter automation.
 
-After changing Markdown workflow configuration, run
-`gh aw compile dependency-fix-tier1 dependency-fix-tier2` and commit the generated
-lock files together with the sources. Runtime agent imports read the profiles
-from the trusted repository branch.
+After changing tier 1's Markdown configuration, compile with
+`gh aw compile dependency-fix-tier1 --action-mode action --action-tag 406c7719e31d7fe354224d4bb8fe3d4aeb47da1c`
+to retain the currently pinned setup action. Compile tier 2 with
+`gh aw compile dependency-fix-tier2` when needed. Commit generated lock files
+together with the sources. Runtime agent imports read the profiles from the
+trusted repository branch.
 
 Policy tests run in CI and locally with
-`node --test .github/scripts/dependency-merge-policy.test.cjs`.
+`node --test .github/scripts/dependency-merge-policy.test.cjs .github/scripts/dependency-fix-routing.test.cjs`.
