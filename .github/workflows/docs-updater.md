@@ -18,7 +18,7 @@ engine:
   model: gpt-6-luna
 sandbox:
   agent:
-    version: v0.28.37
+    version: v0.28.62
 timeout-minutes: 20
 max-turns: 30
 max-ai-credits: 100

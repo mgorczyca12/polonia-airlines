@@ -12,7 +12,7 @@ Date: 2026-11-17. Prior context: [gh-aw upgrade](./2026-11-16-gh-aw-upgrade.md).
 
 ## Checks and follow-up
 
-- Inspected PR diffs, check statuses, workflow jobs, failure logs, and the relevant test and workflow source. No tests were run locally and no GitHub actions or settings were changed.
+- Initially inspected PR diffs, check statuses, workflow jobs, failure logs, and the relevant test and workflow source without making changes.
 - Investigate or rerun #44's observability test, and investigate the earlier broker status mismatch separately.
 - Create the missing repository label and rerun the major-upgrade routing workflow, then verify tier 2 review and its checks before merging #46.
 - Replace or redesign tier 1's failure detection to evaluate current check runs and commit statuses; preserve its scope and exclusions, and verify pending, failed, and successful cases before relying on it.
@@ -24,3 +24,6 @@ Date: 2026-11-17. Prior context: [gh-aw upgrade](./2026-11-16-gh-aw-upgrade.md).
 - Added routing tests and CI coverage, synchronized the workflow's setup-action pins with the generated file, and regenerated the tier 1 lock while retaining the current gh-aw setup action.
 - `node --test` passed all 46 routing and merge-policy tests. `gh aw compile` and `gh aw validate` passed; a read-only live API check selected #44. `git diff --check` passed.
 - In an isolated checkout of #44, the specific observability test passed, then all 48 shared integration tests passed. This does not explain the earlier CI failure; a fresh GitHub CI run is still needed.
+- Five further runs of the 48 shared integration tests on #44 passed locally.
+- PR #47's required backend and frontend checks passed, but the advisory reviewer failed before starting: its setup action had no reviewed checksum for firewall v0.28.37. All five agent workflows used this incompatible combination. Updated them to firewall v0.28.62, whose checksum is in the pinned setup action, and regenerated locks with immutable container digests. Remote execution remains to be verified.
+- Compilation and validation of all five workflows succeeded with two existing warnings, concerning the docs updater's `pull_request_target` trigger and the test writer's unrestricted push target. The 46 dependency policy and routing tests passed again.
