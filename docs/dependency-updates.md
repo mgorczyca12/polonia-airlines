@@ -83,9 +83,10 @@ Before enabling automation:
    existing `GH_AW_GITHUB_TOKEN` override, to trigger new PR CI. Pushes made only
    with `GITHUB_TOKEN` do not trigger ordinary PR workflows; missing CI blocks
    Tier 2 merging rather than being treated as success.
-4. Ensure the router token can label PRs and dispatch workflows. Tier 2 output
-   permissions must support pushes, comments, labels, decision issues and
-   dispatching the merge workflow.
+4. Ensure the router token can label PRs and dispatch workflows. The router
+   supplies `GH_REPO` explicitly because it does not check out the repository.
+   Tier 2 output permissions must support pushes, comments, labels, decision
+   issues and dispatching the merge workflow.
 
 Already-open major PRs without a new event can be reviewed by dispatching
 `dependency-fix-tier2.lock.yml` after adding its two required labels. Existing
