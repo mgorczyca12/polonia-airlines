@@ -53,6 +53,8 @@ public sealed class ObservabilityTests
         var activities = new ConcurrentQueue<Activity>();
         var logs = new ConcurrentQueue<(string? Category, string? TraceId, LogLevel Level)>();
         var metrics = new ConcurrentQueue<string>();
+        const string traceId = "12345678901234567890123456789012";
+        var activityExporter = new ActivityExporter(activities, traceId);
         var metricReader = new BaseExportingMetricReader(new MetricExporter(metrics));
         var builder = WebApplication.CreateBuilder();
         builder.WebHost.UseTestServer();
@@ -64,7 +66,7 @@ public sealed class ObservabilityTests
         builder.AddSharedObservability("test-service");
         builder.Services.AddOpenTelemetry()
             .WithTracing(tracing => tracing.AddProcessor(
-                new SimpleActivityExportProcessor(new ActivityExporter(activities))))
+                new SimpleActivityExportProcessor(activityExporter)))
             .WithMetrics(meter => meter.AddReader(metricReader));
         builder.Logging.AddOpenTelemetry(options => options.AddProcessor(new LogProcessor(logs)));
 
@@ -81,12 +83,13 @@ public sealed class ObservabilityTests
         await app.StartAsync();
         using var client = app.GetTestClient();
         using var request = new HttpRequestMessage(HttpMethod.Get, "/test");
-        const string traceId = "12345678901234567890123456789012";
         request.Headers.Add("traceparent", $"00-{traceId}-1234567890123456-01");
         using var response = await client.SendAsync(request);
         response.EnsureSuccessStatusCode();
         using var health = await client.GetAsync("/health");
         health.EnsureSuccessStatusCode();
+        // TestServer can return the response before the server activity is exported.
+        await activityExporter.ServerActivityExported.WaitAsync(TimeSpan.FromSeconds(10));
         Assert.True(metricReader.Collect());
 
         Assert.Contains(activities, activity => activity.Kind == ActivityKind.Server
@@ -104,13 +107,24 @@ public sealed class ObservabilityTests
             && attribute.Value.ToString() == "test-service");
     }
 
-    private sealed class ActivityExporter(ConcurrentQueue<Activity> activities) : BaseExporter<Activity>
+    private sealed class ActivityExporter(
+        ConcurrentQueue<Activity> activities,
+        string traceId) : BaseExporter<Activity>
     {
+        private readonly TaskCompletionSource serverActivityExported =
+            new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        public Task ServerActivityExported => serverActivityExported.Task;
+
         public override ExportResult Export(in Batch<Activity> batch)
         {
             foreach (var activity in batch)
             {
                 activities.Enqueue(activity);
+                if (activity.Kind == ActivityKind.Server && activity.TraceId.ToString() == traceId)
+                {
+                    serverActivityExported.TrySetResult();
+                }
             }
 
             return ExportResult.Success;
