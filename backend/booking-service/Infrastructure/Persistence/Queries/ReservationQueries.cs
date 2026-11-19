@@ -1,3 +1,4 @@
+using System.Data;
 using booking_service.Application.Contracts.Requests;
 using booking_service.Application.Contracts.Responses;
 using booking_service.Application.Errors;
@@ -38,6 +39,9 @@ public sealed class ReservationQueries(
         CancellationToken cancellationToken)
     {
         var tokenHash = GuestToken.From(request.GuestToken).Hash;
+        await using var transaction = await context.Database.BeginTransactionAsync(
+            IsolationLevel.RepeatableRead,
+            cancellationToken);
         var access = await context.ReservationCheckouts
             .AsNoTracking()
             .SingleOrDefaultAsync(
@@ -62,7 +66,7 @@ public sealed class ReservationQueries(
             .AsNoTracking()
             .SingleOrDefaultAsync(state => state.CorrelationId == access.CorrelationId, cancellationToken);
 
-        return Result.Ok(new ReservationResponse(
+        var response = new ReservationResponse(
             reservation.Id,
             reservation.Code.Value,
             reservation.Status.Status,
@@ -82,6 +86,9 @@ public sealed class ReservationQueries(
                     passenger.Id,
                     passenger.FirstName,
                     passenger.LastName))
-                .ToArray()));
+                .ToArray());
+        await transaction.CommitAsync(cancellationToken);
+
+        return Result.Ok(response);
     }
 }

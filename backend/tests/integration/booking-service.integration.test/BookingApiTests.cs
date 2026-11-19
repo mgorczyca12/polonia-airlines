@@ -1,3 +1,6 @@
+using System.Collections.Concurrent;
+using System.Data;
+using System.Data.Common;
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
@@ -5,12 +8,15 @@ using booking_service.Application.Contracts.Requests;
 using booking_service.Application.Contracts.Responses;
 using booking_service.Domain.Entities;
 using booking_service.Domain.ValueObjects;
+using booking_service.Infrastructure.Integrations.Sagas;
 using booking_service.Infrastructure.Persistence;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
@@ -80,6 +86,55 @@ public sealed class BookingApiTests
 
         using var json = JsonDocument.Parse(await unauthorized.Content.ReadAsStringAsync());
         Assert.Equal("not_found", json.RootElement.GetProperty("code").GetString());
+    }
+
+    [Fact]
+    public async Task ReservationRead_UsesRepeatableReadTransaction()
+    {
+        var transactionObserver = new SnapshotTransactionObserver();
+        using var factory = new Factory(transactionObserver);
+        using var client = factory.CreateSeededClient();
+
+        var checkout = await (await client.PostAsync("/api/booking/checkouts", null))
+            .Content.ReadFromJsonAsync<CheckoutResponse>();
+        Assert.NotNull(checkout);
+        client.DefaultRequestHeaders.Add("X-Guest-Token", checkout.GuestToken);
+
+        var offerResponse = await client.PostAsJsonAsync("/api/booking/offers",
+            new OfferRequest("PLN", 1, [new(" flight ", factory.ProductId)]));
+        Assert.Equal(HttpStatusCode.Created, offerResponse.StatusCode);
+        var offer = await offerResponse.Content.ReadFromJsonAsync<OfferResponse>();
+        Assert.NotNull(offer);
+
+        var reservationResponse = await client.PostAsJsonAsync("/api/booking/reservations",
+            new ReservationRequest(offer.Id, "snapshot-probe", "Guest", "guest@example.test",
+                [new("First", "Last", new DateOnly(1990, 1, 1))]));
+        Assert.Equal(HttpStatusCode.Created, reservationResponse.StatusCode);
+        var created = await reservationResponse.Content.ReadFromJsonAsync<ReservationResponse>();
+        Assert.NotNull(created);
+
+        await using (var scope = factory.Services.CreateAsyncScope())
+        {
+            var database = scope.ServiceProvider.GetRequiredService<BookingDbContext>();
+            database.Set<ReservationSagaState>().Add(new ReservationSagaState
+            {
+                CorrelationId = created.WorkflowId,
+                ReservationId = created.Id.ToString(),
+                CurrentState = "ConfirmingAllocations",
+                HoldUntil = DateTimeOffset.UtcNow.AddMinutes(1),
+                NextCheckAt = DateTimeOffset.UtcNow
+            });
+            await database.SaveChangesAsync();
+        }
+
+        transactionObserver.Arm();
+        var observed = await client.GetFromJsonAsync<ReservationResponse>(reservationResponse.Headers.Location);
+        Assert.NotNull(observed);
+        Assert.Equal("Created", observed.Status);
+        Assert.Equal("ConfirmingAllocations", observed.WorkflowStatus);
+        Assert.NotEmpty(transactionObserver.IsolationLevels);
+        Assert.All(transactionObserver.IsolationLevels,
+            isolationLevel => Assert.Equal(IsolationLevel.Serializable, isolationLevel));
     }
 
     [Fact]
@@ -185,11 +240,13 @@ public sealed class BookingApiTests
     private sealed class Factory : WebApplicationFactory<Program>
     {
         private readonly SqliteConnection connection = new("Data Source=:memory:");
+        private readonly DbCommandInterceptor? commandInterceptor;
 
         public Guid ProductId { get; private set; }
 
-        public Factory()
+        public Factory(DbCommandInterceptor? commandInterceptor = null)
         {
+            this.commandInterceptor = commandInterceptor;
             connection.Open();
         }
 
@@ -216,7 +273,14 @@ public sealed class BookingApiTests
                 services.RemoveAll<BookingDbContext>();
                 services.RemoveAll<DbContextOptions<BookingDbContext>>();
                 services.RemoveAll<IDbContextOptionsConfiguration<BookingDbContext>>();
-                services.AddDbContext<BookingDbContext>(options => options.UseSqlite(connection));
+                services.AddDbContext<BookingDbContext>(options =>
+                {
+                    options.UseSqlite(connection);
+                    if (commandInterceptor is not null)
+                    {
+                        options.AddInterceptors(commandInterceptor);
+                    }
+                });
             });
         }
 
@@ -240,6 +304,36 @@ public sealed class BookingApiTests
             {
                 connection.Dispose();
             }
+        }
+    }
+
+    private sealed class SnapshotTransactionObserver : DbCommandInterceptor
+    {
+        private readonly ConcurrentQueue<IsolationLevel?> isolationLevels = new();
+        private int armed;
+
+        public IsolationLevel?[] IsolationLevels => isolationLevels.ToArray();
+
+        public void Arm()
+        {
+            Volatile.Write(ref armed, 1);
+        }
+
+        public override ValueTask<InterceptionResult<DbDataReader>> ReaderExecutingAsync(
+            DbCommand command,
+            CommandEventData eventData,
+            InterceptionResult<DbDataReader> result,
+            CancellationToken cancellationToken = default)
+        {
+            if (command.CommandText.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase)
+                && Volatile.Read(ref armed) == 1)
+            {
+                var isolationLevel = eventData.Context?.Database.CurrentTransaction?
+                    .GetDbTransaction().IsolationLevel;
+                isolationLevels.Enqueue(isolationLevel);
+            }
+
+            return ValueTask.FromResult(result);
         }
     }
 }

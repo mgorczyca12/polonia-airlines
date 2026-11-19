@@ -88,6 +88,10 @@ seating; it does not replace the reservation aggregate.
 
 ## Distributed completion
 
+- Guest reservation reads fetch reservation status and saga progress in a
+  repeatable-read transaction. A poll during completion may return the preceding
+  state pair; it will not combine the reservation and workflow from different
+  database snapshots.
 - Offers expire after 15 minutes; inventory holds expire after 10 minutes.
 - The saga progresses through `AwaitingCapacity`, `ConfirmingAllocations`, and
   `Completed`. Only confirmed inventory causes the aggregate to become `Reserved`.
@@ -103,5 +107,6 @@ seating; it does not replace the reservation aggregate.
 
 Unit and integration test sources cover catalog/offer rules, reservation
 idempotency, domain invariants, and saga transitions. The new fare query and
-guest-scoped request lookup have SQLite HTTP integration coverage. Live browser
-workflow verification remains pending; see [frontend](../frontend.md).
+guest-scoped request lookup have SQLite HTTP integration coverage. Reservation
+read transaction isolation is also verified by the SQLite HTTP integration tests.
+Live browser workflow verification remains pending; see [frontend](../frontend.md).
