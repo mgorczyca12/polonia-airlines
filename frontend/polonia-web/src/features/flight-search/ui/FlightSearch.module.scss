@@ -83,10 +83,10 @@
 
 .fields {
   display: grid;
-  grid-template-areas: 'from swap to dates travellers';
-  grid-template-columns:
-    minmax(0, 1.1fr) auto minmax(0, 1fr) minmax(0, 1.25fr)
-    minmax(0, 1.2fr);
+  grid-template-areas:
+    'from swap to'
+    'dates . travellers';
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   gap: 0.875rem;
   align-items: start;
 }
@@ -149,15 +149,6 @@
 .actions {
   display: flex;
   justify-content: flex-end;
-}
-
-@include below($bp-lg) {
-  .fields {
-    grid-template-areas:
-      'from swap to'
-      'dates dates travellers';
-    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
-  }
 }
 
 @include below($bp-md) {
