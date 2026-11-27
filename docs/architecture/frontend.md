@@ -136,6 +136,14 @@ a terminal workflow state; `deriveReservationView` maps stored status to the sho
 state. First loads show section skeletons after a short delay, result paging keeps
 the previous page visible while updating, and submissions use button loading states.
 
+The web API applies up to two retries with exponential backoff and jitter to
+backend GETs on network failures and HTTP 5xx responses; browser queries do not
+retry. Each backend has its own in-process circuit breaker, which opens after
+five consecutive transient failures and permits a recovery probe after 30 seconds.
+The existing 15-second timeout covers the whole upstream operation. Mutations
+are never retried, but fail fast when their backend's circuit is open. Breaker
+state is local to each web server process. Caller cancellation stops retries.
+
 ## Development and verification
 
 See [development setup](development.md) for server-only environment variables and

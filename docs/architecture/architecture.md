@@ -38,6 +38,13 @@ SQLite exists only inside integration tests. Booking and seating communicate
 through RabbitMQ; Redis is seating's temporary-hold store, not its confirmed
 allocation database. These runtime dependencies require external provisioning.
 
+The shared infrastructure project also exposes an opt-in
+`AddSharedHttpResilience()` extension for future named or typed HTTP clients.
+It adds the standard .NET HTTP resilience handler and disables retries for
+unsafe HTTP methods. No backend service registers it currently; it does not
+change RabbitMQ, Redis, or database retry policies. Future clients must choose
+dependency-specific timeouts and retry behavior appropriate for their contracts.
+
 ```mermaid
 C4Container
     title Polonia Airlines - implemented containers and test-only storage
